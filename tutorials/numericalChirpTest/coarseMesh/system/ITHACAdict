@@ -1,0 +1,30 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      ITHACAdict;
+}
+
+thermalConductivity 300.0; 
+density             992; 
+specificHeat        4180.0; 
+heatTranferCoeff    5.66e4; 
+Tf                  350.0;
+a		    1100;
+b		    1200;
+c		    3000;
+d		    14;
+
+
+//Test to perform
+parameterizedBC_steadyTest 1;
+parameterizedBC_unsteadyTest 0;

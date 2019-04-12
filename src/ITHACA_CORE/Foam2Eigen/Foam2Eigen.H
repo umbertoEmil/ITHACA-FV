@@ -393,6 +393,250 @@ class Foam2Eigen
         static std::tuple<List<Eigen::SparseMatrix<double>>, List<Eigen::VectorXd>>
                 LFvMatrix2LSM(PtrList<fvMatrix<Type>>& MatrixList);
 
+        //--------------------------------------------------------------------------
+        /// @brief      Convert a Foam List into an Eigen matrix with one column
+        ///
+        /// @param[in]  list        The Foam List
+        ///
+        /// @tparam     type_matrix The type of data in the List (int or double)
+        ///
+        /// @return     The Eigen matrix
+        ///
+        template <class type_matrix>
+        static Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic>
+        List2EigenMatrix ( List<type_matrix> list );
+
+        //--------------------------------------------------------------------------
+        /// @brief      Convert an Eigen matrix with one column into a Foam List
+        ///
+        /// @param[in]  matrix       The Eigen matrix
+        ///
+        /// @tparam     type_matrix The type of data in the List (int or double)
+        ///
+        /// @return     The Foam List
+        ///
+        template <class type_matrix>
+        static List<type_matrix> EigenMatrix2List (
+            Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic> matrix );
+
+
 
 };
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+template<class type_f>
+Eigen::VectorXd Foam2Eigen::field2Eigen(const
+                                        DimensionedField<type_f, Foam::volMesh>& field)
+{
+    Eigen::VectorXd out;
+    out.resize(int(field.size()));
+
+    for (int l = 0; l < field.size(); l++)
+    {
+        out(l) = field[l];
+    }
+
+    return out;
+}
+
+template <>
+Field<scalar> Foam2Eigen::Eigen2field(Field<scalar>& field,
+                                      Eigen::MatrixXd& matrix);
+
+template <>
+Field<vector> Foam2Eigen::Eigen2field(Field<vector>& field,
+                                      Eigen::MatrixXd& matrix);
+
+template<>
+Eigen::VectorXd Foam2Eigen::field2Eigen(
+    GeometricField<vector, fvPatchField, volMesh>& field);
+
+template<>
+Eigen::VectorXd Foam2Eigen::field2Eigen(
+    GeometricField<scalar, fvPatchField, volMesh>& field);
+
+template<>
+List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
+    GeometricField<vector, fvPatchField, volMesh>& field);
+
+template<>
+List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
+    GeometricField<scalar, fvPatchField, volMesh>& field);
+
+template<class type_f>
+List<Eigen::MatrixXd> PtrList2EigenBC(type_f& fields, int Nfields);
+
+template<>
+List<Eigen::MatrixXd> PtrList2EigenBC(
+    PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fields,
+    int Nfields);
+
+template<>
+List<Eigen::MatrixXd> PtrList2EigenBC(
+    PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields,
+    int Nfields);
+
+template<class type_matrix>
+std::tuple<List<Eigen::SparseMatrix<double>>, List<Eigen::VectorXd>>
+        Foam2Eigen::LFvMatrix2LSM(PtrList<fvMatrix<type_matrix>>& MatrixList)
+{
+    List<Eigen::SparseMatrix<double>> SM_list;
+    List<Eigen::VectorXd> V_list;
+    int LSize =  MatrixList.size();
+    SM_list.resize(LSize);
+    V_list.resize(LSize);
+    Eigen::SparseMatrix<double> A;
+    Eigen::VectorXd b;
+
+    for (int j = 0; j < LSize; j++)
+    {
+        fvMatrix2Eigen(MatrixList[j], A, b);
+        SM_list[j] = A;
+        V_list[j] = b;
+    }
+
+    std::tuple <List<Eigen::SparseMatrix<double>>, List<Eigen::VectorXd>> tupla;
+    tupla = std::make_tuple(SM_list, V_list);
+    return tupla;
+}
+
+template<class type_matrix>
+Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic>
+Foam2Eigen::List2EigenMatrix ( List<type_matrix> list )
+{
+    Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic> matrix(list.size(),
+            1);
+
+    for (label i = 0; i < matrix.rows(); i++)
+    {
+        matrix(i, 0) = list[i];
+    }
+
+    return matrix;
+}
+
+template<class type_matrix>
+List<type_matrix> Foam2Eigen::EigenMatrix2List (
+    Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic> matrix )
+{
+    if (matrix.cols() == 1)
+    {
+        List<int> list(matrix.rows());
+
+        for (label i = 0; i < matrix.rows(); i++)
+        {
+            list[i] = matrix(i, 0);
+        }
+
+        return list;
+    }
+    else
+    {
+        Info << "I still must code EigenMatrix2List for matrix cols>1, exiting" << endl;
+        exit(11);
+    }
+}
+
+template <class type_m>
+std::tuple<Eigen::MatrixXd, Eigen::VectorXd> Foam2Eigen::projectFvMatrix(
+    fvMatrix<type_m>& matrix,
+    PtrList<GeometricField<type_m, fvPatchField, volMesh>>& modes, int Nmodes)
+{
+    Eigen::SparseMatrix<double> A;
+    Eigen::MatrixXd Ar;
+    Eigen::VectorXd b;
+    Eigen::VectorXd br;
+    Eigen::MatrixXd Eig_Modes = PtrList2Eigen(modes, Nmodes);
+    Foam2Eigen::fvMatrix2Eigen(matrix, A, b);
+    Eigen::VectorXd Volumes = field2Eigen(modes[0].mesh());
+    Eigen::MatrixXd VolumesN(Volumes.rows(), Nmodes);
+
+    if (Volumes.rows() != Eig_Modes.rows())
+    {
+        VolumesN.resize(Eig_Modes.rows(), Nmodes);
+    }
+
+    if (Volumes.rows() == Eig_Modes.rows())
+    {
+        for (auto i = 0; i < Nmodes; i++)
+        {
+            VolumesN.col(i) = Volumes;
+        }
+    }
+    else
+    {
+        for (auto i = 0; i < Nmodes; i++)
+        {
+            VolumesN.col(i).segment(0, Volumes.rows()) = Volumes;
+            VolumesN.col(i).segment(Volumes.rows() + 1, Volumes.rows() * 2) = Volumes;
+            VolumesN.col(i).segment(Volumes.rows() * 2 + 1, Volumes.rows() * 3) = Volumes;
+        }
+    }
+
+    Ar = Eig_Modes.transpose() * A * Eig_Modes;
+    br = Eig_Modes.transpose() * b;
+    std::tuple <Eigen::MatrixXd, Eigen::VectorXd> tupla;
+    tupla = std::make_tuple(Ar, br);
+    return tupla;
+}
+
+template <class type_PtrList>
+Eigen::MatrixXd Foam2Eigen::MassMatrix(
+    PtrList<GeometricField<type_PtrList, fvPatchField, volMesh>>& modes, int Nmodes)
+{
+    Eigen::MatrixXd Mr;
+    Eigen::MatrixXd Eig_Modes = PtrList2Eigen(modes, Nmodes);
+    Eigen::VectorXd Volumes = field2Eigen(modes[0].mesh());
+    Eigen::MatrixXd VolumesN(Volumes.rows(), Nmodes);
+
+    if (Volumes.rows() != Eig_Modes.rows())
+    {
+        VolumesN.resize(Eig_Modes.rows(), Nmodes);
+    }
+
+    if (Volumes.rows() == Eig_Modes.rows())
+    {
+        for (auto i = 0; i < Nmodes; i++)
+        {
+            VolumesN.col(i) = Volumes;
+        }
+    }
+    else
+    {
+        for (auto i = 0; i < Nmodes; i++)
+        {
+            VolumesN.col(i).segment(0, Volumes.rows()) = Volumes;
+            VolumesN.col(i).segment(Volumes.rows() + 1, Volumes.rows() * 2) = Volumes;
+            VolumesN.col(i).segment(Volumes.rows() * 2 + 1, Volumes.rows() * 3) = Volumes;
+        }
+    }
+
+    Mr = Eig_Modes.transpose() * (Eig_Modes.cwiseProduct(VolumesN));
+    return Mr;
+}
+
+template <class type_f>
+Eigen::VectorXd Foam2Eigen::projectField(
+    GeometricField<type_f, fvPatchField, volMesh>& field,
+    PtrList<GeometricField<type_f, fvPatchField, volMesh>>& modes,
+    int Nmodes)
+{
+    Eigen::VectorXd fr;
+    Eigen::MatrixXd Eig_Modes = PtrList2Eigen(modes, Nmodes);
+    Eigen::VectorXd f = Foam2Eigen::field2Eigen(field);
+    Eigen::VectorXd Volumes = field2Eigen(modes[0].mesh());
+    Eigen::MatrixXd VolumesN(Volumes.rows(), 1);
+    VolumesN = Volumes;
+
+    if (Volumes.rows() != Eig_Modes.rows())
+    {
+        VolumesN.resize(Eig_Modes.rows(), 1);
+        VolumesN.col(0).segment(0, Volumes.rows()) = Volumes;
+        VolumesN.col(0).segment(Volumes.rows() + 1, Volumes.rows() * 2) = Volumes;
+        VolumesN.col(0).segment(Volumes.rows() * 2 + 1, Volumes.rows() * 3) = Volumes;
+    }
+
+    fr = Eig_Modes.transpose() * (f.cwiseProduct(VolumesN));
+    return fr;
+}
 #endif

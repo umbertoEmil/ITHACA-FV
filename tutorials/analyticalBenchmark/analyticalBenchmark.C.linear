@@ -1,0 +1,424 @@
+/*---------------------------------------------------------------------------*\
+     ██╗████████╗██╗  ██╗ █████╗  ██████╗ █████╗       ███████╗██╗   ██╗
+     ██║╚══██╔══╝██║  ██║██╔══██╗██╔════╝██╔══██╗      ██╔════╝██║   ██║
+     ██║   ██║   ███████║███████║██║     ███████║█████╗█████╗  ██║   ██║
+     ██║   ██║   ██╔══██║██╔══██║██║     ██╔══██║╚════╝██╔══╝  ╚██╗ ██╔╝
+     ██║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██║      ██║      ╚████╔╝
+     ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝      ╚═╝       ╚═══╝
+
+ * In real Time Highly Advanced Computational Applications for Finite Volumes
+ * Copyright (C) 2017 by the ITHACA-FV authors
+-------------------------------------------------------------------------------
+License
+    This file is part of ITHACA-FV
+    ITHACA-FV is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    ITHACA-FV is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Lesser General Public License for more details.
+    You should have received a copy of the GNU Lesser General Public License
+    along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
+Description
+    Example of a heat transfer Reduction Problem
+SourceFiles
+    14optimization.C
+\*---------------------------------------------------------------------------*/
+
+#include <iostream>
+#include "fvCFD.H"
+#include "fvOptions.H"
+#include "simpleControl.H"
+#include "IOmanip.H"
+#include "Time.H"
+#include "laplacianProblem.H"
+#include "inverseLaplacianProblem.H"
+#include "reducedInverseLaplacian.H"
+// #include "reducedLaplacian.H"
+#include "ITHACAPOD.H"
+#include "ITHACAutilities.H"
+//#include "ITHACAbayesian.H"
+#include <Eigen/Dense>
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include "Foam2Eigen.H"
+#include "mixedFvPatchFields.H"
+#include "cellDistFuncs.H"
+
+using namespace SPLINTER;
+
+class analyticalBenchmark: public inverseLaplacianProblem
+{
+    public:
+        explicit analyticalBenchmark(int argc, char* argv[])
+            :
+            inverseLaplacianProblem(argc, argv),
+            T(_T()),
+            lambda(_lambda()),
+            deltaT(_deltaT()),
+            mesh(_mesh()),
+            runTime(_runTime())
+        {
+            hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
+            coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
+            interpolationPlaneDefined = 0;
+            cgIter = 0;
+            thermocouplesRead = 0;
+        }
+        volScalarField& T;
+        volScalarField& lambda;
+        volScalarField& deltaT;
+        fvMesh& mesh;
+        Time& runTime;
+
+        PtrList<volScalarField> gField;
+        PtrList<volScalarField> TredField;
+        PtrList<volScalarField> TfullField;
+        PtrList<volScalarField> lambdaFullField;
+        PtrList<volScalarField> deltaTfullField;
+        PtrList<volScalarField> TdiffField;
+        PtrList<volScalarField> gFullField;
+        PtrList<volScalarField> gDiffField;
+        PtrList<volScalarField> gRelErrField;
+
+        scalar L2norm_g(volScalarField& field1, volScalarField& field2)
+        {
+            scalar L2 = 0;
+            //Access the mesh information for the boundary
+            const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+            //List of cells close to a boundary
+            const labelUList& faceCells = cPatch.faceCells();
+            forAll(cPatch, faceI)
+            {
+                scalar faceX = mesh.Cf().boundaryField()[hotSide_ind][faceI][0];
+                scalar faceZ = mesh.Cf().boundaryField()[hotSide_ind][faceI][2];
+
+                if (isInPlane(faceX, faceZ))
+                {
+                    //id of the owner cell having the face
+                    label faceOwner = faceCells[faceI] ;
+                    scalar faceArea = mesh.magSf().boundaryField()[hotSide_ind][faceI];
+                    scalar relErr = (field1[faceOwner] - field2[faceOwner]) / field2[faceOwner];
+                    L2 += faceArea * relErr * relErr;
+                }
+            }
+            return Foam::sqrt(L2);
+        }
+
+        scalar LinfinityErrorNorm(volScalarField& field1, volScalarField& field2)
+        {
+            scalar Linfty = 0;
+            //Access the mesh information for the boundary
+            const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+            //List of cells close to a boundary
+            const labelUList& faceCells = cPatch.faceCells();
+            label firstElement = 1;
+            forAll(cPatch, faceI)
+            {
+                scalar faceX = mesh.Cf().boundaryField()[hotSide_ind][faceI][0];
+                scalar faceZ = mesh.Cf().boundaryField()[hotSide_ind][faceI][2];
+
+                if (isInPlane(faceX, faceZ))
+                {
+                    //id of the owner cell having the face
+                    label faceOwner = faceCells[faceI] ;
+                    scalar fieldsDiff = field1[faceOwner] - field2[faceOwner];
+                    scalar value = fieldsDiff * fieldsDiff / (field2[faceOwner] *
+                                   field2[faceOwner]);
+                    value = Foam::sqrt(value);
+
+                    if (firstElement)
+                    {
+                        Linfty = value;
+                        firstElement = 0;
+                    }
+                    else if (Linfty < value)
+                    {
+                        Linfty = value;
+                    }
+                }
+            }
+            return Linfty;
+        }
+
+        void computeRelativeErrorFields()
+        {
+            //Access the mesh information for the boundary
+            const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+            //List of cells close to a boundary
+            const labelUList& faceCells = cPatch.faceCells();
+            gRelErrField = gField;
+            forAll(gField, testI)
+            {
+                forAll(cPatch, faceI)
+                {
+                    label faceOwner = faceCells[faceI] ;
+                    gRelErrField[testI][faceOwner] = (gField[testI][faceOwner] -
+                                                      gFullField[0][faceOwner]) /  (gFullField[0][faceOwner]);
+                }
+            }
+        }
+
+        PtrList<volScalarField> differenceField (PtrList<volScalarField>& field1,
+                PtrList<volScalarField>& field2)
+        {
+            PtrList<volScalarField> fieldDiff(field1);
+
+            if (field2.size() == fieldDiff.size())
+            {
+                for (label i = 0; i < fieldDiff.size(); i++)
+                {
+                    fieldDiff[i] = (field1[i] - field2[i]);
+                }
+            }
+            else if (field2.size() == 1)
+            {
+                for (label i = 0; i < fieldDiff.size(); i++)
+                {
+                    fieldDiff[i] = (field1[i] - field2[0]);
+                }
+            }
+            else
+            {
+                Info << "Don't know how to behave in differenceField" << endl;
+                Info << "the two fields have different size" << endl;
+                Info << "Size field1 = " << field1.size()
+                     << "Size field2 = " << field2.size() << endl;
+            }
+
+            return fieldDiff;
+        }
+
+        PtrList<volScalarField> relativeDifferenceField (PtrList<volScalarField>&
+                field1, PtrList<volScalarField>& field2)
+        {
+            PtrList<volScalarField> fieldDiff;
+
+            if (field2.size() == fieldDiff.size())
+            {
+                for (label i = 0; i < field1.size(); i++)
+                {
+                    fieldDiff.append((field1[i] - field2[i]) / field2[i]);
+                }
+            }
+            else if (field2.size() == 1)
+            {
+                for (label i = 0; i < field1.size(); i++)
+                {
+                    fieldDiff.append((field1[i] - field2[0]) / field2[0]);
+                }
+            }
+            else
+            {
+                Info << "WARNING:" << endl;
+                Info << "Don't know how to behave in relativeDifferenceField" << endl;
+                Info << "the two fields have different size" << endl;
+                Info << "Size field1 = " << field1.size()
+                     << ", Size field2 = " << field2.size() << endl;
+            }
+
+            return fieldDiff;
+        }
+
+        void computeTdiff()
+        {
+            TdiffField = TredField;
+            forAll(TdiffField, testI)
+            {
+                TdiffField[testI] = TredField[testI] - TfullField[0];
+            }
+        }
+
+        int isInPlane(double cx, double cz)
+        {
+            return (cx >= interpolationPlane.minX -
+                    interpolationPlane.thermocoupleCellDim[0] / 4 &&
+                    cz >= interpolationPlane.minZ - interpolationPlane.thermocoupleCellDim[2] / 4 &&
+                    cx <= interpolationPlane.maxX + interpolationPlane.thermocoupleCellDim[0] / 4 &&
+                    cz <= interpolationPlane.maxZ + interpolationPlane.thermocoupleCellDim[2] / 4
+                   );
+        }
+
+        // To be added to ITHACAutilities
+        scalar list2norm(List<scalar> list)
+        {
+            scalar norm = 0;
+            forAll(list, I)
+            {
+                norm += list[I] * list[I];
+            }
+            return Foam::sqrt(norm);
+        }
+
+        void parameterizedBC_postProcess(word folder, scalar innerField = 0.0)
+        {
+            Info << "Computing errors" << endl;
+            gFullField.resize(0);
+            ITHACAstream::read_fields(mesh, gFullField, "gParametrized",
+                                      folder);
+            solveTrue();
+            PtrList<volScalarField> gTrueField;
+            gTrueField.resize(0);
+            gTrueField.append(list2Field(gTrue, innerField));
+            gDiffField = relativeDifferenceField(gFullField,
+                                                 gTrueField);
+            forAll(gFullField, solutionI)
+            {
+	        volScalarField relErrField = (gFullField[solutionI] - gTrueField[0]) / gTrueField[0] ;  
+                
+		forAll(gFullField[solutionI], faceI)
+                {
+                    relErrField[faceI] =
+                        Foam::sqrt(relErrField[faceI] *
+                                   relErrField[faceI]);
+                }
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(solutionI + 1), folder,
+                                             "relErrField");
+
+            }
+            Eigen::MatrixXd errorG_L2norm;
+            errorG_L2norm.resize(gFullField.size(), 1);
+            Eigen::MatrixXd errorG_LinfNorm = errorG_L2norm;
+            gTrueField.resize(0);
+
+            for (int i = 0; i < errorG_L2norm.rows() ; i++)
+            {
+                gTrueField.append(list2Field(gTrue, innerField));
+                errorG_L2norm(i, 0) = L2norm_g(gFullField[i], gTrueField[0]);
+                errorG_LinfNorm(i, 0) = LinfinityErrorNorm(gFullField[i],
+                                        gTrueField[0]);
+            }
+
+            ITHACAstream::exportMatrix(errorG_L2norm, "relError_L2norm", "eigen",
+                                       folder);
+            ITHACAstream::exportMatrix(errorG_LinfNorm, "relError_LinfNorm", "eigen",
+                                       folder);
+            //ITHACAstream::exportFields(gDiffField, folder, "gDiff");
+            ITHACAstream::exportFields(gTrueField, folder, "gTrue");
+        }
+
+	void assignBC(
+            GeometricField<scalar, fvPatchField, volMesh>& field, label BC_ind,
+            List<scalar>& value)
+        {
+                fixedValueFvPatchScalarField& Tpatch =
+                    refCast<fixedValueFvPatchScalarField>(field.boundaryFieldRef()[BC_ind]);
+                Tpatch = value;
+		//scalarField& valueTpatch = Tpatch.fixedValue();
+                //valueTpatch = value;
+        }
+
+	void solveTrue()
+	{
+	    volScalarField& T = _T();
+            fvMesh& mesh = _mesh();
+            Foam::Time& runTime = _runTime();
+            
+	    scalar b = -10;
+	    set_valueFraction();
+            forAll(mesh.boundaryMesh(), patchI)
+            {
+                if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
+                {
+                    ITHACAutilities::assignMixedBC(T, patchI, Tf, refGrad, valueFraction);
+                }
+	        if (patchI == mesh.boundaryMesh().findPatchID("hotSide"))
+                {
+                    ITHACAutilities::assignBC(T, patchI, b);
+                }
+            }
+            //ITHACAutilities::assignIF(T, homogeneousBC);
+            simpleControl simple(mesh);
+
+	    Info << "DT = " << DT << endl;
+
+            while (simple.loop())
+            {
+                while (simple.correctNonOrthogonal())
+                {
+                    fvScalarMatrix TEqn
+                    (
+                        fvm::laplacian(DT, T)
+                    );
+                    TEqn.solve();
+                }
+            }
+
+            Info << "Exporting" << endl;
+            ITHACAstream::exportSolution(T, "1", "./ITHACAoutput/true/", T.name());
+
+	}
+};
+
+
+
+
+int main(int argc, char* argv[])
+{
+    solverPerformance::debug = 0; //No verbose output
+    double time;
+    analyticalBenchmark example(argc, argv);
+    
+    //Setting parameters for the analytical benchmark
+    double a = 5;
+    double b = 10;
+    double c = 15;
+    double d = 20;
+
+    
+    // Reading parameters from ITHACAdict
+    ITHACAparameters para;
+    example.cgIterMax = para.ITHACAdict->lookupOrDefault<int>("cgIterMax", 100);
+    example.thermocouplesNum =
+        para.ITHACAdict->lookupOrDefault<int>("thermocouplesNumber", 0);
+    M_Assert(example.thermocouplesNum > 0, "Number of thermocouples not specified");
+    example.interpolation = para.ITHACAdict->lookupOrDefault<int>("interpolation",
+                            1);
+    example.Jtol =  para.ITHACAdict->lookupOrDefault<double>("Jtolerance",
+                    0.000001);
+    example.JtolRel =
+        para.ITHACAdict->lookupOrDefault<double>("JrelativeTolerance",
+                0.001);
+    example.k = para.ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
+    M_Assert(example.k > 0, "thermalConductivity, k, not specified");
+    example.H = para.ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
+    double Tf = para.ITHACAdict->lookupOrDefault<double>("Tf", 300.0);
+    double refGrad = para.ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
+    double homogeneousBClist = 0.0;
+    double valueFraction = para.ITHACAdict->lookupOrDefault<double>("valueFraction",
+                           0.0);
+    
+    // Tests to do
+    label fullOrderTest = para.ITHACAdict->lookupOrDefault<int>("fullOrderTest", 0);
+    
+    // Setting BC at the cold side
+    example.coldSide_ind = example.mesh.boundaryMesh().findPatchID("coldSide");
+    label coldSideSize = example.T.boundaryField()[example.coldSide_ind].size();
+    example.Tf.resize(coldSideSize);
+    example.refGrad.resize(coldSideSize);
+    example.homogeneousBClist.resize(coldSideSize);
+    example.valueFraction.resize(coldSideSize);
+    forAll(example.Tf, faceI)
+    {
+        scalar faceZ =
+            example.mesh.boundaryMesh()[example.coldSide_ind].faceCentres()[faceI].z();
+        scalar faceX =
+            example.mesh.boundaryMesh()[example.coldSide_ind].faceCentres()[faceI].x();
+        example.Tf[faceI] = b * example.k / example.H + b + a * faceX + c * faceZ + d;
+
+        //example.Tf[faceI] =  example.k * b / example.H + a * faceX + b * 1 + c * faceZ;
+        example.refGrad[faceI] = refGrad;
+        example.homogeneousBClist[faceI] = homogeneousBClist;
+        example.valueFraction[faceI] = valueFraction;
+    }
+    
+    example.solveTrue();
+    
+
+    return 0;
+}
+
