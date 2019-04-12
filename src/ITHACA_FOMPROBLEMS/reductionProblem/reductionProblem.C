@@ -73,11 +73,11 @@ void reductionProblem::genRandPar(int Tsize)
     auto dx = mu_range.col(1) - mu_range.col(0);
     Eigen::MatrixXd k;
     k = (rand.array() + double(1)) / 2;
-
     for (int i = 0; i < Pnumber; i ++)
     {
         k.col(i) = (k.col(i) * dx(i)).array() + mu_range(i, 0);
     }
+    
 
     mu = k;
 }
