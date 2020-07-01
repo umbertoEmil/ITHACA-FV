@@ -500,10 +500,10 @@ template void changeBCtype<vector>
 (GeometricField<vector, fvPatchField, volMesh>& field, word BCtype,
  label BC_ind);
 
-template<typename Type>
+template<typename type_f>
 void assignMixedBC(
-    GeometricField<Type, fvPatchField, volMesh>& field, label BC_ind,
-    List<Type>& value, List<Type>& grad, List<scalar>& valueFrac)
+    GeometricField<type_f, fvPatchField, volMesh>& field, label BC_ind,
+    List<type_f>& value, List<type_f>& grad, List<scalar>& valueFrac)
 {
     std::string message = "Patch is NOT mixed. It is of type: " +
                           field.boundaryField()[BC_ind].type();
@@ -511,10 +511,10 @@ void assignMixedBC(
 
     if (field.boundaryField()[BC_ind].type() == "mixed")
     {
-        mixedFvPatchField<Type>& Tpatch =
-            refCast<mixedFvPatchField<Type>>(field.boundaryFieldRef()[BC_ind]);
-        Field<Type>& valueTpatch = Tpatch.refValue();
-        Field<Type>& gradTpatch = Tpatch.refGrad();
+        mixedFvPatchField<type_f>& Tpatch =
+            refCast<mixedFvPatchField<type_f>>(field.boundaryFieldRef()[BC_ind]);
+        Field<type_f>& valueTpatch = Tpatch.refValue();
+        Field<type_f>& gradTpatch = Tpatch.refGrad();
         Field<scalar>& valueFracTpatch = Tpatch.valueFraction();
         valueTpatch = value;
         gradTpatch = grad;

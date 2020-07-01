@@ -59,12 +59,10 @@ int main(int argc, char* argv[])
     double b = 10;
     double c = 15;
     double d = 20;
-    double W = 1; //Domain width [m]
     example.a = a;
     example.b = b;
     example.c = c;
     example.d = d;
-    example.W = W;
 
     // Reading tests to perform
     ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
@@ -132,16 +130,16 @@ int main(int argc, char* argv[])
                                  "analyticalSol");
     volScalarField error = T_true - T;
     ITHACAstream::exportSolution(error, "1", "./ITHACAoutput/true/", "error");
-    Info << "L2 norm of the relative error = " << ITHACAutilities::error_fields(
+    Info << "L2 norm of the relative error = " << ITHACAutilities::errorL2Rel(
              T_true, T) << endl;
     Info << "Linf norm of the relative error = " <<
-         ITHACAutilities::relError_fields_LinfNorm(T_true, T) << endl;
-    Info << "L2 norm of the error = " << ITHACAutilities::error_fields_abs(T_true, T) << endl;
+         ITHACAutilities::errorLinfRel(T_true, T) << endl;
+    Info << "L2 norm of the error = " << ITHACAutilities::errorL2Abs(T_true, T) << endl;
     Info << "Linf norm of the error = " << ITHACAutilities::LinfNorm(error) << endl;
-    Info << "L2 norm of T = " << ITHACAutilities::L2norm(T) << endl;
+    Info << "L2 norm of T = " << ITHACAutilities::L2Norm(T) << endl;
     Info << "L2 norm of Tanal = " << Ttrue_L2norm << endl;
-    Info << "L2 norm of diff = " << ITHACAutilities::L2norm(T) - Ttrue_L2norm  <<  endl;
-    Info << "L2 norm of rel diff = " << (ITHACAutilities::L2norm(T) - Ttrue_L2norm) / Ttrue_L2norm  << endl<< endl;
+    Info << "L2 norm of diff = " << ITHACAutilities::L2Norm(T) - Ttrue_L2norm  <<  endl;
+    Info << "L2 norm of rel diff = " << (ITHACAutilities::L2Norm(T) - Ttrue_L2norm) / Ttrue_L2norm  << endl<< endl;
     // Setting up the thermocouples
     example.readThermocouples();
     example.Tmeas = example.fieldValueAtThermocouples(T_true);
@@ -220,12 +218,12 @@ int main(int argc, char* argv[])
                                      "1", outputFolder,
                                      "gTrue");
         List<word> linSys_solvers;
-        linSys_solvers.resize(5);
+        linSys_solvers.resize(1);
         linSys_solvers[0] = "fullPivLU";
-        linSys_solvers[1] = "jacobiSvd";
-        linSys_solvers[2] = "householderQr";
-        linSys_solvers[3] = "ldlt";
-        linSys_solvers[4] = "TSVD";
+        //linSys_solvers[1] = "jacobiSvd";
+        //linSys_solvers[2] = "householderQr";
+        //linSys_solvers[3] = "ldlt";
+        //linSys_solvers[4] = "TSVD";
         Eigen::VectorXd residualNorms;
         residualNorms.resize(linSys_solvers.size());
         example.set_gParametrized("rbf", 0.7);

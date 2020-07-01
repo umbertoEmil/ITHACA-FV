@@ -548,9 +548,11 @@ void reducedInverseLaplacian::writeFields(label folderNumber,
     volScalarField& T = problem->_T();
     volScalarField& lambda = problem->_lambda();
     volScalarField& deltaT = problem->_deltaT();
-    T = problem->Tmodes.reconstruct(Treduced, "T");
-    lambda = problem->lambdaModes.reconstruct(lambdaReduced, "lambda");
-    deltaT = problem->deltaTmodes.reconstruct(deltaTreduced, "deltaT");
+    Info << "Code well the fields reconstruction\n";
+    exit(10);
+    //T = problem->Tmodes.reconstruct(Treduced, "T");
+    //lambda = problem->lambdaModes.reconstruct(lambdaReduced, "lambda");
+    //deltaT = problem->deltaTmodes.reconstruct(deltaTreduced, "deltaT");
     reconstructHeatFlux();
     autoPtr<volScalarField> gVolField_
     (
@@ -708,7 +710,9 @@ int reducedInverseLaplacian::conjugateGradientHalfFull()
     {
         Info << "Iteration " << problem->cgIter + 1 << endl;
         solveOnline(T, halfFull);
-        T = problem->Tmodes.reconstruct(Treduced, "T");
+        Info << "Code well the fields reconstruction\n";
+        exit(10);
+        //T = problem->Tmodes.reconstruct(Treduced, "T");
         problem->differenceBetweenDirectAndMeasure();
 
         if (problem->conjugateGradientConvergenceCheck())
@@ -717,11 +721,11 @@ int reducedInverseLaplacian::conjugateGradientHalfFull()
         }
 
         solveOnline(lambda, halfFull);
-        lambda = problem->lambdaModes.reconstruct(lambdaReduced, "lambda");
+        //lambda = problem->lambdaModes.reconstruct(lambdaReduced, "lambda");
         problem->computeGradJ();
         problem->searchDirection();
         solveOnline(deltaT, halfFull);
-        deltaT = problem->deltaTmodes.reconstruct(deltaTreduced, "deltaT");
+        //deltaT = problem->deltaTmodes.reconstruct(deltaTreduced, "deltaT");
         problem->sensibilitySolAtThermocouplesLocations();
         problem->computeSearchStep();
         problem->updateHeatFlux();
@@ -819,7 +823,9 @@ int reducedInverseLaplacian::Marquardt()
         LinSysDirect[1] =  LinSysDirectOrig[1] + heatFluxBasesReduced * gWeightsEigen /
                            problem->k;
         Treduced = solveLinearSys(LinSysDirect, Treduced, residual);
-        T = problem->Tmodes.reconstruct(Treduced, "T");
+        Info << "Code well the fields reconstruction\n";
+        exit(10);
+        //T = problem->Tmodes.reconstruct(Treduced, "T");
         ITHACAstream::exportSolution(T, std::to_string(iter + 1),
                                      "./ITHACAoutput/testRedMarquardt/", "T");
         forAll(problem->thermocouplesCellID, cellI)

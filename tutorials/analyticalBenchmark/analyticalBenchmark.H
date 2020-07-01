@@ -142,13 +142,14 @@ class analyticalBenchmark: public inverseLaplacianProblem
                         TEqn.solve();
                     }
                 }
+		Tad_base.append(Tad);
             
                 //Reinitializing runTime
                 instantList Times = runTime.times();
                 runTime.setTime(Times[1], 1);
                 addSol = fieldValueAtThermocouples(Tad);
                 ITHACAstream::exportSolution(Tad, "1",
-                                             "ITHACAoutput/offlineParamBC/additionalT",
+                                             "ITHACAoutput/offlineParamBC/",
                                              "Tad");
 	}
 

@@ -25,7 +25,7 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
 	volScalarField initialField;
 
 	List<scalar> heatFlux_steady;
-	scalar minFrequency = 0.5; // Hz
+	scalar minFrequency = 1; // Hz
 
         List<int> EigenMatrix2List ( Eigen::MatrixXi matrix )
 	{

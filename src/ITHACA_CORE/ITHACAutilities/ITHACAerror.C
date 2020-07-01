@@ -83,10 +83,37 @@ double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
     return err;
 }
 
+template<typename T>
+double errorLinfRel(GeometricField<T, fvPatchField, volMesh>& field1,
+                    GeometricField<T, fvPatchField, volMesh>& field2)
+{
+    double err;
+
+    if (LinfNorm(field1) <= 1e-6)
+    {
+        err = 0;
+    }
+    else
+    {
+        GeometricField<T, fvPatchField, volMesh> fieldDiff = field1 - field2;
+        err = LinfNorm(fieldDiff) / LinfNorm(field1);
+    }
+
+    return err;
+}
+
+
 template double errorL2Rel(GeometricField<scalar, fvPatchField, volMesh>&
                            field1,
                            GeometricField<scalar, fvPatchField, volMesh>& field2);
 template double errorL2Rel(GeometricField<vector, fvPatchField, volMesh>&
+                           field1,
+                           GeometricField<vector, fvPatchField, volMesh>& field2);
+
+template double errorLinfRel(GeometricField<scalar, fvPatchField, volMesh>&
+                           field1,
+                           GeometricField<scalar, fvPatchField, volMesh>& field2);
+template double errorLinfRel(GeometricField<vector, fvPatchField, volMesh>&
                            field1,
                            GeometricField<vector, fvPatchField, volMesh>& field2);
 
@@ -267,6 +294,23 @@ double L2Norm(GeometricField<vector, fvPatchField, volMesh>& field)
 }
 
 template<>
+double LinfNorm(GeometricField<scalar, fvPatchField, volMesh>& field)
+{
+    double a;
+    a = Foam::max(Foam::sqrt(field.internalField() * field.internalField())).value();
+    return a;
+}
+
+template<>
+double LinfNorm(GeometricField<vector, fvPatchField, volMesh>& field)
+{
+    double a;
+    Info << "LinfNorm(GeometricField<vector, fvPatchField, volMesh>& field) is still to be implemented" << endl;
+    exit(12);
+    return a;
+}
+
+template<>
 double H1Seminorm(GeometricField<scalar, fvPatchField, volMesh>& field)
 {
     double a;
@@ -296,4 +340,51 @@ double frobNorm(GeometricField<T, fvPatchField, volMesh>& field)
 template double frobNorm(GeometricField<scalar, fvPatchField, volMesh>& field);
 template double frobNorm(GeometricField<vector, fvPatchField, volMesh>& field);
 
+double L2normOnPatch(fvMesh& mesh, volScalarField& field,
+                                      word patch)
+{
+    double L2 = 0;
+    //Access the mesh information for the boundary
+    label patchID = mesh.boundaryMesh().findPatchID(patch);
+    const polyPatch& cPatch = mesh.boundaryMesh()[patchID];
+    //List of cells close to a boundary
+    const labelUList& faceCells = cPatch.faceCells();
+    forAll(cPatch, faceI)
+    {
+        //id of the owner cell having the face
+        label faceOwner = faceCells[faceI] ;
+        scalar faceArea = mesh.magSf().boundaryField()[patchID][faceI];
+        L2 += faceArea * field[faceOwner] * field[faceOwner];
+    }
+    return Foam::sqrt(L2);
 }
+
+double LinfNormOnPatch(fvMesh& mesh, volScalarField& field,
+                                        word patch)
+{
+    double Linf = 0;
+    //Access the mesh information for the boundary
+    label patchID = mesh.boundaryMesh().findPatchID(patch);
+    const polyPatch& cPatch = mesh.boundaryMesh()[patchID];
+    //List of cells close to a boundary
+    const labelUList& faceCells = cPatch.faceCells();
+    forAll(cPatch, faceI)
+    {
+        label faceOwner = faceCells[faceI] ;
+
+        if (faceI == 0)
+        {
+            Linf = std::abs(field[faceOwner]);
+        }
+        else if (std::abs(field[faceOwner]) > Linf)
+        {
+            Linf = std::abs(field[faceOwner]);
+        }
+    }
+    return Linf;
+}
+
+
+}
+
+

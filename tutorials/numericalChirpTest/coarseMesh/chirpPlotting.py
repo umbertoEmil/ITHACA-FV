@@ -16,10 +16,10 @@ pylab.rcParams.update(params)
 
 N = 10000
 t0 = 0
-tF = 20
+tF = 10
 t = np.linspace(t0, tF, N, endpoint=True)
 
-fmin = 0.5
+fmin = 1.
 G = 1
 f1 = fmin / tF * t
 g1 = G * np.sin(2 * np.pi * f1 * t) 
@@ -35,13 +35,13 @@ g2 = G * np.sin(2 * np.pi * f2 * t)
 relErrL2norm_unsteady = np.loadtxt("./ITHACAoutput/testInverse/relErrL2norm_mat.txt")
 relErrL2norm_steady = np.loadtxt("./ITHACAoutput/steadyTest/relError_L2norm_mat.txt")
 
-Nmeas = 19
+Nmeas = 9
 t0meas = 1.
 tMeas = np.linspace(t0meas, tF, Nmeas, endpoint=False)
 
-Nunsteady = 201
+Nunsteady = 101
 t0 = 0
-tF = 20
+tF = 10
 tUnsteady = np.linspace(t0, tF, Nunsteady, endpoint=True)
 
 fig = plt.figure(1,figsize=(8,6))
