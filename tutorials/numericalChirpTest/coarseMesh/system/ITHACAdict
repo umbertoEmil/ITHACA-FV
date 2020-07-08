@@ -14,15 +14,16 @@ FoamFile
     object      ITHACAdict;
 }
 
-thermalConductivity 300.0; 
-density             992; 
-specificHeat        4180.0; 
+thermalConductivity 383.0; 
+density             8940.0; 
+specificHeat        390.0; 
 heatTranferCoeff    5.66e4; 
 Tf                  350.0;
 a		    1100;
 b		    1200;
 c		    3000;
 d		    14;
+maxFrequency        0.;
 
 
 //Test to perform

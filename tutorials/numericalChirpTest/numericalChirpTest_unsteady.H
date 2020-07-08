@@ -25,7 +25,7 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
 	volScalarField initialField;
 
 	List<scalar> heatFlux_steady;
-	scalar minFrequency = 1; // Hz
+	scalar maxFrequency; // Hz
 
         List<int> EigenMatrix2List ( Eigen::MatrixXi matrix )
 	{
@@ -128,7 +128,7 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].y();
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                    gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (minFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI]));
+                    gTrue[timeI][faceI] = heatFlux_steady[faceI];// + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI]));
                 }
 	    }
         }
@@ -191,7 +191,6 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
 	        set_Tf(0);
 	        ITHACAstream::read_fields(mesh, Ttrue, "Ttrue",
                                   directOutputFolder);
-	        Tmeas = fieldValueAtThermocouples(Ttrue);
 	    }
 	    else
 	    {
@@ -247,10 +246,14 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
                     runTime.printExecutionTime(Info);
                     runTime.write();
                 }
-	        Tmeas = fieldValueAtThermocouples(Ttrue);
-
-                Info<< "End\n" << endl;
 	    }
+	    Tmeas = fieldValueAtThermocouples(Ttrue);
+	    forAll(samplingTime, sampleI)
+	    {
+	        std::cout << "debug: Tmeas = " << Tmeas(sampleI * thermocouplesNum + 5) << std::endl;
+	    }
+
+            Info<< "End\n" << endl;
 	}
 
 	void inverseProblemPostProcess(word outputFolder)

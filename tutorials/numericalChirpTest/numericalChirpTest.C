@@ -85,6 +85,8 @@ int main(int argc, char* argv[])
     example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
     example.T0 = para->ITHACAdict->lookupOrDefault<scalar>("T0", 0);
 
+    example.maxFrequency = para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
+
     unsigned parameterizedBC_steadyTest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_steadyTest", 0);
     unsigned parameterizedBC_unsteadyTest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_unsteadyTest", 0);
     
@@ -95,7 +97,9 @@ int main(int argc, char* argv[])
     Info << "\n ************************************************************ \n";
     Info << "Conducting chirp test to compare performance of steady and unsteady inverse solvers\n";
     Info << "We assume the heat flux to estimate has the shape:\n";
-    Info << "\n g = A + B sin [2 pi (a t) t] \n \n";
+    Info << "\n g = A + B sin [2 pi (a t) t] \n"; 
+    Info << "Maximum frequency is " << example.maxFrequency << "Hz\n \n";
+
 
     example.readThermocouples();
     example.set_gTrue();
@@ -171,6 +175,7 @@ int main(int argc, char* argv[])
         example.assignTrueIF();
         example.set_gParametrized("rbf", 0.7);
         example.parameterizedBCoffline();
+
         example.parameterizedBC(outputFolder, "fullPivLU");
 	example.inverseProblemPostProcess(outputFolder);
     }

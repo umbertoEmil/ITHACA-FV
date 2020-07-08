@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
     ITHACAparameters* para= ITHACAparameters::getInstance(example._mesh(),
                              example._runTime());
     label CGtest = para->ITHACAdict->lookupOrDefault<int>("CGtest", 0);
+    label TSVDtest = para->ITHACAdict->lookupOrDefault<int>("TSVDtest", 0);
     label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
@@ -257,6 +258,55 @@ int main(int argc, char* argv[])
 	{
 	    example.postProcess(outputFolder, "gParametrized", userDefinedTemperatures);
 	}
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    
+    }
+    
+    if(TSVDtest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Performing test for the parameterized BC inverse solver" << endl;
+        Info << endl;
+        word outputFolder = "./ITHACAoutput/TSVDtest/";
+        if(userDefinedTemperatures)
+        {
+            volScalarField gTrueField = example.list2Field(example.gTrue);
+            ITHACAstream::exportSolution(gTrueField,
+                                         "1", outputFolder,
+                                         "gTrue");
+	}
+
+        Eigen::VectorXd residualNorms;
+        example.set_gParametrized("rbf",0.9);
+        example.parameterizedBCoffline();
+    
+        Eigen::VectorXd tsvdTruncation = Eigen::VectorXd::LinSpaced(20, 10, 30);
+        residualNorms.resize(tsvdTruncation.size());
+        for(int i = 0; i < tsvdTruncation.size(); i++)
+        {
+    
+            example.parameterizedBC("TSVD", tsvdTruncation(i));
+	    
+            volScalarField gParametrizedField = example.list2Field(example.g);
+	    volScalarField& T(example._T());
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(i + 1),
+                                         outputFolder,
+                                         "gParametrized");
+            ITHACAstream::exportSolution(T,
+                                         std::to_string(i + 1),
+                                         outputFolder,
+                                         "T");
+            residualNorms(i) = Foam::sqrt(
+                        example.residual.squaredNorm());
+        }
+        Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+    
+        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+                                   outputFolder);
+        example.postProcess(outputFolder, "gParametrized", userDefinedTemperatures);
         Info << "*********************************************************" << endl;
         Info << endl;
     

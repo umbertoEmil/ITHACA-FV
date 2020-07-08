@@ -161,7 +161,7 @@ void inverseHeatTransferProblem::set_gBaseFunctions(word type,
                     scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - thermocoupleX) +
                                                (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ) +
                                                (time - sTime) * (time - sTime));
-                    gBaseFunctions[funcI][timeI][faceI] = Foam::exp(- (shapeParameter *
+                    gBaseFunctions[funcI][timeI][faceI] = 1e5 * Foam::exp(- (shapeParameter *
                                                           shapeParameter
                                                           * radius * radius));
                 }
@@ -331,11 +331,11 @@ void inverseHeatTransferProblem::parameterizedBCoffline(bool force)
             {
                 volScalarField& T = Ttime[timeI];
                 /// Saving basis
-                //volScalarField gParametrizedField = list2Field(g[timeI]);
-                //ITHACAstream::exportSolution(gParametrizedField,
-                //                             std::to_string(timeSteps[timeI]),
-                //                             folderOffline,
-                //                             "g" + std::to_string(baseI + 1));
+                volScalarField gParametrizedField = list2Field(g[timeI]);
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(timeSteps[timeI]),
+                                             folderOffline,
+                                             "g" + std::to_string(baseI + 1));
                 ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
                                              folderOffline,
                                              "T" + std::to_string(baseI + 1));
@@ -889,7 +889,7 @@ void inverseHeatTransferProblem::parameterizedBC_postProcess(
     List<Eigen::MatrixXd> linSys, Eigen::VectorXd weigths, word outputFolder,
     label verbose)
 {
-    if (verbose)
+    if (1)
     {
         // Printing outputs at screen
         Eigen::JacobiSVD<Eigen::MatrixXd> svd(linSys[0],

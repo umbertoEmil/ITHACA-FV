@@ -42,6 +42,7 @@ thermocouplesFile       "DanieliSteadyTestData.npy";
 
 //Test to perform
 CGtest    0;
+TSVDtest    1;
 CGnoiseTest   0;
 parameterizedBCtest  1;
 parameterizedBCerrorTest  0;

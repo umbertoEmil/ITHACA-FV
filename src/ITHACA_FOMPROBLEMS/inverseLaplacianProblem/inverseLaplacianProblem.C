@@ -2169,44 +2169,40 @@ void inverseLaplacianProblem::reconstructT()
     Info << "Reconstructing field T" << endl;
     restart();
     update_gParametrized(gWeights);
+
     volScalarField& T = _T();
     ITHACAutilities::assignIF(T, homogeneousBC);
-    Info << "debug: Tad_base.size() = " << Tad_base.size() << endl;
-    Info << "debug: Tbasis.size() = " << Tbasis.size() << endl;
-    Info << "debug: gWeights = \n" << gWeights << endl;
-    Info << "debug: homogeneousBC = \n" << homogeneousBC << endl;
-    
-    Eigen::VectorXd weight;
-    weight.resize(gWeights.size());
-    forAll(gWeights, gI)
-    {
-        weight(gI) = gWeights[gI];
-    }
-    Eigen::MatrixXd basis = Foam2Eigen::PtrList2Eigen(Tbasis);
+    //Info << "debug: Tad_base.size() = " << Tad_base.size() << endl;
+    //Info << "debug: Tbasis.size() = " << Tbasis.size() << endl;
+    //Info << "debug: gWeights = \n" << gWeights << endl;
+    //Info << "debug: homogeneousBC = \n" << homogeneousBC << endl;
+    //
+    //Eigen::VectorXd weight;
+    //weight.resize(gWeights.size());
+    //forAll(gWeights, gI)
+    //{
+    //    weight(gI) = gWeights[gI];
+    //}
+    //Eigen::MatrixXd basis = Foam2Eigen::PtrList2Eigen(Tbasis);
 
-    Eigen::VectorXd f = basis * weight;
-    
-    std::cout << "debug : f = \n" << f << std::endl;
+    //Eigen::VectorXd f = basis * weight;
+    //
+    //std::cout << "debug : f = \n" << f << std::endl;
 
-    T = Foam2Eigen::Eigen2field(T,f);
+    //T = Foam2Eigen::Eigen2field(T,f);
 
-    Info << T << endl;
+    //Info << T << endl;
 
 
 //for (label j = 0; j < Tbasis.size(); j++)
 //{
 //    Info << "debug: Tbasis[" << j << "] = " << Tbasis[j] << endl;
 //}
-
-    //forAll(Tbasis, baseI)
-    //{
-    //    T = T +  gWeights[baseI] * (Tbasis[baseI]);// + Tad_base[0]);
-    ////T += gWeights[Tbasis.size()-1] * (Tbasis[Tbasis.size()-1] + Tad_base[0]);
-    //        ITHACAstream::exportSolution(Tbasis[baseI],
-    //                                     std::to_string(1),
-    //                                     "ITHACAoutput/debug/",
-    //                                     "Tbase"+std::to_string(baseI));
-    //}
+    forAll(Tbasis, baseI)
+    {
+        T += gWeights[baseI] * (Tbasis[baseI] + Tad_base[0]);
+    //T += gWeights[Tbasis.size()-1] * (Tbasis[Tbasis.size()-1] + Tad_base[0]);
+    }
     //        ITHACAstream::exportSolution(T,
     //                                     std::to_string(1),
     //                                     "ITHACAoutput/debug/",
@@ -2217,6 +2213,6 @@ void inverseLaplacianProblem::reconstructT()
     //                                     "Tad_base");
 
 
-    //T += - Tad_base[0];
+    T += - Tad_base[0];
 }
 

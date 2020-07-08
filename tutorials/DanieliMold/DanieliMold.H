@@ -46,6 +46,8 @@ class DanieliMold: public inverseLaplacianProblem
         PtrList<volScalarField> gFullField;
         PtrList<volScalarField> gRelErrField;
 
+	scalar meniscusHeight = 1.11; //[m] from bottom of the mold
+
         List<int> thermocouplesPlaneCellID;
         const std::vector<label>* surfaceCellList;
 
@@ -102,10 +104,21 @@ class DanieliMold: public inverseLaplacianProblem
                                                (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ));
                     if(faceX > - castWidth / 2 && faceX < castWidth / 2)
                     {
-                        gBaseFunctions[funcI][faceI] = Foam::exp(- (shapeParameter *
-                                                       shapeParameter
-                                                       * radius * radius));
-                    }
+                        if(faceZ > meniscusHeight)
+                        {
+			    //Fast decay of the basis
+                            gBaseFunctions[funcI][faceI] = 0;
+                            //gBaseFunctions[funcI][faceI] = Foam::exp(- (10 *
+                            //                               shapeParameter
+                            //                               * radius * radius));
+			}
+		        else
+			{
+                            gBaseFunctions[funcI][faceI] = Foam::exp(- (shapeParameter *
+                                                           shapeParameter
+                                                           * radius * radius));
+                        }
+		    }
                     else
                     {
                         gBaseFunctions[funcI][faceI] = 0;
@@ -303,6 +316,7 @@ class DanieliMold: public inverseLaplacianProblem
 	    }
 	    else
 	    {
+	        Eigen::VectorXd totalHeatFluxVec(gFullField.size());
 	        forAll(gFullField, solutionI)
                 {
 	            //Access the mesh information for the boundary
@@ -322,7 +336,10 @@ class DanieliMold: public inverseLaplacianProblem
 		    totalHeatFlux /= totalArea;
 		    Info << "Heat flux = " << totalHeatFlux << " W/m2" << endl;
 		    Info << "HotSide area = " << totalArea << " m2" << endl;
+		    totalHeatFluxVec(solutionI) = totalHeatFlux; 
 		}
+                ITHACAstream::exportVector(totalHeatFluxVec, "totalHeatFlux", "eigen",
+                                           folder);
 
 	    }
             Info << "Postprocessing done\n" << endl;
@@ -342,8 +359,8 @@ class DanieliMold: public inverseLaplacianProblem
             {
                 scalar faceZ =
                     mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].z();
-                //Tf[faceI] = 323 - faceZ / 1.2 * 0.4; //Cooling mold
-                Tf[faceI] = 323 - faceZ / 1.2 * 8.7; //Steady mold
+                Tf[faceI] = 298 - faceZ / 1.2 * 0.4; //Cooling mold
+                //Tf[faceI] = 298 - faceZ / 1.2 * 8.7; //Steady mold
 		//Tf[faceI] = 0;
             }
             // Setting BC at hotSide
