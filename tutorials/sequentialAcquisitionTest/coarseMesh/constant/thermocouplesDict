@@ -24,8 +24,8 @@ positions
     (0.5 0.02 0.8)
 );
 
-timeSamplesNumber 5;
-timeSamplesT0     1;
+timeSamplesNumber 11;
+timeSamplesT0     0;
 timeSamplesDeltaT 1.0;
 
 // ************************************************************************* //

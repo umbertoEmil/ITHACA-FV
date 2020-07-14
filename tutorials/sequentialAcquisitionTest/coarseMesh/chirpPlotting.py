@@ -35,11 +35,11 @@ g2 = G * np.sin(2 * np.pi * f2 * t)
 relErrL2norm_unsteady = np.loadtxt("./ITHACAoutput/testInverse/relErrL2norm_mat.txt")
 relErrL2norm_steady = np.loadtxt("./ITHACAoutput/steadyTest/relError_L2norm_mat.txt")
 
-Nmeas = 5
-t0meas = 1.
-tMeas = np.linspace(t0meas, tF, Nmeas, endpoint=False)
+Nmeas = 11
+t0meas = 0.
+tMeas = np.linspace(t0meas, tF, Nmeas, endpoint=True)
 
-Nunsteady = 61
+Nunsteady = 51
 t0 = 0
 tF = 10
 tUnsteady = np.linspace(t0, tF, Nunsteady, endpoint=True)

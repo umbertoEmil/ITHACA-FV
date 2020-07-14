@@ -24,7 +24,7 @@ License
 Description
     Example of a heat transfer Reduction Problem
 SourceFiles
-    numericalChirpTest_unsteady.C
+    sequentialAcquisitionTest_unsteady.C
 \*---------------------------------------------------------------------------*/
 
 #include <iostream>
@@ -37,6 +37,7 @@ SourceFiles
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem.H"
 #include "inverseHeatTransferProblem.H"
+#include "inverseHeatTransferProblem_2.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
 #include <Eigen/Dense>
@@ -46,8 +47,8 @@ SourceFiles
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
 #include "sampledTriSurfaceMesh.H"
-#include "numericalChirpTest_unsteady.H"
-#include "numericalChirpTest_steady.H"
+#include "sequentialAcquisitionTest_unsteady.H"
+#include "sequentialAcquisitionTest_steady.H"
 
 using namespace SPLINTER;
 
@@ -56,8 +57,8 @@ int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
     
-    numericalChirpTest_unsteady example(argc, argv);
-    numericalChirpTest_steady exampleSteady(argc, argv);
+    sequentialAcquisitionTest_unsteady example(argc, argv);
+    sequentialAcquisitionTest_steady exampleSteady(argc, argv);
 
     ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
                          example._runTime());
@@ -90,10 +91,6 @@ int main(int argc, char* argv[])
     unsigned parameterizedBC_steadyTest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_steadyTest", 0);
     unsigned parameterizedBC_unsteadyTest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_unsteadyTest", 0);
     
-    
-    //example.heatFlux = cnpy::load(example.heatFlux, "DanieliHeatFluxAndCastingSpeed.npy");
-    //std::cout << "heatFlux.rows = " << example.heatFlux.rows() << std::endl;
-
     Info << "\n ************************************************************ \n";
     Info << "Conducting chirp test to compare performance of steady and unsteady inverse solvers\n";
     Info << "We assume the heat flux to estimate has the shape:\n";
@@ -173,7 +170,7 @@ int main(int argc, char* argv[])
     {
         word outputFolder = "./ITHACAoutput/testInverse/";
         example.assignTrueIF();
-        example.set_gParametrized("rbf", 0.7, 0.1);
+        example.set_gParametrized("rbf", 0.7, 1);
         example.parameterizedBCoffline();
 
         example.parameterizedBC(outputFolder, "fullPivLU");

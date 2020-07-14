@@ -1,8 +1,8 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  1.5                                   |
-|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |
+|  \\    /   O peration     | Version:  v1812                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 FoamFile
@@ -10,22 +10,12 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    object      thermocouplesDict;
+    object      meshQualityDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-positions
-(
-    (-0.5 0.02 0.2)
-    (0.5 0.02 0.2)
-    (-0.5 0.02 0.5)
-    (0.5 0.02 0.5)
-    (-0.5 0.02 0.8)
-    (0.5 0.02 0.8)
-);
+// Include defaults parameters from master dictionary
+#includeEtc "caseDicts/meshQualityDict"
 
-timeSamplesNumber 5;
-timeSamplesT0     1;
-timeSamplesDeltaT 1.0;
 
 // ************************************************************************* //

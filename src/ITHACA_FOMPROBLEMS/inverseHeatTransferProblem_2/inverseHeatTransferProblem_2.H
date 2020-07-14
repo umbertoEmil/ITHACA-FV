@@ -22,21 +22,21 @@ License
     You should have received a copy of the GNU Lesser General Public License
     along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
 Class
-    inverseHeatTransferProblem
+    inverseHeatTransferProblem_2
 Description
     A general full order implementation of an inverse problem
 SourceFiles
-    inverseHeatTransferProblem.C
+    inverseHeatTransferProblem_2.C
 \*---------------------------------------------------------------------------*/
 
 /// \file
-/// Header file of the inverseHeatTransferProblem class.
+/// Header file of the inverseHeatTransferProblem_2 class.
 /// \dir
-/// Directory containing the header and source files for the inverseHeatTransferProblem class.
+/// Directory containing the header and source files for the inverseHeatTransferProblem_2 class.
 
 
-#ifndef inverseHeatTransferProblem_H
-#define inverseHeatTransferProblem_H
+#ifndef inverseHeatTransferProblem_2_H
+#define inverseHeatTransferProblem_2_H
 #include <iostream>
 #include "fvCFD.H"
 #include "interpolation.H"
@@ -61,16 +61,16 @@ SourceFiles
 using namespace SPLINTER;
 
 /// Class to implement a full order inverse parameterized laplacian problem
-class inverseHeatTransferProblem: public laplacianProblem
+class inverseHeatTransferProblem_2: public laplacianProblem
 {
 
     public:
         // Constructors
-        inverseHeatTransferProblem();
+        inverseHeatTransferProblem_2();
         /// Construct with argc and argv
-        inverseHeatTransferProblem(int argc, char* argv[]);
-        //inverseHeatTransferProblem(int argc, char* argv[], scalar _diffusivity);
-        virtual ~inverseHeatTransferProblem() {};
+        inverseHeatTransferProblem_2(int argc, char* argv[]);
+        //inverseHeatTransferProblem_2(int argc, char* argv[], scalar _diffusivity);
+        virtual ~inverseHeatTransferProblem_2() {};
 
         ITHACAparameters* para;
 
@@ -97,6 +97,7 @@ class inverseHeatTransferProblem: public laplacianProblem
 
         /// Time
         autoPtr<Time> _runTime;
+        autoPtr<Time> _runTimeShort;
 
         /// Dummy thermal diffusivity with unitary value
         dimensionedScalar DT;
@@ -119,6 +120,16 @@ class inverseHeatTransferProblem: public laplacianProblem
         scalar endTime;
         label Ntimes;
         List<scalar> timeSteps;
+
+        /// List of time at which I acquire the measurements
+        List<scalar> samplingTime;
+        scalar timeSamplesDeltaT;
+        scalar timeSamplesT0;
+        label timeSamplesNum;
+	label NtimeStepsBetweenSamples;
+	label timeSampleI;
+        label basisDeltaSample = 2; //Numer of sampling steps to consider when computing offline phase
+        List<label> samplingSteps; //symulation timesteps at which there are mesurements
 
 
         int interpolation;
@@ -159,6 +170,7 @@ class inverseHeatTransferProblem: public laplacianProblem
 
         List<List<scalar>>
                         g;           //Heat flux at hotSide for the direct problem [W/m2]
+
         List<List<List<scalar>>> gBaseFunctions;
         List<scalar> gWeights;
         List<List<scalar>> gTrue;       //True heat flux at hotSide [w/m2]
@@ -175,17 +187,12 @@ class inverseHeatTransferProblem: public laplacianProblem
         Eigen::MatrixXd gPODmodes;
 
 
-        /// List of time at which I acquire the measurements
-        List<scalar> samplingTime;
-        scalar timeSamplesDeltaT;
-        scalar timeSamplesT0;
-        label timeSamplesNum;
-        List<label> samplingSteps; //symulation timesteps at which there are mesurements
         List<vector> thermocouplesPos;
         List<int> thermocouplesCellID;
         List<int> thermocouplesCellProc;
         List<Foam::vector> thermocouplesCellC;
         Eigen::VectorXd Tmeas;   //Temperature at the thermocouples locations [K]
+	Eigen::VectorXd TmeasShort; //Temperature at the thermocouples locations in only two sampling times [K]
         Eigen::VectorXd Tdirect;
         Eigen::VectorXd Tdiff;
 
@@ -300,13 +307,7 @@ class inverseHeatTransferProblem: public laplacianProblem
 
         /// Solve direct problem
         ///
-        void solveDirect();
-
-        //--------------------------------------------------------------------------
-
-        /// Solve laplacian problem without source term
-        ///
-        void solve(const char* problem, word outputFolder = "noFolder");
+        void solveDirect(label offline = 0);
 
         //--------------------------------------------------------------------------
 
@@ -350,17 +351,15 @@ class inverseHeatTransferProblem: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
-        /// Writes fields to file
+        /// Restart fields
         ///
-        /// @param[in]  folde  Folder in which the fields are written
-        ///
-        void writeFields(label folderNumber, const char* folder);
+        void restart(word fieldName = "all");
 
         //--------------------------------------------------------------------------
 
         /// Restart fields
         ///
-        void restart(word fieldName = "all");
+        void restartOffline();
 
         //--------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  v1806                                 |
+|  \\    /   O peration     | Version:  v1812                                 |
 |   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
@@ -9,44 +9,38 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "system";
-    object      controlDict;
+    class       volScalarField;
+    location    "0.2";
+    object      deltaT;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     laplacianFoam;
+dimensions      [0 0 0 1 0 0 0];
 
-startFrom       startTime;
 
-startTime       0;
+internalField   uniform 0;
 
-stopAt          endTime;
+boundaryField
+{
+    hotSide
+    {
+        type            fixedGradient;
+        gradient        uniform 0;
+    }
+    coldSide
+    {
+        type            mixed;
+        refValue        uniform 0;
+        refGradient     uniform 0;
+        valueFraction   uniform 0;
+        value           uniform 0;
+    }
+    adiabaticPlanes
+    {
+        type            fixedGradient;
+        gradient        uniform 0;
+    }
+}
 
-endTime         6;
-
-deltaT          0.1;
-
-writeControl    noWrite;
-
-writeInterval   10000;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  6;
-
-writeCompression off;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-adjustTimeStep  no;
-
-maxCo           1;
 
 // ************************************************************************* //
