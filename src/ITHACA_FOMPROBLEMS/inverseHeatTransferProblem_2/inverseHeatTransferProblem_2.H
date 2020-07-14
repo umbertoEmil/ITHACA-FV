@@ -185,6 +185,7 @@ class inverseHeatTransferProblem_2: public laplacianProblem
         Eigen::VectorXd Tcomp;
         Eigen::MatrixXd Theta;
         Eigen::MatrixXd gPODmodes;
+	word timeBasisType = "None";
 
 
         List<vector> thermocouplesPos;

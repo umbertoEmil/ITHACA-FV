@@ -85,6 +85,7 @@ int main(int argc, char* argv[])
     example.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
     example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
     example.T0 = para->ITHACAdict->lookupOrDefault<scalar>("T0", 0);
+    example.timeBasisType = para->ITHACAdict->lookupOrDefault<word>("timeBasisType", "None");
 
     example.maxFrequency = para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
 

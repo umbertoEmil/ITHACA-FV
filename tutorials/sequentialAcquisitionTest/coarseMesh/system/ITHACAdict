@@ -23,7 +23,8 @@ a		    1100;
 b		    1200;
 c		    3000;
 d		    14;
-maxFrequency        0.;
+timeBasisType       constant;
+maxFrequency        0.2;
 
 
 //Test to perform

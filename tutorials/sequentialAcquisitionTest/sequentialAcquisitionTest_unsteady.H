@@ -128,7 +128,8 @@ class sequentialAcquisitionTest_unsteady: public inverseHeatTransferProblem_2
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].y();
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                    gTrue[timeI][faceI] = heatFlux_steady[faceI];// + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI]));
+                    gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * maxFrequency * timeSteps[timeI]));
+                    //gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI]));
                 }
 	    }
         }

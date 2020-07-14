@@ -221,20 +221,42 @@ void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
                 gBaseFunctions[funcI][timeI].resize(T.boundaryField()[hotSide_ind].size());
                 scalar time = timeSteps[timeI];
 		scalar timeBase = 0;
-		if(std::abs(time - sTime) < timeSamplesDeltaT)
+
+		if(timeBasisType.compare("constant"))
 		{
-		    Info << "time = " <<time << endl;
-		    Info << "sTime = " <<sTime << endl;
-		    Info << "std::abs(time - sTime) = " << std::abs(time - sTime) << endl;
-		    timeBase = 1 - std::abs(time - sTime) / timeSamplesDeltaT;
+		    Info << "\nUsing CONSTANT time basis\n";
+		    timeBase = 1;
 		}
+		else if(timeBasisType.compare("linear"))
+		{
+		    Info << "\nUsing LINEAR time basis\n";
+		    if(std::abs(time - sTime) < timeSamplesDeltaT)
+		    {
+		        Info << "time = " <<time << endl;
+		        Info << "sTime = " <<sTime << endl;
+		        Info << "std::abs(time - sTime) = " << std::abs(time - sTime) << endl;
+		        timeBase = 1 - std::abs(time - sTime) / timeSamplesDeltaT;
+		    }
+		}
+		else if(timeBasisType.compare("rbf"))
+		{
+		    Info << "\nUsing RBF time basis\n";
+                    scalar radius_time = Foam::sqrt((time - sTime) * (time - sTime));
+		    timeBase = Foam::exp( - (shapeParameter_time * radius_time) * (shapeParameter_time * radius_time) );
+		}
+		else
+		{
+		    Info << "Type of time base for the heat flux not defined. EXITING" << endl;
+		    exit(101);
+		}
+
+
                 forAll (T.boundaryField()[hotSide_ind], faceI)
                 {
                     scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
                     scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
                     scalar radius_space = Foam::sqrt((faceX - thermocoupleX) * (faceX - thermocoupleX) +
                                                (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ));
-                    //scalar radius_time = Foam::sqrt((time - sTime) * (time - sTime));
 
 		    scalar exponent = shapeParameter_space * radius_space;// + shapeParameter_time * radius_time;
                     gBaseFunctions[funcI][timeI][faceI] = Foam::exp(- exponent * exponent) * timeBase;
