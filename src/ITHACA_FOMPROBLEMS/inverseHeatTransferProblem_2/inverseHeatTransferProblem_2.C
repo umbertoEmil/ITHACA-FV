@@ -222,12 +222,12 @@ void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
                 scalar time = timeSteps[timeI];
 		scalar timeBase = 0;
 
-		if(timeBasisType.compare("constant"))
+		if(timeBasisType == "constant")
 		{
 		    Info << "\nUsing CONSTANT time basis\n";
 		    timeBase = 1;
 		}
-		else if(timeBasisType.compare("linear"))
+		else if(timeBasisType == "linear")
 		{
 		    Info << "\nUsing LINEAR time basis\n";
 		    if(std::abs(time - sTime) < timeSamplesDeltaT)
@@ -238,7 +238,7 @@ void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
 		        timeBase = 1 - std::abs(time - sTime) / timeSamplesDeltaT;
 		    }
 		}
-		else if(timeBasisType.compare("rbf"))
+		else if(timeBasisType == "rbf")
 		{
 		    Info << "\nUsing RBF time basis\n";
                     scalar radius_time = Foam::sqrt((time - sTime) * (time - sTime));
@@ -246,6 +246,7 @@ void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
 		}
 		else
 		{
+		Info << "debug : " << timeBasisType << endl; 
 		    Info << "Type of time base for the heat flux not defined. EXITING" << endl;
 		    exit(101);
 		}
@@ -451,15 +452,11 @@ void inverseHeatTransferProblem_2::parameterizedBCoffline(bool force)
             Tbasis.append(Ttime);
             Tcomp = fieldValueAtThermocouples(Ttime);
 
-		    Info << "Tcomp.size() = " << Tcomp.size()<< endl;
-		    Info << "addSol.size() = " << addSol.size()<< endl;
             for(int sampleI = 0; sampleI < basisDeltaSample; sampleI++)
             {
                 forAll(thermocouplesPos, tcI)
                 {
                     label measI = tcI + thermocouplesNum * sampleI;
-		    Info << "measI = " << measI<< endl;
-		    Info << "baseI = " << baseI<< endl;
                     Theta(measI, baseI) = Tcomp(measI) + addSol(measI);
                 }
             }

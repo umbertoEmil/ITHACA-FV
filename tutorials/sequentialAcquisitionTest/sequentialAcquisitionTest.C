@@ -98,6 +98,8 @@ int main(int argc, char* argv[])
     Info << "\n g = A + B sin [2 pi (a t) t] \n"; 
     Info << "Maximum frequency is " << example.maxFrequency << "Hz\n \n";
 
+    Info << "Using time basis of type " << example.timeBasisType << endl << endl;
+
 
     example.readThermocouples();
     example.set_gTrue();
@@ -174,7 +176,7 @@ int main(int argc, char* argv[])
         example.set_gParametrized("rbf", 0.7, 1);
         example.parameterizedBCoffline();
 
-        example.parameterizedBC(outputFolder, "fullPivLU");
+        example.parameterizedBC(outputFolder, "fullPivLU", 5);
 	example.inverseProblemPostProcess(outputFolder);
     }
     

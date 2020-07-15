@@ -23,10 +23,10 @@ a		    1100;
 b		    1200;
 c		    3000;
 d		    14;
-timeBasisType       constant;
+timeBasisType       linear;
 maxFrequency        0.2;
 
 
 //Test to perform
-parameterizedBC_steadyTest 1;
+parameterizedBC_steadyTest 0;
 parameterizedBC_unsteadyTest 1;
