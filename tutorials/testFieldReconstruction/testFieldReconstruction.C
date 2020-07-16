@@ -110,15 +110,53 @@ int main(int argc, char* argv[])
                                  "1", outputFolder,
                                  "gTrue");
 
-    /// Offline
-    // The heat flux g is parameterized such that
-    //    
-    //        g = sum_i gWeights_i * phi_i
-    //
-    // where phi_i are basis functions I define in set_gParametrized
-    //
+    
+    // Now I compute the basis  
     scalar rbfShapeParameter = 0.7;
     example.set_gParametrized("rbf", rbfShapeParameter); // define the basis of the heat flux
+    label forceComputingBasis = 1;
+    example.parameterizedBCoffline(forceComputingBasis); 
+    PtrList<volScalarField> Tad_base1 = example.Tad_base;
+    PtrList<volScalarField> Tbasis1 = example.Tbasis;
+    Eigen::VectorXd weightsTry(16);
+    
+    //These are weights that I made up
+    //weightsTry << -10000, +15000, 0, -30000, 8000, -15000, 0, 45000, 0, 15000, 0, 0, -8000, 15000, 0, -40500;
+
+    //These are weights that the inverse solver gives as a result
+    weightsTry << -14460.3, 21096.3, 0, -6924.19, 21020.8, -31081.5, 0, 10093.6, 0, 814.007, 0, 0, -7179.26, 10049.4, 0, -3427.73;
+
+    // Reconstruct the field using weightsTry
+    example.parameterizedBCpostProcess(weightsTry);
+    volScalarField& Trecon1(example._T());
+    ITHACAstream::exportSolution(Trecon1,
+                     std::to_string(1),
+                     outputFolder,
+                     "Trecon1");
+
+    // Now I read the basis from file and reconstruct the field
+    Info << " \n\n AGAIN \n\n";
+    example.parameterizedBCoffline(); 
+    PtrList<volScalarField> Tad_base2 = example.Tad_base;
+    PtrList<volScalarField> Tbasis2 = example.Tbasis;
+    example.parameterizedBCpostProcess(weightsTry);
+    volScalarField& Trecon2(example._T());
+    ITHACAstream::exportSolution(Trecon2,
+                     std::to_string(1),
+                     outputFolder,
+                     "Trecon2");
+
+    // Compute the difference between computed and read basis and write it
+    forAll(Tbasis1, baseI)
+    {
+        volScalarField test = Tbasis1[baseI] - Tbasis2[baseI];
+	ITHACAstream::exportSolution(test,
+                 std::to_string(baseI),
+                 outputFolder,
+                 "differenceBetweenBasis");
+
+    }
+
 
     //------------ description of offline phase -------------//
     // Let phi_i be the basis of the heat flux g
@@ -134,7 +172,6 @@ int main(int argc, char* argv[])
     //
     // Now I have everything I need for the online phase
     // 
-    example.parameterizedBCoffline(); 
 
     // Online
     //------------ description of online phase -------------//
@@ -160,23 +197,24 @@ int main(int argc, char* argv[])
     //label dummy = 0;
     //example.parameterizedBC("fullPivLU", dummy); 
 
-    label dummy = 0;
-    Eigen::VectorXd weights = example.parameterizedBC("fullPivLU", dummy);
-    
-    std::cout << "\n weights = \n " << weights.transpose() << std::endl;
+    //label dummy = 0;
+    //Eigen::VectorXd weights = example.parameterizedBC("fullPivLU", dummy);
+    //
+    //std::cout << "\n weights = \n " << weights.transpose() << std::endl;
+    //std::cout << "\n weights diff = \n " << (weightsTry - weights).transpose() << std::endl;
 
 
-    // Results output
-    volScalarField gParametrizedField = example.list2Field(example.g);
-    ITHACAstream::exportSolution(gParametrizedField,
-                                 std::to_string(1),
-                                 outputFolder,
-                                 "gParametrized");
-    volScalarField& Tout(example._T());
-    ITHACAstream::exportSolution(Tout,
-                                 std::to_string(1),
-                                 outputFolder,
-                                 "Treconstructed");
+    //// Results output
+    //volScalarField gParametrizedField = example.list2Field(example.g);
+    //ITHACAstream::exportSolution(gParametrizedField,
+    //                             std::to_string(1),
+    //                             outputFolder,
+    //                             "gParametrized");
+    //volScalarField& Tout(example._T());
+    //ITHACAstream::exportSolution(Tout,
+    //                             std::to_string(1),
+    //                             outputFolder,
+    //                             "T");
 
     Info << "*********************************************************" << endl;
     Info << endl;
