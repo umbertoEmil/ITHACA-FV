@@ -278,7 +278,7 @@ class inverseLaplacianProblem: public laplacianProblem
 
         ///
         ///
-        void parameterizedBC(word linSys_solver = "fullPivLU",
+	Eigen::VectorXd parameterizedBC(word linSys_solver = "fullPivLU",
                              label TSVD_filter = 0);
 
         //--------------------------------------------------------------------------

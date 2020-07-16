@@ -157,8 +157,14 @@ int main(int argc, char* argv[])
     //
     // this is done by the function reconstructT 
     //
+    //label dummy = 0;
+    //example.parameterizedBC("fullPivLU", dummy); 
+
     label dummy = 0;
-    example.parameterizedBC("fullPivLU", dummy); 
+    Eigen::VectorXd weights = example.parameterizedBC("fullPivLU", dummy);
+    
+    std::cout << "\n weights = \n " << weights.transpose() << std::endl;
+
 
     // Results output
     volScalarField gParametrizedField = example.list2Field(example.g);
@@ -170,7 +176,7 @@ int main(int argc, char* argv[])
     ITHACAstream::exportSolution(Tout,
                                  std::to_string(1),
                                  outputFolder,
-                                 "T");
+                                 "Treconstructed");
 
     Info << "*********************************************************" << endl;
     Info << endl;

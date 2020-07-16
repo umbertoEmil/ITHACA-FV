@@ -404,7 +404,7 @@ void inverseLaplacianProblem::parameterizedBCoffline(bool force)
                                folderOffline);
 }
 
-void inverseLaplacianProblem::parameterizedBC(word linSys_solver,
+Eigen::VectorXd inverseLaplacianProblem::parameterizedBC(word linSys_solver,
         label TSVD_filter)
 {
     Info << endl << "Using quasilinearity of direct problem" << endl;
@@ -449,6 +449,7 @@ void inverseLaplacianProblem::parameterizedBC(word linSys_solver,
         exit(1);
     }
     parameterizedBCpostProcess(weigths);
+    return weigths;
 }
 
 void inverseLaplacianProblem::parameterizedBCpostProcess(Eigen::VectorXd weigths)

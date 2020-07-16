@@ -128,6 +128,29 @@ class testFieldReconstruction: public inverseLaplacianProblem
                                              "Tad");
 	}
 
+	void dummyReconstructT(word outputFolder)
+	{
+            Info << "Reconstructing field T" << endl;
+            restart();
+            update_gParametrized(gWeights);
+
+            volScalarField& T = _T();
+            ITHACAutilities::assignIF(T, homogeneousBC);
+
+            forAll(Tbasis, baseI)
+            {
+		gWeights[baseI] = 1.0 * baseI;
+                T += gWeights[baseI] * (Tbasis[baseI] + Tad_base[0]);
+            }
+
+            T += - Tad_base[0];
+            ITHACAstream::exportSolution(T,
+                                 std::to_string(1),
+                                 outputFolder,
+                                 "Trecon");
+
+	}
+
 	void assignDirectBC()
         {
             fvMesh& mesh = _mesh();
