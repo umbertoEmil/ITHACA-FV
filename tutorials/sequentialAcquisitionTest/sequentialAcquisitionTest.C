@@ -86,6 +86,8 @@ int main(int argc, char* argv[])
     example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
     example.T0 = para->ITHACAdict->lookupOrDefault<scalar>("T0", 0);
     example.timeBasisType = para->ITHACAdict->lookupOrDefault<word>("timeBasisType", "None");
+    word linSysSolver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver", "None");
+    label TSVDtruncation = para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 0);
 
     example.maxFrequency = para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
 
@@ -173,10 +175,10 @@ int main(int argc, char* argv[])
     {
         word outputFolder = "./ITHACAoutput/testInverse/";
         example.assignTrueIF();
-        example.set_gParametrized("rbf", 0.7, 1);
+        example.set_gParametrized("rbf", 0.7);
         example.parameterizedBCoffline();
 
-        example.parameterizedBC(outputFolder, "fullPivLU", 5);
+        example.parameterizedBC(outputFolder, linSysSolver, TSVDtruncation);
 	example.inverseProblemPostProcess(outputFolder);
     }
     

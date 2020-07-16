@@ -127,7 +127,6 @@ class inverseHeatTransferProblem_2: public laplacianProblem
         scalar timeSamplesT0;
         label timeSamplesNum;
 	label NtimeStepsBetweenSamples;
-	label NtimeBasis; // The number of basis used is NtimeStepsBetweenSamples + 1
 	label timeSampleI;
         label basisDeltaSample = 2; //Numer of sampling steps to consider when computing offline phase
         List<label> samplingSteps; //symulation timesteps at which there are mesurements
@@ -218,12 +217,22 @@ class inverseHeatTransferProblem_2: public laplacianProblem
         //--------------------------------------------------------------------------
 
         /// Define the base functions used for the parametrization of g
-        void set_gBaseFunctions(word type, scalar shapeParameter_space, scalar shapeParameter_time = 0.0);
+        void set_gBaseFunctions(word type, scalar shapeParameter);
+
+        //--------------------------------------------------------------------------
+
+        /// Define the base functions used for the parametrization of g
+        void set_gBaseFunctions(word type, scalar shapeParameter_space, scalar shapeParameter_time);
 
         //--------------------------------------------------------------------------
 
         /// Set parameterized heat flux defining the basis
-        void set_gParametrized(word baseFuncType, scalar shapeParameter_space, scalar shapeParameter_time = 0.0);
+        void set_gParametrized(word baseFuncType, scalar shapeParameter);
+
+        //--------------------------------------------------------------------------
+
+        /// Set parameterized heat flux defining the basis
+        void set_gParametrized(word baseFuncType, scalar shapeParameter_space, scalar shapeParameter_time);
 
         //--------------------------------------------------------------------------
 
@@ -266,13 +275,6 @@ class inverseHeatTransferProblem_2: public laplacianProblem
         ///
         void parameterizedBC(word folder, word linSys_solver = "fullPivLU",
                              label TSVD_filter = 0);
-
-        //--------------------------------------------------------------------------
-
-        /// interpolating Tmeas in between the measurements
-	//
-	/// @param[in]  timeSampleI Index of the first of the two sampling time to interpolate in between 
-	Eigen::VectorXd TmeasInterpolation(label timeSampleI);
 
         //--------------------------------------------------------------------------
 

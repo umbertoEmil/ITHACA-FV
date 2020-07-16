@@ -119,11 +119,11 @@ void inverseHeatTransferProblem_2::set_g()
 }
 
 void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
-        scalar shapeParameter_space, scalar shapeParameter_time)
+        scalar shapeParameter)
 {
     volScalarField& T = _T();
     fvMesh& mesh = _mesh();
-    gBasisSize = thermocouplesNum * NtimeBasis; 
+    gBasisSize = thermocouplesNum * basisDeltaSample;
     //Info << "debug: thermocouplesNum = " << thermocouplesNum << " , timeSamplesNum = " << timeSamplesNum << endl;
 
     if (type == "rbf")
@@ -141,43 +141,112 @@ void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
         gWeights.resize(gBasisSize);
         int thermocouplesCounter = 0;
         int samplingTimeI = 0;
-	Info << "\nUsing " << timeBasisType << " time basis\n";
         forAll(gBaseFunctions, funcI)
         {
-            M_Assert(samplingTimeI < NtimeBasis, "Some error happened when defining the heat flux basis");
-            gBaseFunctions[funcI].resize(NtimeStepsBetweenSamples + 1);
+            //Info << "debug: Setting up RBF for TC " << thermocouplesCounter << ", samplingTime = " << samplingTime[samplingTimeI] << endl;
+            gBaseFunctions[funcI].resize(timeSteps.size());
             scalar thermocoupleX =
                 mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
             scalar thermocoupleZ =
                 mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
-            scalar sTime = timeSteps[samplingTimeI]; //I have one time base centered at each time step between the first two measurements
-	    Info << "debug : sTime = " << sTime << endl;
+            scalar sTime = samplingTime[samplingTimeI];
+            forAll(timeSteps, timeI)
+            {
+                gBaseFunctions[funcI][timeI].resize(T.boundaryField()[hotSide_ind].size());
+                scalar time = timeSteps[timeI];
+                forAll (T.boundaryField()[hotSide_ind], faceI)
+                {
+                    scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
+                    scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
+                    scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - thermocoupleX) +
+                                               (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ) +
+                                               (time - sTime) * (time - sTime));
+                    gBaseFunctions[funcI][timeI][faceI] = Foam::exp(- (shapeParameter *
+                                                          shapeParameter
+                                                          * radius * radius));
+                }
+            }
+            thermocouplesCounter++;
+
+            if (thermocouplesCounter == thermocouplesNum)
+            {
+                thermocouplesCounter = 0;
+                samplingTimeI++;
+            }
+        }
+    }
+    else if (type == "pod")
+    {
+        Info << "Not yet implemented, exiting" << endl;
+        exit(10);
+    }
+}
+
+void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
+        scalar shapeParameter_space, scalar shapeParameter_time)
+{
+    volScalarField& T = _T();
+    fvMesh& mesh = _mesh();
+    gBasisSize = thermocouplesNum * basisDeltaSample;
+    //Info << "debug: thermocouplesNum = " << thermocouplesNum << " , timeSamplesNum = " << timeSamplesNum << endl;
+
+    if (type == "rbf")
+    {
+        Info << "Radial Basis Functions are used." << endl;
+        // The center of each function is the projection of each thermocouple
+        // on the boundary hotSide
+
+        if (thermocouplesCellID.size() == 0)
+        {
+            readThermocouples();
+        }
+
+        gBaseFunctions.resize(gBasisSize);
+        gWeights.resize(gBasisSize);
+        int thermocouplesCounter = 0;
+        int samplingTimeI = 0;
+        forAll(gBaseFunctions, funcI)
+        {
+            //Info << "debug: Setting up RBF for TC " << thermocouplesCounter << ", samplingTime = " << samplingTime[samplingTimeI] << endl;
+            gBaseFunctions[funcI].resize(timeSteps.size());
+            scalar thermocoupleX =
+                mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
+            scalar thermocoupleZ =
+                mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
+            scalar sTime = samplingTime[samplingTimeI];
             
 	    //forAll(timeSteps, timeI)
 	    for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
             {
                 gBaseFunctions[funcI][timeI].resize(T.boundaryField()[hotSide_ind].size());
                 scalar time = timeSteps[timeI];
-
 		scalar timeBase = 0;
+
 		if(timeBasisType == "constant")
 		{
+		    Info << "\nUsing CONSTANT time basis\n";
 		    timeBase = 1;
 		}
 		else if(timeBasisType == "linear")
 		{
+		    Info << "\nUsing LINEAR time basis\n";
 		    if(std::abs(time - sTime) < timeSamplesDeltaT)
 		    {
+		        Info << "time = " <<time << endl;
+		        Info << "sTime = " <<sTime << endl;
+		        Info << "std::abs(time - sTime) = " << std::abs(time - sTime) << endl;
 		        timeBase = 1 - std::abs(time - sTime) / timeSamplesDeltaT;
 		    }
 		}
 		else if(timeBasisType == "rbf")
 		{
+		    Info << "\nUsing RBF time basis\n";
                     scalar radius_time = Foam::sqrt((time - sTime) * (time - sTime));
 		    timeBase = Foam::exp( - (shapeParameter_time * radius_time) * (shapeParameter_time * radius_time) );
 		}
 		else
 		{
+		Info << "debug : " << timeBasisType << endl; 
 		    Info << "Type of time base for the heat flux not defined. EXITING" << endl;
 		    exit(101);
 		}
@@ -207,6 +276,31 @@ void inverseHeatTransferProblem_2::set_gBaseFunctions(word type,
     {
         Info << "Not yet implemented, exiting" << endl;
         exit(10);
+    }
+}
+
+void inverseHeatTransferProblem_2::set_gParametrized(word baseFuncType,
+        scalar shapeParameter)
+{
+    volScalarField& T = _T();
+    set_gBaseFunctions(baseFuncType, shapeParameter);
+    g.resize(timeSteps.size());
+    forAll (gWeights, weigthI)
+    {
+        gWeights[weigthI] = 0; //-10000;
+    }
+    Info << "gWeights = " << gWeights << endl;
+    forAll(timeSteps, timeI)
+    {
+        g[timeI].resize(T.boundaryField()[hotSide_ind].size(), 0.0);
+        forAll (T.boundaryField()[hotSide_ind], faceI)
+        {
+            g[timeI][faceI] = 0.0;
+            forAll (gWeights, weigthI)
+            {
+                g[timeI][faceI] += gWeights[weigthI] * gBaseFunctions[weigthI][timeI][faceI];
+            }
+        }
     }
 }
 
@@ -325,10 +419,10 @@ void inverseHeatTransferProblem_2::parameterizedBCoffline(bool force)
     else
     {
         Info << "\nComputing offline" << endl;
-	label offline = 1;
         solveAdditional();
         //solveT0();
-        Theta.resize(thermocouplesNum * NtimeBasis, gWeights.size());
+        Theta.resize(thermocouplesNum * basisDeltaSample, gWeights.size());
+	label offline = 1;
         Info << "Theta size = " << Theta.rows() << ", " << Theta.cols() << endl;
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
@@ -341,13 +435,11 @@ void inverseHeatTransferProblem_2::parameterizedBCoffline(bool force)
             update_gParametrized(gWeights);
             Info << "Solving for base = " << baseI << endl;
             solveDirect(offline);
-            Tbasis.append(Ttime);
-            Tcomp = fieldValueAtThermocouples(Ttime);
 
-            /// Saving basis
             for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
             {
                 volScalarField& T = Ttime[timeI];
+                /// Saving basis
                 volScalarField gParametrizedField = list2Field(g[timeI]);
                 ITHACAstream::exportSolution(gParametrizedField,
                                              std::to_string(timeSteps[timeI]),
@@ -356,14 +448,18 @@ void inverseHeatTransferProblem_2::parameterizedBCoffline(bool force)
                 ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
                                              folderOffline,
                                              "T" + std::to_string(baseI + 1));
+            }
+            Tbasis.append(Ttime);
+            Tcomp = fieldValueAtThermocouples(Ttime);
+
+            for(int sampleI = 0; sampleI < basisDeltaSample; sampleI++)
+            {
                 forAll(thermocouplesPos, tcI)
                 {
-                    label measI = tcI + thermocouplesNum * timeI;
+                    label measI = tcI + thermocouplesNum * sampleI;
                     Theta(measI, baseI) = Tcomp(measI) + addSol(measI);
                 }
             }
-        Info << "debug : Theta size = " << Theta.rows() << ", " << Theta.cols() << endl;
-        Info << "debug : Tbasis.size() = " << Tbasis.size() << endl;
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
@@ -422,17 +518,15 @@ void inverseHeatTransferProblem_2::parameterizedBC(word outputFolder,
     timeSampleI = 0;
     while(timeSampleI < timeSamplesNum - 1)
     {
-        //interpolating Tmeas in between the measurements
-	TmeasShort = TmeasInterpolation(timeSampleI);
-
         //TODO update initial field for T0
 	solveT0();
         List<Eigen::MatrixXd> linSys;
         linSys.resize(2);
 	Info << "debug : Theta = " << Theta.rows() << " x " << Theta.cols() << endl;
-	Info << "debug : TmeasShort.size() = " << TmeasShort.size() << endl;
+	Info << "debug : Tmeas.size() = " << Tmeas.size() << endl;
 	Info << "debug : addSol.size() = " << addSol.size() << endl;
 	Info << "debug : T0_vector.size() = " << T0_vector.size() << endl;
+	TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum * basisDeltaSample);
         linSys[0] = Theta.transpose() * Theta;
         linSys[1] = Theta.transpose() * (TmeasShort + addSol - T0_vector);
         Eigen::VectorXd weigths;
@@ -475,10 +569,6 @@ void inverseHeatTransferProblem_2::parameterizedBC(word outputFolder,
         {
             gWeights[weightI] = weigths(weightI);
         }
-	std::cout << "debug : addSol = " << addSol << std::endl;
-	std::cout << "debug : T0_vector = " << T0_vector << std::endl;
-	std::cout << "debug : TmeasShort = " << TmeasShort << std::endl;
-	Info << "debug : gWeights = " << gWeights << endl;
         update_gParametrized(gWeights);
         label verbose = 0;
         parameterizedBC_postProcess(linSys, weigths, outputFolder, verbose);
@@ -486,24 +576,6 @@ void inverseHeatTransferProblem_2::parameterizedBC(word outputFolder,
     }
     Info << "End" << endl;
     Info << endl;
-}
-
-Eigen::VectorXd inverseHeatTransferProblem_2::TmeasInterpolation(label timeSampleI)
-{
-    Info << "\nI assume linear temperature between measurements\n";
-    Eigen::VectorXd firstMeas = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum);
-    Eigen::VectorXd lastMeas = Tmeas.segment(thermocouplesNum * (timeSampleI + 1), thermocouplesNum);
-    Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(NtimeBasis, 0, timeSamplesDeltaT);
-    Eigen::VectorXd output;
-    output.resize(thermocouplesNum * NtimeBasis);
-    for(int timeI = 0; timeI < NtimeBasis; timeI++)
-    {
-        for(int TCi = 0; TCi < thermocouplesNum; TCi++)
-	{
-	    output(thermocouplesNum * timeI + TCi) = firstMeas(TCi) + (  lastMeas(TCi)- firstMeas(TCi) / x(NtimeBasis - 1)) * x(timeI);
-	}
-    }
-    return output;
 }
 
 void inverseHeatTransferProblem_2::set_valueFraction()
@@ -556,7 +628,7 @@ void inverseHeatTransferProblem_2::solveT0()
     Foam::Time& runTime = _runTime();
     set_valueFraction();
     List<scalar> RobinBC = Tf * 0.0;
-    word outputFolder = "./ITHACAoutput/debug/";
+    word outpurFolder = "./ITHACAoutput/debug/";
     if(timeSampleI == 0 & timeSamplesT0 < startTime + 1e-16)
     {
         assignT0_IF(T0_field);
@@ -564,7 +636,7 @@ void inverseHeatTransferProblem_2::solveT0()
     else
     {
         //TODO probably there is no need of reconstructing again T
-        reconstrucT(outputFolder);
+        reconstrucT(outpurFolder);
         ITHACAutilities::assignIF(T0_field, Ttime[NtimeStepsBetweenSamples]);
     }
 
@@ -583,7 +655,7 @@ void inverseHeatTransferProblem_2::solveT0()
         }
     }
     T0_time.append(T0_field);
-    ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI] + NtimeStepsBetweenSamples * timeSampleI),
+    ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI]),
                                  folderOffline,
                                  "T0_field");
 
@@ -603,7 +675,7 @@ void inverseHeatTransferProblem_2::solveT0()
             fvOptions.correct(T0_field);
         }
 
-        ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI] + NtimeStepsBetweenSamples * timeSampleI),
+        ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI]),
                                      folderOffline,
                                      "T0_field");
         T0_time.append(T0_field);
@@ -781,7 +853,6 @@ void inverseHeatTransferProblem_2::readThermocouples()
         }
         sampling2symulationTime();
 	NtimeStepsBetweenSamples = timeSamplesDeltaT / deltaTime;
-	NtimeBasis = NtimeStepsBetweenSamples + 1;
         Info << "debug: NtimeStepsBetweenSamples = " << NtimeStepsBetweenSamples << endl;
         Info << "debug: samplingTimes = " << samplingTime << endl;
         residual.resize(thermocouplesNum * timeSamplesNum);
@@ -840,11 +911,11 @@ Eigen::VectorXd inverseHeatTransferProblem_2::fieldValueAtThermocouples(
     else if ( fieldList.size() == NtimeStepsBetweenSamples + 1 )
     {
         Info << "\n Sampling ONLY between two sampling times \n\n" << endl;
-        fieldInt.resize(NtimeBasis * thermocouplesNum);
-        for(int sampleTimeI = 0; sampleTimeI < NtimeStepsBetweenSamples + 1; sampleTimeI++)
+        fieldInt.resize(basisDeltaSample * thermocouplesNum);
+        for(int sampleTimeI = 0; sampleTimeI < basisDeltaSample; sampleTimeI++)
         {
             fieldInt.segment(sampleTimeI * thermocouplesNum, thermocouplesNum) =
-                fieldValueAtThermocouples(fieldList, sampleTimeI);
+                fieldValueAtThermocouples(fieldList, sampleTimeI * NtimeStepsBetweenSamples);
         }
     }
     else

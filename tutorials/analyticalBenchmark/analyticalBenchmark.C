@@ -46,7 +46,6 @@ SourceFiles
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
 #include "analyticalBenchmark.H"
-#include "stochastic.h"
 
 
 int main(int argc, char* argv[])
@@ -291,7 +290,10 @@ int main(int argc, char* argv[])
 
             for (int i = 0; i < example.Tmeas.size(); i++)
             {
-                measurementsError(i) = variance(i) * stochastic::set_normal_random(0.0, 1.0);
+                //measurementsError(i) = variance(i) * stochastic::set_normal_random(0.0, 1.0);
+		Info << "add stochastic.H" << endl;
+		exit(10);
+			
             }
 
             example.Tmeas += measurementsError;
@@ -361,8 +363,10 @@ int main(int argc, char* argv[])
 
             for (int i = 0; i < example.Tmeas.size(); i++)
             {
-                measurementsError(i) = example.Tmeas.mean() * 0.02 *
-                                       stochastic::set_normal_random(0.0, 1.0);
+                //measurementsError(i) = example.Tmeas.mean() * 0.02 *
+                //                       stochastic::set_normal_random(0.0, 1.0);
+		Info << "add stochastic.H" << endl;
+		exit(10);
             }
 
             example.Tmeas += measurementsError;
