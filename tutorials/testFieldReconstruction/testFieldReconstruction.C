@@ -100,15 +100,10 @@ int main(int argc, char* argv[])
     example.readThermocouples();
     example.Tmeas = example.fieldValueAtThermocouples(T);
 
-    // Solving inverse problem
     Info << endl;
     Info << "*********************************************************" << endl;
     Info << "Performing test for the parameterized BC inverse solver" << endl;
     Info << endl;
-    volScalarField gTrueField = example.list2Field(example.gTrue);
-    ITHACAstream::exportSolution(gTrueField,
-                                 "1", outputFolder,
-                                 "gTrue");
 
     
     // Now I compute the basis  
@@ -121,10 +116,10 @@ int main(int argc, char* argv[])
     Eigen::VectorXd weightsTry(16);
     
     //These are weights that I made up
-    //weightsTry << -10000, +15000, 0, -30000, 8000, -15000, 0, 45000, 0, 15000, 0, 0, -8000, 15000, 0, -40500;
+    weightsTry << -10000, +15000, 0, -30000, 8000, -15000, 0, 45000, 0, 15000, 0, 0, -8000, 15000, 0, -40500;
 
     //These are weights that the inverse solver gives as a result
-    weightsTry << -14460.3, 21096.3, 0, -6924.19, 21020.8, -31081.5, 0, 10093.6, 0, 814.007, 0, 0, -7179.26, 10049.4, 0, -3427.73;
+    //weightsTry << -14460.3, 21096.3, 0, -6924.19, 21020.8, -31081.5, 0, 10093.6, 0, 814.007, 0, 0, -7179.26, 10049.4, 0, -3427.73;
 
     // Reconstruct the field using weightsTry
     example.parameterizedBCpostProcess(weightsTry);
@@ -151,70 +146,12 @@ int main(int argc, char* argv[])
     {
         volScalarField test = Tbasis1[baseI] - Tbasis2[baseI];
 	ITHACAstream::exportSolution(test,
-                 std::to_string(baseI),
+                 std::to_string(baseI + 1),
                  outputFolder,
                  "differenceBetweenBasis");
 
     }
 
-
-    //------------ description of offline phase -------------//
-    // Let phi_i be the basis of the heat flux g
-    // In the offline phase I whant to compute T[phi_i]
-    // for all i. Moreover, I have to compute what I call 
-    // the additional problem, Tadd, wich do not depend on phi_i.
-    // Then, I have to take the values of T[phi_i] and Tadd at 
-    // the termocouples and store them in vectors. With these 
-    // values, I assemble the matrix Theta which is such that
-    //              
-    //     Theta[i,j] = T[phi_j](thermocouple_i) 
-    //                  + Tadd(thermocouple_i)  
-    //
-    // Now I have everything I need for the online phase
-    // 
-
-    // Online
-    //------------ description of online phase -------------//
-    // In the online phase, I want to determine the weights
-    // of the basis function that minimize the cost function
-    //
-    //     J = sum_i (Tcomp_i - Tmeas_I)^2
-    //
-    // thanks to the affinity of the tmeperature field with 
-    // respect to the basis of the heat flux, I can find 
-    // these weights by solving
-    //
-    //     Theta^T Theta gWeights = Theta^T (Tmeas + Tadd)
-    //
-    // In parameterizedBC, I solve this linear system and then
-    // I reconstruct the respective temperature field by
-    //
-    //     T[gWeights] = sum_i gWeights_i (T[phi_i] + Tadd)
-    //                   - Tadd
-    //
-    // this is done by the function reconstructT 
-    //
-    //label dummy = 0;
-    //example.parameterizedBC("fullPivLU", dummy); 
-
-    //label dummy = 0;
-    //Eigen::VectorXd weights = example.parameterizedBC("fullPivLU", dummy);
-    //
-    //std::cout << "\n weights = \n " << weights.transpose() << std::endl;
-    //std::cout << "\n weights diff = \n " << (weightsTry - weights).transpose() << std::endl;
-
-
-    //// Results output
-    //volScalarField gParametrizedField = example.list2Field(example.g);
-    //ITHACAstream::exportSolution(gParametrizedField,
-    //                             std::to_string(1),
-    //                             outputFolder,
-    //                             "gParametrized");
-    //volScalarField& Tout(example._T());
-    //ITHACAstream::exportSolution(Tout,
-    //                             std::to_string(1),
-    //                             outputFolder,
-    //                             "T");
 
     Info << "*********************************************************" << endl;
     Info << endl;

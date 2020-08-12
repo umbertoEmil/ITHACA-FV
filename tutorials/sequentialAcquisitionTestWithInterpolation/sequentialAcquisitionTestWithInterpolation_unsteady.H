@@ -1,12 +1,12 @@
-#ifndef sequentialAcquisitionTest_unsteady_H
-#define sequentialAcquisitionTest_unsteady_H
+#ifndef sequentialAcquisitionTestWithInterpolation_unsteady_H
+#define sequentialAcquisitionTestWithInterpolation_unsteady_H
 
-class sequentialAcquisitionTest_unsteady: public sequentialIHTP
+class sequentialAcquisitionTestWithInterpolation_unsteady: public sequentialIHTPwithTimeInterpolation
 {
     public:
-        explicit sequentialAcquisitionTest_unsteady(int argc, char* argv[])
+        explicit sequentialAcquisitionTestWithInterpolation_unsteady(int argc, char* argv[])
             :
-            sequentialIHTP(argc, argv),
+            sequentialIHTPwithTimeInterpolation(argc, argv),
 	    initialField(_T())
         {
 	    fvMesh& mesh = _mesh();
@@ -128,7 +128,7 @@ class sequentialAcquisitionTest_unsteady: public sequentialIHTP
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].y();
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                    gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.1 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * maxFrequency * timeSteps[timeI]));
+                    gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * maxFrequency * timeSteps[timeI]));
                     //gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI]));
                 }
 	    }
@@ -264,9 +264,6 @@ class sequentialAcquisitionTest_unsteady: public sequentialIHTP
 	    {
 	        volScalarField gTrueField = list2Field(gTrue[timeI]);
 		volScalarField gParametrizedField = list2Field(g[timeI]);
-                ITHACAstream::exportSolution(gParametrizedField,
-                                             std::to_string(timeSteps[timeI]), outputFolder,
-                                             "gParamDebug");
                 volScalarField gDiffField = gParametrizedField - gTrueField;
 		ITHACAstream::exportSolution(gTrueField,
                                              std::to_string(timeSteps[timeI]), outputFolder,
@@ -277,6 +274,9 @@ class sequentialAcquisitionTest_unsteady: public sequentialIHTP
                 ITHACAstream::exportSolution(gDiffField,
                                              std::to_string(timeSteps[timeI]), outputFolder,
                                              "gDiffField");
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(timeSteps[timeI]), outputFolder,
+                                             "gParamDebug");
                 scalar EPS = 1e-6;
                 volScalarField relativeErrorField(gDiffField);
                 for (label i = 0; i < relativeErrorField.internalField().size(); i++)

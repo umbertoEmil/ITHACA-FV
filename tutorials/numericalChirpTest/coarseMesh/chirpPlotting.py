@@ -21,7 +21,9 @@ t = np.linspace(t0, tF, N, endpoint=True)
 
 fmin = 0.5
 G = 1
-f1 = fmin / tF * t
+#f1 = fmin / tF * t
+#g1 = G * np.sin(2 * np.pi * f1 * t) 
+f1 = 0.2
 g1 = G * np.sin(2 * np.pi * f1 * t) 
 
 f2 = 0.1 * t
@@ -35,11 +37,11 @@ g2 = G * np.sin(2 * np.pi * f2 * t)
 relErrL2norm_unsteady = np.loadtxt("./ITHACAoutput/testInverse/relErrL2norm_mat.txt")
 relErrL2norm_steady = np.loadtxt("./ITHACAoutput/steadyTest/relError_L2norm_mat.txt")
 
-Nmeas = 5
+Nmeas = 20
 t0meas = 1.
 tMeas = np.linspace(t0meas, tF, Nmeas, endpoint=False)
 
-Nunsteady = 61
+Nunsteady = 101
 t0 = 0
 tF = 10
 tUnsteady = np.linspace(t0, tF, Nunsteady, endpoint=True)
@@ -67,7 +69,7 @@ fig, ax1 = plt.subplots()
 color = 'tab:red'
 ax1.set_xlabel('Time (s)', fontsize=25)
 ax1.set_ylabel('Frequency [Hz]', color=color, fontsize=25)  # we already handled the x-label with ax1
-ax1.plot(t, f1, color=color, linewidth=2)
+ax1.plot(t, 0 * t +1, color=color, linewidth=2)
 ax1.tick_params(axis='y', labelcolor=color)
 
 ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis

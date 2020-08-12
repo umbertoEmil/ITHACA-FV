@@ -25,7 +25,7 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/laplacianProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseHeatTransferProblem \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/sequentialIHTP \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/sequentialIHTPwithTimeInterpolation \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/steadyNS \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/unsteadyNS \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/glassFurnace \

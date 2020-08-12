@@ -41,7 +41,8 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/thirdparty/spectra/include \
     -I$(LIB_ITHACA_SRC)/thirdparty/MiniInverseProblems/include \
     -I$(LIB_ITHACA_SRC)/ITHACA_THIRD_PARTY/splinter/include \
-    -I/home/umberto/PhD/ITHACA-FV/tutorials/analyticalBenchmark \
+    -I/home/umberto/OpenFOAM/ITHACA-FV/tutorials/analyticalBenchmark \
+    -I/home/umberto/OpenFOAM/ITHACA-FV/tutorials/numericalBenchmark \
     -I$(MUQ_LIBRARIES)/include \
     -I$(MUQ_EXT_LIBRARIES)/include\
     -DOFVER=$${WM_PROJECT_VERSION%.*} \
@@ -76,12 +77,10 @@ EXE_LIBS = \
     -lITHACA_THIRD_PARTY \
     -lITHACA_CORE \
     -L$(FOAM_USER_LIBBIN) \
-    -L/home/umberto/PhD/MUQinstall/lib \
+    -L/home/umberto/OpenFOAM/MUQinstall/lib \
     -lmuqApproximation \
     -lmuqInference \
     -lmuqModeling \
     -lmuqOptimization \
     -lmuqSamplingAlgorithms \
-    -lmuqUtilities \
-
-
+    -lmuqUtilities 

@@ -173,10 +173,10 @@ int main(int argc, char* argv[])
     {
         word outputFolder = "./ITHACAoutput/testInverse/";
         example.assignTrueIF();
-        example.set_gParametrized("rbf", 0.7, 0.1);
+        example.set_gParametrized("rbf", 0.5);
         example.parameterizedBCoffline();
 
-        example.parameterizedBC(outputFolder, "fullPivLU");
+        example.parameterizedBC(outputFolder, "TSVD", 30);
 	example.inverseProblemPostProcess(outputFolder);
     }
     

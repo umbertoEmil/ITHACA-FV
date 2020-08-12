@@ -50,6 +50,6 @@ ProposalVariance	1.3e-6;
 
 //Test to perform
 GibbsSingleRun  0;
-MHMCMCRun 	1;
+MHMCMCRun 	0;
 MHMCMCRunOld 	0;
-regularizationParameterTest 0;
+regularizationParameterTest 1;

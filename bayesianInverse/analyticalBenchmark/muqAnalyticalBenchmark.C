@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
             mesh.boundaryMesh()[example.hotSide_ind].faceCentres()[faceI].x();
         scalar faceZ =
             mesh.boundaryMesh()[example.hotSide_ind].faceCentres()[faceI].z();
-        example.g[faceI] = example.k * (example.b * faceX + example.c * faceZ) ;
+        example.g[faceI] = example.k * (example.b * faceX);// + example.c * faceZ) ;
     }
     example.gTrue = example.g; //-example.heatFlux_hotSide / example.k;
     volScalarField gTrueField = example.list2Field(example.gTrue);

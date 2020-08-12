@@ -186,8 +186,11 @@ int main(int argc, char* argv[])
     }
     example.gTrue = example.g;
     volScalarField gTrueField = example.list2Field(example.g);
+    example.set_Tf();
     
+    Info << "debug 1\n";
     example.solveTrue();
+    Info << "debug 2\n";
 
     volScalarField& T(example._T());
     Info << "Exporting true solution" << endl;

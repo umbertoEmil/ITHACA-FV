@@ -27,7 +27,7 @@ endTime         1000;
 
 deltaT          1;
 
-writeControl    noWrite;
+writeControl    none;
 
 writeInterval   100;
 
@@ -35,7 +35,7 @@ purgeWrite      0;
 
 writeFormat     ascii;
 
-writePrecision  6;
+writePrecision  12;
 
 writeCompression off;
 

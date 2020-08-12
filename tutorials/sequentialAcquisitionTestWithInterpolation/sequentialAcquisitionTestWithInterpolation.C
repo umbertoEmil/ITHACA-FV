@@ -24,7 +24,7 @@ License
 Description
     Example of a heat transfer Reduction Problem
 SourceFiles
-    sequentialAcquisitionTest_unsteady.C
+    sequentialAcquisitionTestWithInterpolation_unsteady.C
 \*---------------------------------------------------------------------------*/
 
 #include <iostream>
@@ -37,7 +37,7 @@ SourceFiles
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem.H"
 #include "inverseHeatTransferProblem.H"
-#include "sequentialIHTP.H"
+#include "sequentialIHTPwithTimeInterpolation.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
 #include <Eigen/Dense>
@@ -47,8 +47,8 @@ SourceFiles
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
 #include "sampledTriSurfaceMesh.H"
-#include "sequentialAcquisitionTest_unsteady.H"
-#include "sequentialAcquisitionTest_steady.H"
+#include "sequentialAcquisitionTestWithInterpolation_unsteady.H"
+#include "sequentialAcquisitionTestWithInterpolation_steady.H"
 
 using namespace SPLINTER;
 
@@ -57,8 +57,8 @@ int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
     
-    sequentialAcquisitionTest_unsteady example(argc, argv);
-    sequentialAcquisitionTest_steady exampleSteady(argc, argv);
+    sequentialAcquisitionTestWithInterpolation_unsteady example(argc, argv);
+    sequentialAcquisitionTestWithInterpolation_steady exampleSteady(argc, argv);
 
     ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
                          example._runTime());
@@ -88,7 +88,6 @@ int main(int argc, char* argv[])
     example.timeBasisType = para->ITHACAdict->lookupOrDefault<word>("timeBasisType", "None");
     word linSysSolver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver", "None");
     label TSVDtruncation = para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 0);
-    scalar shapeParameter = para->ITHACAdict->lookupOrDefault<scalar>("shapeParameter", 1);
 
     example.maxFrequency = para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
 
@@ -176,7 +175,7 @@ int main(int argc, char* argv[])
     {
         word outputFolder = "./ITHACAoutput/testInverse/";
         example.assignTrueIF();
-        example.set_gParametrized("rbf", shapeParameter);
+        example.set_gParametrized("rbf", 0.7);
         example.parameterizedBCoffline();
 
         example.parameterizedBC(outputFolder, linSysSolver, TSVDtruncation);

@@ -14,7 +14,8 @@ msrProblem/msrProblem.C
 unsteadymsrProblem/usmsrProblem.C
 inverseLaplacianProblem/inverseLaplacianProblem.C
 inverseHeatTransferProblem/inverseHeatTransferProblem.C
-inverseHeatTransferProblem_2/inverseHeatTransferProblem_2.C
+sequentialIHTP/sequentialIHTP.C
+sequentialIHTPwithTimeInterpolation/sequentialIHTPwithTimeInterpolation.C
 
 
 LIB = $(FOAM_USER_LIBBIN)/libITHACA_FOMPROBLEMS

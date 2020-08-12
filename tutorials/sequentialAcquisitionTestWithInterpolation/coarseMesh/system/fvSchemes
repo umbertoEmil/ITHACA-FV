@@ -11,42 +11,40 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      controlDict;
+    object      fvSchemes;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     laplacianFoam;
+ddtSchemes
+{
+    default         backward;
+}
 
-startFrom       startTime;
+gradSchemes
+{
+    default         Gauss linear;
+    grad(T)         Gauss linear;
+}
 
-startTime       0;
+divSchemes
+{
+    default         none;
+}
 
-stopAt          endTime;
+laplacianSchemes
+{
+    default         Gauss linear orthogonal;
+}
 
-endTime         20;
+interpolationSchemes
+{
+    default         linear;
+}
 
-deltaT          0.2;
+snGradSchemes
+{
+    default         orthogonal;
+}
 
-writeControl    none;
-
-writeInterval   10000;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  12;
-
-writeCompression off;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-adjustTimeStep  no;
-
-maxCo           1;
 
 // ************************************************************************* //
