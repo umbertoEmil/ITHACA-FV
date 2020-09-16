@@ -388,12 +388,12 @@ void sequentialIHTPwithTimeInterpolation::parameterizedBCoffline(bool force)
         Theta = ITHACAstream::readMatrix(folderOffline + "Theta_mat.txt");
         addSol = ITHACAstream::readMatrix(folderOffline + "addSol_mat.txt");
         T0_vector = ITHACAstream::readMatrix(folderOffline + "T0_vector_mat.txt");
-        ITHACAstream::read_fields(mesh, Tad_time, "Tad", folderOffline);
+        ITHACAstream::read_fields(Tad_time, "Tad", folderOffline);
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
         {
             Ttime.resize(0);
-            ITHACAstream::read_fields(mesh, Ttime, "T" + std::to_string(baseI + 1),
+            ITHACAstream::read_fields(Ttime, "T" + std::to_string(baseI + 1),
                                       folderOffline);
             Tbasis.append(Ttime);
         }

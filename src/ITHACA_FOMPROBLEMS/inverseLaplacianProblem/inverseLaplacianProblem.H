@@ -135,8 +135,8 @@ class inverseLaplacianProblem: public laplacianProblem
         PtrList<volScalarField> deltaTfield;
 
         /// List of POD modes
-        Modes<scalar> lambdaModes;
-        Modes<scalar> deltaTmodes;
+        volScalarModes lambdaModes;
+        volScalarModes deltaTmodes;
 
         /// Number of POD modes
         int NmodesT;

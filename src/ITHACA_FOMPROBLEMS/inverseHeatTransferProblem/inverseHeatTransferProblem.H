@@ -108,7 +108,7 @@ class inverseHeatTransferProblem: public laplacianProblem
         PtrList<volScalarField> Tfield;
 
         /// List of POD modes
-        Modes<scalar> Tmodes;
+        volScalarModes Tmodes;
 
         /// Number of POD modes
         int NmodesT;

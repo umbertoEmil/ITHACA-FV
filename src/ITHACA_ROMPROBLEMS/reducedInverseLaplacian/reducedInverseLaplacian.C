@@ -288,7 +288,7 @@ void reducedInverseLaplacian::get_L_lambda()
 
 void reducedInverseLaplacian::get_L_deltaT()
 {
-    Modes<scalar>& deltaTmodes = problem->deltaTmodes;
+    volScalarModes& deltaTmodes = problem->deltaTmodes;
 
     if (deltaTmodes.EigenModes.size() == 0)
     {
