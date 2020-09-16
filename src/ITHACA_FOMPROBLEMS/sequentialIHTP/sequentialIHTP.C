@@ -123,7 +123,8 @@ void sequentialIHTP::set_gBaseFunctions(word type,
 {
     volScalarField& T = _T();
     fvMesh& mesh = _mesh();
-    gBasisSize = thermocouplesNum * (basisDeltaSample);
+    gBasisSize = thermocouplesNum * (NtimeStepsBetweenSamples);
+    gBasisSize = thermocouplesNum * 1;
 
     if (type == "rbf")
     {
@@ -139,7 +140,7 @@ void sequentialIHTP::set_gBaseFunctions(word type,
         gBaseFunctions.resize(gBasisSize);
         gWeights.resize(gBasisSize);
         int thermocouplesCounter = 0;
-        int samplingTimeI = 0;
+        int rbfCenterTimeI = 0;
 	scalar maxX =  Foam::max(mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::X));
 	scalar maxZ =  Foam::max(mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::Z));
 
@@ -150,7 +151,7 @@ void sequentialIHTP::set_gBaseFunctions(word type,
                 mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
             scalar thermocoupleZ =
                 mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
-            scalar sTime = samplingTime[samplingTimeI];
+            //scalar sTime = timeSteps[rbfCenterTimeI];
             
 	    for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
             {
@@ -162,9 +163,10 @@ void sequentialIHTP::set_gBaseFunctions(word type,
                     scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
                     scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - thermocoupleX) / maxX / maxX +
-                                               (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ) / maxZ / maxZ);
+                                               (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ) / maxZ / maxZ);// +
+                    
                                                //(time - sTime) * (time - sTime) / timeSamplesDeltaT / timeSamplesDeltaT );
-		    gBaseFunctions[funcI][timeI][faceI] = Foam::sqrt(1 + (shapeParameter * radius) * (shapeParameter * radius));
+	            gBaseFunctions[funcI][timeI][faceI] = Foam::sqrt(1 + (shapeParameter * radius) * (shapeParameter * radius));
 
                 }
             }
@@ -173,7 +175,7 @@ void sequentialIHTP::set_gBaseFunctions(word type,
             if (thermocouplesCounter == thermocouplesNum)
             {
                 thermocouplesCounter = 0;
-                samplingTimeI++;
+                rbfCenterTimeI++;
             }
         }
     }
@@ -297,7 +299,6 @@ void sequentialIHTP::set_gParametrized(word baseFuncType,
     {
         gWeights[weigthI] = 0; //-10000;
     }
-    Info << "gWeights = " << gWeights << endl;
     forAll(timeSteps, timeI)
     {
         g[timeI].resize(T.boundaryField()[hotSide_ind].size(), 0.0);
@@ -410,13 +411,15 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
         {
+            Info << "\n--------------------------------------\n" << endl;
+            Info << "Base " << baseI + 1 << " of " << Theta.cols() << endl;
+            Info << "\n--------------------------------------\n" << endl;
             restart();
             Ttime.resize(0);
             gWeights = Foam::zero();
             gWeights[baseI] =  1; //1e5
 	    timeSampleI = 0;
             update_gParametrized(gWeights);
-            Info << "Solving for base = " << baseI << endl;
             solveDirect(offline);
 
             for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
@@ -434,11 +437,12 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             }
             Tbasis.append(Ttime);
             Tcomp = fieldValueAtThermocouples(Ttime);
+            M_Assert(Tcomp.size() == addSol.size(), "Something wrong in reading values at the observations points");
+            std::cout << "Tcom = " << Tcomp << std::endl;
 
-            forAll(thermocouplesPos, tcI)
+            for(int i = 0; i < Tcomp.size(); i++)
             {
-                label measI = tcI; 
-                Theta(measI, baseI) = Tcomp(measI) + addSol(measI);
+                Theta(i, baseI) = Tcomp(i) + addSol(i);
             }
         }
 
@@ -447,11 +451,16 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
         ITHACAstream::exportVector(T0_vector, "T0_vector", "eigen", folderOffline);
     }
 
+            Info << "debug 1" << endl;
     Eigen::MatrixXd A = Theta.transpose() * Theta;
+            Info << "debug 2" << endl;
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
                                           Eigen::ComputeThinU | Eigen::ComputeThinV);
+            Info << "debug 333" << endl;
     Eigen::MatrixXd singularValues = svd.singularValues();
+       std::cout << "singularValues = " << std::endl;
     double conditionNumber = singularValues.maxCoeff() / singularValues.minCoeff();
+            Info << "debug 5" << endl;
     Info << "Condition number = " << conditionNumber << endl;
     ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
                                folderOffline);
@@ -505,6 +514,7 @@ void sequentialIHTP::parameterizedBC(word outputFolder,
 	Info << "debug : addSol.size() = " << addSol.size() << endl;
 	Info << "debug : T0_vector.size() = " << T0_vector.size() << endl;
 	TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum * basisDeltaSample);
+	Info << "debug : TmeasShort.size() = " << TmeasShort.size() << endl;
         linSys[0] = Theta.transpose() * Theta;
         linSys[1] = Theta.transpose() * (TmeasShort + addSol - T0_vector);
         Eigen::VectorXd weigths;
@@ -547,6 +557,7 @@ void sequentialIHTP::parameterizedBC(word outputFolder,
         {
             gWeights[weightI] = weigths(weightI);
         }
+        Info << "Weights = \n" << gWeights << endl;
         update_gParametrized(gWeights);
         label verbose = 0;
         parameterizedBC_postProcess(linSys, weigths, outputFolder, verbose);
@@ -890,8 +901,12 @@ Eigen::VectorXd sequentialIHTP::fieldValueAtThermocouples(
     {
         Info << "\n Sampling ONLY between two sampling times \n\n" << endl;
         fieldInt.resize(basisDeltaSample * thermocouplesNum);
-	int sampleTimeI = NtimeStepsBetweenSamples;
-        fieldInt = fieldValueAtThermocouples(fieldList, sampleTimeI);
+        for(int i = 0; i < basisDeltaSample; i++)
+        {
+            fieldInt.segment(thermocouplesNum * i, thermocouplesNum) =
+                fieldValueAtThermocouples(fieldList, NtimeStepsBetweenSamples * i);
+        }
+        Info << "debug : fieldInt.size() = "<< fieldInt.size() << endl;
     }
     else
     {
@@ -904,8 +919,6 @@ Eigen::VectorXd sequentialIHTP::fieldValueAtThermocouples(
 
 void sequentialIHTP::restart(word fieldName)
 {
-    Info << "\nResetting time and fields: " << fieldName << "\n" << endl;
-    Info << "Reinitializing runTime" << endl;
     Time& runTime = _runTime();
     instantList Times = runTime.times();
     runTime.setTime(Times[1], 0);

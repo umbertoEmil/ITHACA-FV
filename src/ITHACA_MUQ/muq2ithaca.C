@@ -4,6 +4,59 @@ namespace ITHACAmuq
 {
 namespace muq2ithaca
 {
+
+std::tuple<double, double> confidenceLevel(Eigen::VectorXd samps, double confidenceInterval)
+{
+    double Z;
+    double mean = samps.mean();
+    Eigen::VectorXd sampsNoMean = samps - Eigen::VectorXd::Ones(samps.size()) * samps.mean();
+    double stdDev = std::sqrt(sampsNoMean.dot(sampsNoMean) / (samps.size() - 1));
+
+    if(confidenceInterval == 0.90)
+    {
+        Z = 1.645;
+    }
+    else if(confidenceInterval == 0.95)
+    {
+        Z = 1.960;
+    }
+    else if(confidenceInterval == 0.98)
+    {
+        Z = 2.326;
+    }
+    else if(confidenceInterval == 0.99)
+    {
+        Z = 2.576;
+    }
+    else
+    {
+        std::cout << "This interval level is not yet implemented\n";
+        std::cout << "Implemented values are 0.90, 0.95, 0.98, 0.99. Exiting\n";
+    }
+    
+    double min = mean - Z * stdDev / std::sqrt(samps.size()); 
+    double max = mean + Z * stdDev / std::sqrt(samps.size()); 
+
+    std::tuple<double, double> output = {min, max};
+    return output;
+}
+
+std::tuple<Eigen::VectorXd, Eigen::VectorXd> confidenceLevel(Eigen::MatrixXd samps, double confidenceInterval)
+{
+    int Nvariables = samps.rows();
+    Eigen::VectorXd min(Nvariables);
+    Eigen::VectorXd max(Nvariables);
+    for(int i = 0; i < samps.rows(); i++)
+    {
+        Eigen::VectorXd sampsI = samps.row(i);
+        auto [m, M] = confidenceLevel(sampsI, confidenceInterval);
+        min(i) = m;
+        max(i) = M;
+    }
+    std::tuple<Eigen::VectorXd, Eigen::VectorXd> output = {min, max};
+    return output;
+}
+
 Eigen::MatrixXd EnsembleKalmanFilter(Eigen::MatrixXd prior,
                                      Eigen::VectorXd measurements,
                                      Eigen::MatrixXd measurementsCov,

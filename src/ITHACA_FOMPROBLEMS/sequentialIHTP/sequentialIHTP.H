@@ -128,7 +128,7 @@ class sequentialIHTP: public laplacianProblem
         label timeSamplesNum;
 	label NtimeStepsBetweenSamples;
 	label timeSampleI;
-        label basisDeltaSample = 1; //Numer of sampling steps to consider when computing offline phase
+        label basisDeltaSample = 2; //Numer of sampling steps to consider when computing offline phase
         List<label> samplingSteps; //symulation timesteps at which there are mesurements
 
 
