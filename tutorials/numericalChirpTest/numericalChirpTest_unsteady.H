@@ -70,9 +70,6 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
             volScalarField& T(_T());
             for (label i = 0; i < T.internalField().size(); i++)
             {
-                auto cx = T.mesh().C()[i].component(vector::X);
-                auto cy = T.mesh().C()[i].component(vector::Y);
-                auto cz = T.mesh().C()[i].component(vector::Z);
 		T.ref()[i] =  initialField.internalField()[i];
             }
         }
@@ -122,13 +119,7 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
                 gTrue[timeI].resize(hotSideSize);
                 forAll(gTrue[timeI], faceI)
                 {
-                    scalar faceX =
-                        mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
-                    scalar faceY =
-                        mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].y();
-                    scalar faceZ =
-                        mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                    gTrue[timeI][faceI] = heatFlux_steady[faceI] + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (maxFrequency* timeSteps[timeI]))); // + 0.8 * heatFlux_steady[faceI] * (std::sin ( 2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI]));
+                    gTrue[timeI][faceI] = heatFlux_steady[faceI] * (1 + 0.5 * (std::sin ( 2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI])));
                 }
 	    }
         }
@@ -143,13 +134,6 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
             Tf.resize(coldSideSize);
             forAll(Tf, faceI)
             {
-                scalar faceX =
-                    mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].x();
-                scalar faceY =
-                    mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].y();
-                scalar faceZ =
-                    mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].z();
-
                 Tf[faceI] = 300;
             }
 	    
@@ -184,69 +168,59 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
 
 	void solveTrue()
 	{
-	    if (ITHACAutilities::check_folder(directOutputFolder))
-	    {
-	        fvMesh& mesh(_mesh());
-	        Ttrue.resize(0);
-	        set_Tf(0);
-	        ITHACAstream::read_fields(mesh, Ttrue, "Ttrue",
-                                  directOutputFolder);
-	    }
-	    else
-	    {
-	        Info << "Performing true computation" << endl;
-                restart();
-                volScalarField& T(_T());
-                Foam::Time& runTime = _runTime();
-	        Info << "Thermal diffusivity = " << diffusivity << " m2/s"<< endl;
+	    Info << "Performing true computation" << endl;
+            restart();
+            volScalarField& T(_T());
+            Foam::Time& runTime = _runTime();
+	    Info << "Thermal diffusivity = " << diffusivity << " m2/s"<< endl;
 
-                simpleControl& simple = _simple();
-	        fv::options& fvOptions(_fvOptions());
+            simpleControl& simple = _simple();
+	    fv::options& fvOptions(_fvOptions());
 
 
-                label timeI = 0;
-	        assignTrueIF();
-	        g = gTrue;
+            label timeI = 0;
+	    assignTrueIF();
+	    g = gTrue;
+	    assignDirectBC(timeI);
+            ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
+                             directOutputFolder,
+                             "Ttrue");
+	    volScalarField gTrueField = list2Field(gTrue[timeI]);
+	    ITHACAstream::exportSolution(gTrueField,
+                                         std::to_string(timeSteps[timeI]), directOutputFolder,
+                                         "gTrue");
+	    Ttrue.resize(0);
+	    Ttrue.append(T);
+            while (runTime.loop())
+            {
+                Info<< "Time = " << runTime.timeName() << nl << endl;
+                timeI++;
 	        assignDirectBC(timeI);
+                while (simple.correctNonOrthogonal())
+                {
+                    fvScalarMatrix TEqn
+                    (
+                        fvm::ddt(T) - fvm::laplacian(DT * diffusivity, T)
+                    );
+
+                    fvOptions.constrain(TEqn);
+                    TEqn.solve();
+                    fvOptions.correct(T);
+                }
                 ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
                                  directOutputFolder,
                                  "Ttrue");
-	        volScalarField gTrueField = list2Field(gTrue[timeI]);
+	        gTrueField = list2Field(gTrue[timeI]);
 	        ITHACAstream::exportSolution(gTrueField,
                                              std::to_string(timeSteps[timeI]), directOutputFolder,
                                              "gTrue");
-	        Ttrue.resize(0);
 	        Ttrue.append(T);
-                while (runTime.loop())
-                {
-                    Info<< "Time = " << runTime.timeName() << nl << endl;
-                    timeI++;
-	            assignDirectBC(timeI);
-                    while (simple.correctNonOrthogonal())
-                    {
-                        fvScalarMatrix TEqn
-                        (
-                            fvm::ddt(T) - fvm::laplacian(DT * diffusivity, T)
-                        );
-
-                        fvOptions.constrain(TEqn);
-                        TEqn.solve();
-                        fvOptions.correct(T);
-                    }
-                    ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
-                                     directOutputFolder,
-                                     "Ttrue");
-	            gTrueField = list2Field(gTrue[timeI]);
-	            ITHACAstream::exportSolution(gTrueField,
-                                                 std::to_string(timeSteps[timeI]), directOutputFolder,
-                                                 "gTrue");
-	            Ttrue.append(T);
-	            Info << endl;
-                    
-                    runTime.printExecutionTime(Info);
-                    runTime.write();
-                }
-	    }
+	        Info << endl;
+                
+                runTime.printExecutionTime(Info);
+                runTime.write();
+            }
+	    
 	    Tmeas = fieldValueAtThermocouples(Ttrue);
 	    forAll(samplingTime, sampleI)
 	    {
@@ -256,25 +230,51 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
             Info<< "End\n" << endl;
 	}
 
-	void inverseProblemPostProcess(word outputFolder)
-	{
-	    fvMesh& mesh(_mesh());
-	    Eigen::VectorXd heatFluxL2norm(timeSteps.size());
-	    Eigen::VectorXd heatFluxLinfNorm(timeSteps.size());
-	    forAll(timeSteps, timeI)
-	    {
-	        volScalarField gTrueField = list2Field(gTrue[timeI]);
-		volScalarField gParametrizedField = list2Field(g[timeI]);
+        void inverseProblemPostProcess(word outputFolder)
+        {
+            fvMesh& mesh(_mesh());
+            Eigen::VectorXd heatFluxL2norm(timeSteps.size());
+            Eigen::VectorXd heatFluxLinfNorm(timeSteps.size());
+            Info << "debug : g.size() = " << g.size() << endl;
+            Info << "debug : timeSteps.size() = " << timeSteps.size() << endl;
+
+            Foam::vector probe1 (0.0, 0.0, 0.6);
+            label cellProbe1 = mesh.findCell(probe1);
+            Eigen::VectorXd probe1_gTrue(timeSteps.size());
+            Eigen::VectorXd probe1_gRec = probe1_gTrue;
+            Eigen::VectorXd probe1_Ttrue = probe1_gTrue;
+            Eigen::VectorXd probe1_Trec = probe1_gTrue;
+
+            Foam::vector probe2 (0.0, 0.015, 0.6);
+            label cellProbe2 = mesh.findCell(probe2);
+            Eigen::VectorXd probe2_Ttrue(timeSteps.size());
+            Eigen::VectorXd probe2_Trec = probe2_Ttrue;
+
+            PtrList<volScalarField> Trec;
+            ITHACAstream::read_fields(Trec, "Treconstructed",
+                                  outputFolder);
+            forAll(timeSteps, timeI)
+            {
+                volScalarField gTrueField = list2Field(gTrue[timeI]);
+                volScalarField gParametrizedField = list2Field(g[timeI]);
                 volScalarField gDiffField = gParametrizedField - gTrueField;
-		ITHACAstream::exportSolution(gTrueField,
+                ITHACAstream::exportSolution(gTrueField,
                                              std::to_string(timeSteps[timeI]), outputFolder,
                                              "gTrue");
-		ITHACAstream::exportSolution(Ttrue[timeI],
+                ITHACAstream::exportSolution(Ttrue[timeI],
                                              std::to_string(timeSteps[timeI]), outputFolder,
                                              "Ttrue");
                 ITHACAstream::exportSolution(gDiffField,
                                              std::to_string(timeSteps[timeI]), outputFolder,
                                              "gDiffField");
+                probe1_gTrue(timeI) = gTrueField[cellProbe1];
+                probe1_gRec(timeI) = gParametrizedField[cellProbe1];
+                probe1_Ttrue(timeI) = Ttrue[timeI][cellProbe1];
+                probe1_Trec(timeI) = Trec[timeI][cellProbe1];
+
+                probe2_Ttrue(timeI) = Ttrue[timeI][cellProbe2];
+                probe2_Trec(timeI) = Trec[timeI][cellProbe2];
+
                 scalar EPS = 1e-6;
                 volScalarField relativeErrorField(gDiffField);
                 for (label i = 0; i < relativeErrorField.internalField().size(); i++)
@@ -295,14 +295,70 @@ class numericalChirpTest_unsteady: public inverseHeatTransferProblem
                                             "hotSide");
                 heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
                                             "hotSide");
-	    }
-	    ITHACAstream::exportVector(heatFluxL2norm, "relErrL2norm", "eigen", outputFolder);
-	    ITHACAstream::exportVector(heatFluxLinfNorm, "relErrLinfNorm", "eigen", outputFolder);
-	    Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
-	    Eigen::VectorXd samplingTime_eigen = Foam2Eigen::List2EigenMatrix(samplingTime);
-	    ITHACAstream::exportVector(timeSteps_eigen, "timeSteps", "eigen", outputFolder);
-	    ITHACAstream::exportVector(samplingTime_eigen, "samplingTime", "eigen", outputFolder);
-	}
+            }
+            ITHACAstream::exportVector(heatFluxL2norm, "relErrL2norm", "eigen", outputFolder);
+            ITHACAstream::exportVector(heatFluxLinfNorm, "relErrLinfNorm", "eigen", outputFolder);
+            Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
+            Eigen::VectorXd samplingTime_eigen = Foam2Eigen::List2EigenMatrix(samplingTime);
+            ITHACAstream::exportVector(timeSteps_eigen, "timeSteps", "eigen", outputFolder);
+            ITHACAstream::exportVector(samplingTime_eigen, "samplingTime", "eigen", outputFolder);
+            ITHACAstream::exportVector(probe1_gTrue, "probe1_gTrue", "eigen", outputFolder);
+            ITHACAstream::exportVector(probe1_gRec, "probe1_gRec", "eigen", outputFolder);
+            ITHACAstream::exportVector(probe1_Ttrue, "probe1_Ttrue", "eigen", outputFolder);
+            ITHACAstream::exportVector(probe1_Trec, "probe1_Trec", "eigen", outputFolder);
+
+            ITHACAstream::exportVector(probe2_Ttrue, "probe2_Ttrue", "eigen", outputFolder);
+            ITHACAstream::exportVector(probe2_Trec, "probe2_Trec", "eigen", outputFolder);
+        }
+
+
+	//void inverseProblemPostProcess(word outputFolder)
+	//{
+	//    fvMesh& mesh(_mesh());
+	//    Eigen::VectorXd heatFluxL2norm(timeSteps.size());
+	//    Eigen::VectorXd heatFluxLinfNorm(timeSteps.size());
+	//    forAll(timeSteps, timeI)
+	//    {
+	//        volScalarField gTrueField = list2Field(gTrue[timeI]);
+	//	volScalarField gParametrizedField = list2Field(g[timeI]);
+        //        volScalarField gDiffField = gParametrizedField - gTrueField;
+	//	ITHACAstream::exportSolution(gTrueField,
+        //                                     std::to_string(timeSteps[timeI]), outputFolder,
+        //                                     "gTrue");
+	//	ITHACAstream::exportSolution(Ttrue[timeI],
+        //                                     std::to_string(timeSteps[timeI]), outputFolder,
+        //                                     "Ttrue");
+        //        ITHACAstream::exportSolution(gDiffField,
+        //                                     std::to_string(timeSteps[timeI]), outputFolder,
+        //                                     "gDiffField");
+        //        scalar EPS = 1e-6;
+        //        volScalarField relativeErrorField(gDiffField);
+        //        for (label i = 0; i < relativeErrorField.internalField().size(); i++)
+        //        {
+        //            if (std::abs(gTrueField.ref()[i]) < EPS)
+        //            {
+        //                relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
+        //            }
+        //            else
+        //            {
+        //                relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / gTrueField.ref()[i];
+        //            }
+        //        }
+        //        ITHACAstream::exportSolution(relativeErrorField,
+        //                                     std::to_string(timeSteps[timeI]), outputFolder,
+        //                                     "relativeErrorField");
+        //        heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
+        //                                    "hotSide");
+        //        heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
+        //                                    "hotSide");
+	//    }
+	//    ITHACAstream::exportVector(heatFluxL2norm, "relErrL2norm", "eigen", outputFolder);
+	//    ITHACAstream::exportVector(heatFluxLinfNorm, "relErrLinfNorm", "eigen", outputFolder);
+	//    Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
+	//    Eigen::VectorXd samplingTime_eigen = Foam2Eigen::List2EigenMatrix(samplingTime);
+	//    ITHACAstream::exportVector(timeSteps_eigen, "timeSteps", "eigen", outputFolder);
+	//    ITHACAstream::exportVector(samplingTime_eigen, "samplingTime", "eigen", outputFolder);
+	//}
 };
 
 #endif

@@ -5,7 +5,6 @@
      ██║   ██║   ██╔══██║██╔══██║██║     ██╔══██║╚════╝██╔══╝  ╚██╗ ██╔╝
      ██║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██║      ██║      ╚████╔╝
      ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝      ╚═╝       ╚═══╝
-
  * In real Time Highly Advanced Computational Applications for Finite Volumes
  * Copyright (C) 2017 by the ITHACA-FV authors
 -------------------------------------------------------------------------------
@@ -137,6 +136,7 @@ class sequentialIHTP: public laplacianProblem
         int offlinePhase;
         int thermocouplesRead;
         int thermocouplesNum;
+        int NtimeBasis;
         int gBasisSize;
         label saveSolInLists = 0;
         double J; //cost funtion  [K^2]

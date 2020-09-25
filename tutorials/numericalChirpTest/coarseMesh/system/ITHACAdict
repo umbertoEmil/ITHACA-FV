@@ -19,11 +19,15 @@ density             8940.0;
 specificHeat        390.0; 
 heatTranferCoeff    5.66e4; 
 Tf                  350.0;
-a		    1100;
-b		    1200;
+a		    1000;
+b		    1500;
 c		    3000;
 d		    14;
-maxFrequency        0.;
+maxFrequency        0.05;
+linSysSolver        TSVD;
+TSVDtruncation      60;
+shapeParameter      2;
+
 
 
 //Test to perform

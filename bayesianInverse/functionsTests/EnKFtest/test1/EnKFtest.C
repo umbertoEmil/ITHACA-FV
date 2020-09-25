@@ -37,8 +37,6 @@ SourceFiles
 #include "MUQ/Utilities/RandomGenerator.h"
 #include "MUQ/Utilities/StringUtilities.h"
 
-#include "./EnKF.h"
-
 #include  <boost/property_tree/ptree.hpp>
 
 #include <iostream>
@@ -64,7 +62,6 @@ SourceFiles
 int main(int argc, char* argv[])
 {
     word outputFolder = "./ITHACAoutput/";
-    muq::Inference::EnsembleKalmanFilter EnKF;
 
     int stateSize = 4;
     int obsSize = 2;

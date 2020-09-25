@@ -454,19 +454,22 @@ void read_fields(
             last_s = min(runTime2.times().size(), n_snap + 2);
         }
 
-        for (int i = 2 + first_snap; i < last_s + first_snap; i++)
+        for (int i = 1 + first_snap; i < last_s + first_snap; i++)
         {
-            GeometricField<Type, PatchField, GeoMesh> tmp_field(
-                IOobject
-                (
-                    Name,
-                    casename + runTime2.times()[i].name(),
-                    mesh,
-                    IOobject::MUST_READ
-                ),
-                mesh
-            );
-            Lfield.append(tmp_field);
+            if (runTime2.times()[i].name() != "0")
+            {
+                GeometricField<Type, PatchField, GeoMesh> tmp_field(
+                    IOobject
+                    (
+                        Name,
+                        casename + runTime2.times()[i].name(),
+                        mesh,
+                        IOobject::MUST_READ
+                    ),
+                    mesh
+                );
+                Lfield.append(tmp_field);
+            }
             printProgress(double(i + 1) / (last_s + first_snap));
         }
 

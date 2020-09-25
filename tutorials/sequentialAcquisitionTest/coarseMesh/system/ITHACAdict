@@ -24,10 +24,10 @@ b		    1200;
 c		    3000;
 d		    14;
 timeBasisType       constant;
-maxFrequency        0.1;
-linSysSolver        TSVD;
-TSVDtruncation      10;
-shapeParameter      2.;
+maxFrequency        0.2;
+linSysSolver        fullPivLU;
+TSVDtruncation      5;
+shapeParameter      .6;
 
 
 //Test to perform

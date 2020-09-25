@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 {
     word outputFolder = "./ITHACAoutput/";
 
-    int Nseeds = 1000;
+    int Nseeds = 10000;
 
     Eigen::MatrixXd A = ITHACAstream::readMatrix("A_mat.txt");
     Eigen::MatrixXd H = ITHACAstream::readMatrix("observation_mat.txt");
@@ -78,12 +78,12 @@ int main(int argc, char* argv[])
     std::cout << "with A = \n" << A << std::endl;
     std::cout << "and b = \n(" << b.transpose() << ") * sin(t)" << std::endl;
 
-    std::cout << "We observe the state x by mean of the observation matrix \nH = " << H << std::endl; 
-    std::cout << "The objective is to reconstruct the vector b kmowing H, x_0, and A" << std::endl; 
+    std::cout << "We observe the state x by mean of the observation matrix \nH = \n" << H << std::endl; 
+    std::cout << "The objective is to reconstruct the vector b knowing H, x_0, and A" << std::endl; 
  
 
-    int Ntimes = 201;
-    int sampleDeltsStep = 3;
+    int Ntimes = 51;
+    int sampleDeltaStep = 1;
     double endTime = 10;
     Eigen::VectorXd time = Eigen::VectorXd::LinSpaced(Ntimes, 0, endTime);
 
@@ -93,14 +93,14 @@ int main(int argc, char* argv[])
     X.col(0) = x0;
     forcer.col(0) = b *0.0;
 
-    int sampleFlag = sampleDeltsStep;
-    int Nsamples = (Ntimes - 1) / sampleDeltsStep;
+    int sampleFlag = sampleDeltaStep;
+    int Nsamples = (Ntimes - 1) / sampleDeltaStep;
     int sampleI = 0;
     Eigen::MatrixXd obs(obsSize, Nsamples);
 
     for(int timeI = 0; timeI < Ntimes - 1; timeI++)
     {
-        forcer.col(timeI + 1) = - b * std::sin(time(timeI+1));
+        forcer.col(timeI + 1) = b * std::sin(time(timeI+1));
 	Eigen::VectorXd xNew = A * xOld + forcer.col(timeI + 1);
 	xOld = xNew;
 	Eigen::VectorXd dNew = H * xNew;
@@ -108,13 +108,12 @@ int main(int argc, char* argv[])
         sampleFlag--;
         if(sampleFlag == 0)
         {
-            sampleFlag = sampleDeltsStep;
+            sampleFlag = sampleDeltaStep;
             obs.col(sampleI) = dNew;
             sampleI++;
         }
     }
-    std::cout << "\nobs = \n" << obs << std::endl;
-    M_Assert(Nsamples == sampleI, "Somthing went wrong in the sampling");
+    M_Assert(Nsamples == sampleI, "Something went wrong in the sampling");
 
     ITHACAstream::exportVector(time, "time", "eigen", outputFolder);
     ITHACAstream::exportMatrix(X, "X", "eigen", outputFolder);
@@ -122,10 +121,8 @@ int main(int argc, char* argv[])
 
     Eigen::VectorXd x = x0;
 
-    Eigen::MatrixXd prior_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.1;
 
-
-    Eigen::MatrixXd meas_cov = Eigen::MatrixXd::Identity(obsSize, obsSize) * 0.05;
+    Eigen::MatrixXd meas_cov = Eigen::MatrixXd::Identity(obsSize, obsSize) * 0.5;
     auto measNoise = std::make_shared<muq::Modeling::Gaussian>(Eigen::VectorXd::Zero(obsSize), meas_cov); 
 
     Eigen::MatrixXd posteriorMean(stateSize, Ntimes);
@@ -144,6 +141,7 @@ int main(int argc, char* argv[])
     Eigen::MatrixXd priorSamples(stateSize, Nseeds);
 
     Eigen::VectorXd prior_mu = b * 0.0;
+    Eigen::MatrixXd prior_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.7;
     auto priorDensity = std::make_shared<muq::Modeling::Gaussian>(prior_mu, prior_cov); 
     for(int i = 0; i < Nseeds; i++)
     {
@@ -151,50 +149,69 @@ int main(int argc, char* argv[])
     }
     posteriorSamples = priorSamples;
     
-    sampleFlag = sampleDeltsStep;
+    sampleFlag = sampleDeltaStep;
     sampleI = 0;
-    Eigen::VectorXd xNew = x0;
+    Eigen::MatrixXd forwardSamples(stateSize, Nseeds);
     for(int timeI = 0; timeI < Ntimes - 1; timeI++)
     {
         std::cout << "Time " << time(timeI + 1) << std::endl;
-        xOld = xNew;
+        priorSamples = posteriorSamples;
+        Eigen::MatrixXd forwardSamplesOld = forwardSamples;
+
+        //Forecast step
+        for(int i = 0; i < Nseeds; i++)
+        {
+            if(timeI == 0)
+            {
+	        forwardSamples.col(i) = A * x0 + priorDensity->Sample();//priorSamples.col(i);
+            }
+            else
+            {
+	        forwardSamples.col(i) = A * forwardSamplesOld.col(i) + priorDensity->Sample();//priorSamples.col(i);
+            }
+        }
+
         sampleFlag--;
         if(sampleFlag == 0)
         {
-            sampleFlag = sampleDeltsStep;
-            priorSamples = posteriorSamples;
+            sampleFlag = sampleDeltaStep;
 	    Eigen::VectorXd meas = obs.col(sampleI);
-
-            //sampling
-            Eigen::MatrixXd forwardSamples(stateSize, Nseeds);
-            for(int i = 0; i < Nseeds; i++)
-            {
-                //priorSamples.col(i) += priorDensity->Sample();
-	        forwardSamples.col(i) = A * xOld + priorSamples.col(i);
-            }
 
 	    //Kalman filter
 	    posteriorSamples = ITHACAmuq::muq2ithaca::EnsembleKalmanFilter(priorSamples, meas, meas_cov, H * forwardSamples);
+            posteriorMean.col(timeI + 1) = posteriorSamples.rowwise().mean();
 
-            singleVariableSamples.row(timeI + 1) = posteriorSamples.row(0); 
-
-	    posteriorMean.col(timeI + 1) = posteriorSamples.rowwise().mean();
+            for(int i = 0; i < Nseeds; i++)
+            {
+                if(timeI == 0)
+                {
+	            forwardSamples.col(i) = A * x0 + posteriorSamples.col(i);
+                }
+                else
+                {
+                    forwardSamples.col(i) = A * forwardSamplesOld.col(i)+ posteriorSamples.col(i);
+                }
+            }
 
             sampleI++;
         }
         else
         {
-            posteriorMean.col(timeI + 1) = posteriorMean.col(timeI);
+            for(int i = 0; i < Nseeds; i++)
+            {
+                posteriorSamples.col(i) += priorDensity->Sample();
+            }
+            posteriorMean.col(timeI + 1) = posteriorSamples.rowwise().mean();
         }
 
-        xNew = A * xOld + posteriorMean.col(timeI + 1);
-        stateRec.col(timeI + 1) = xNew; 
+        singleVariableSamples.row(timeI + 1) = posteriorSamples.row(0); 
+        stateRec.col(timeI + 1) = forwardSamples.rowwise().mean(); 
         minConfidence.col(timeI + 1) = ITHACAmuq::muq2ithaca::quantile(posteriorSamples, 0.05);
         maxConfidence.col(timeI + 1) = ITHACAmuq::muq2ithaca::quantile(posteriorSamples, 0.95);
     }
 
-
     ITHACAstream::exportMatrix(posteriorMean, "posteriorMean", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(obs, "obs", "eigen", outputFolder);
     ITHACAstream::exportMatrix(stateRec, "stateRec", "eigen", outputFolder);
     ITHACAstream::exportMatrix(minConfidence, "minConfidence", "eigen", outputFolder);
     ITHACAstream::exportMatrix(maxConfidence, "maxConfidence", "eigen", outputFolder);

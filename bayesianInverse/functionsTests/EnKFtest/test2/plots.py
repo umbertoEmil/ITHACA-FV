@@ -31,6 +31,7 @@ pylab.rcParams.update(params)
 time = np.loadtxt("./ITHACAoutput/time_mat.txt")
 X = np.loadtxt("./ITHACAoutput/X_mat.txt")
 forcer = np.loadtxt("./ITHACAoutput/forcer_mat.txt")
+obs = np.loadtxt("./ITHACAoutput/obs_mat.txt")
 stateRec = np.loadtxt("./ITHACAoutput/stateRec_mat.txt")
 singleVariableSample = np.loadtxt("./ITHACAoutput/singleVariableSamples_mat.txt")
 posteriorMean = np.loadtxt("./ITHACAoutput/posteriorMean_mat.txt")
@@ -67,8 +68,8 @@ plt.plot(time, posteriorMean[3,:], "o", linewidth = 2, label="p4")
 plt.legend()
 
 fig = plt.figure(3,figsize=(8,6))
-for column in singleVariableSample.T:
-    plt.plot(time, column, "ko", markersize=0.8)
+#for column in singleVariableSample.T:
+#    plt.plot(time, column, "ko", markersize=0.8)
 plt.fill_between(time, minConfidence[0,:], maxConfidence[0,:], color='b', alpha=.1, label= "b(1)")
 plt.plot(time,posteriorMean[0,:], color='b')
 

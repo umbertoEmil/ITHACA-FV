@@ -41,12 +41,12 @@ writeCompression off;
 
 timeFormat      general;
 
-timePrecision   6;
+timePrecision   12;
 
 runTimeModifiable true;
 
 adjustTimeStep  no;
 
-maxCo           1;
+maxCo           0.8;
 
 // ************************************************************************* //

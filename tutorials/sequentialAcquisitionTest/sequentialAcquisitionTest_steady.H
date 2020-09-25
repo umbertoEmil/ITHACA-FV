@@ -75,10 +75,10 @@ class sequentialAcquisitionTest_steady: public inverseLaplacianProblem
         {
             Info << "Computing errors" << endl;
             gFullField.resize(0);
-            ITHACAstream::read_fields(mesh, gFullField, heatFluxFieldName,
+            ITHACAstream::read_fields(gFullField, heatFluxFieldName,
                                       folder);
             PtrList<volScalarField> gTrueField;
-            ITHACAstream::read_fields(mesh, gTrueField, "gTrue",
+            ITHACAstream::read_fields(gTrueField, "gTrue",
                                       folder);
             label Nsolutions = gFullField.size();
             Eigen::MatrixXd heatFluxL2norm;
