@@ -55,6 +55,7 @@ SourceFiles
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "Foam2Eigen.H"
+#include "muq2ithaca.H"
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
 
@@ -63,116 +64,122 @@ int main(int argc, char* argv[])
 {
     word outputFolder = "./ITHACAoutput/";
 
-    int stateSize = 4;
-    int obsSize = 2;
-    int Nseeds = 1000;
+    int Nseeds = 10000;
 
-    Eigen::VectorXd x0(stateSize);
-    x0 << 0.1, 0.2, 0.1, 0.2;
+    Eigen::MatrixXd A = ITHACAstream::readMatrix("A_mat.txt");
+    Eigen::MatrixXd Aw = ITHACAstream::readMatrix("Awrong_mat.txt");
+    Eigen::MatrixXd H = ITHACAstream::readMatrix("observation_mat.txt");
+    M_Assert(ITHACAstream::readMatrix("initialState_mat.txt").cols() == 1, "Wrong initialState input");
+    Eigen::VectorXd x0 = ITHACAstream::readMatrix("initialState_mat.txt").col(0);
+    int stateSize = A.rows();
+    int obsSize = H.rows();
+    std::cout << "In this tutorial we have a dynamical system in the form:\nx_{n+1} = A * x_{n}" << std::endl;
+    std::cout << "with A = \n" << A << std::endl;
 
-    Eigen::MatrixXd A(stateSize, stateSize);
-    A << 1, 0, 0, 0,
-	    0, 1.1, 0, 0,
-	    0, 0, 1, .1,
-	    0, 0, .1, 1;
+    std::cout << "We observe the state x by mean of the observation matrix \nH = \n" << H << std::endl;
+    std::cout << "The objective is to reconstruct the vector state knowing H and x0 but having a wrong A" << std::endl;
+    std::cout << "A_wrong =\n" << Aw << std::endl;
 
-    Eigen::MatrixXd H(obsSize, stateSize); //Observation Matrix
-    H << 1, 0, 0, 0,
-	    0, 0, 0, 1;
- 
-    Eigen::VectorXd b = x0 + Eigen::VectorXd::Ones(x0.size()) * 2.0;
 
-    int Ntimes = 11;
+    int Ntimes = 21;
+    int sampleDeltaStep = 3;
     double endTime = 10;
     Eigen::VectorXd time = Eigen::VectorXd::LinSpaced(Ntimes, 0, endTime);
-
+ 
     Eigen::VectorXd xOld = x0;
-    Eigen::MatrixXd obs(obsSize,Ntimes - 1);
     Eigen::MatrixXd X(stateSize,Ntimes);
     X.col(0) = x0;
+   
+    int sampleFlag = sampleDeltaStep;
+    int Nsamples = (Ntimes - 1) / sampleDeltaStep;
+    int sampleI = 0;
+    Eigen::MatrixXd obs(obsSize, Nsamples);
+
     for(int timeI = 0; timeI < Ntimes - 1; timeI++)
     {
-	Eigen::VectorXd xNew = A * xOld + b;
-	xOld = xNew;
-	Eigen::VectorXd dNew = H * xNew;
+        Eigen::VectorXd xNew = A * xOld;
+        xOld = xNew;
+        Eigen::VectorXd dNew = H * xNew;
         X.col(timeI + 1) = xNew;
-        obs.col(timeI) = dNew;
+        sampleFlag--;
+        if(sampleFlag == 0)
+        {
+            sampleFlag = sampleDeltaStep;
+            obs.col(sampleI) = dNew;
+            sampleI++;
+        }
     }
+    M_Assert(Nsamples == sampleI, "Something went wrong in the sampling");
 
     ITHACAstream::exportVector(time, "time", "eigen", outputFolder);
     ITHACAstream::exportMatrix(X, "X", "eigen", outputFolder);
 
     Eigen::VectorXd x = x0;
 
-    Eigen::MatrixXd prior_cov(stateSize, stateSize);
-    prior_cov << 0.5, .0, .0, .0,
-           .0, 0.8, .0, .0,
-	   .0, .0, .8, .0,
-	   .0, .0, .0, .8;
+    Eigen::VectorXd prior_mu = x * 0.0;
+    Eigen::MatrixXd prior_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.7;
+    auto priorDensity = std::make_shared<muq::Modeling::Gaussian>(prior_mu, prior_cov);
+
+    Eigen::VectorXd modelError_mu = x * 0.0;
+    Eigen::MatrixXd modelError_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.1;
+    auto modelErrorDensity = std::make_shared<muq::Modeling::Gaussian>(modelError_mu, modelError_cov);
+
+    Eigen::MatrixXd posteriorSamples(stateSize, Nseeds);
+    Eigen::MatrixXd priorSamples(stateSize, Nseeds);
+
+    for(int i = 0; i < Nseeds; i++)
+    {
+        priorSamples.col(i) = priorDensity->Sample();
+    }
+    posteriorSamples = priorSamples;
 
 
-    Eigen::MatrixXd meas_cov(obsSize, obsSize);
-    meas_cov << 0.02, .0,
-	   .0, .02;
+    Eigen::MatrixXd meas_cov = Eigen::MatrixXd::Identity(obsSize, obsSize) * 0.3;
     auto measNoise = std::make_shared<muq::Modeling::Gaussian>(Eigen::VectorXd::Zero(obsSize), meas_cov); 
+
     Eigen::MatrixXd posteriorMean(stateSize, Ntimes);
+    Eigen::MatrixXd minConfidence = posteriorMean;
+    Eigen::MatrixXd maxConfidence = minConfidence;
+
     posteriorMean.col(0) = x0;
 
-    b = b *0.8;
-    
+    sampleFlag = sampleDeltaStep;
+    sampleI = 0;
+    Eigen::MatrixXd forwardSamples(stateSize, Nseeds);
     for(int timeI = 0; timeI < Ntimes - 1; timeI++)
     {
-	Eigen::VectorXd meas = obs.col(timeI);
-	Eigen::VectorXd prior_mu = posteriorMean.col(timeI);
-        auto priorDensity = std::make_shared<muq::Modeling::Gaussian>(prior_mu, prior_cov); 
+        std::cout << "Time " << time(timeI + 1) << std::endl;
+        priorSamples = posteriorSamples;
+        Eigen::MatrixXd forwardSamplesOld = forwardSamples;
 
-        //sampling
-        Eigen::MatrixXd priorSamples(stateSize, Nseeds);
-        Eigen::MatrixXd forwardSamples(stateSize, Nseeds);
-        Eigen::MatrixXd measSamples(obsSize, Nseeds);
+        //Forecast step
         for(int i = 0; i < Nseeds; i++)
         {
-            priorSamples.col(i) = priorDensity->Sample();
-	    forwardSamples.col(i) = A * priorSamples.col(i) + b;
-	    measSamples.col(i) = meas + measNoise->Sample(); 
+            forwardSamples.col(i) = A * priorSamples.col(i) + modelErrorDensity->Sample();
         }
 
-	//Kalman filter
-	Eigen::MatrixXd As = forwardSamples;
-        for(int i = 0; i < Nseeds; i++)
+        sampleFlag--;
+        if(sampleFlag == 0)
         {
-	    As.col(i) = forwardSamples.col(i) - forwardSamples.rowwise().mean();
+            sampleFlag = sampleDeltaStep;
+            Eigen::VectorXd meas = obs.col(sampleI);
+
+            //Kalman filter
+            posteriorSamples = ITHACAmuq::muq2ithaca::EnsembleKalmanFilter(forwardSamples, meas, meas_cov, H * forwardSamples);
+            sampleI++;
         }
-
-	Eigen::MatrixXd C = As * As.transpose() / (Nseeds - 1);
-
-	Eigen::MatrixXd Y = measSamples - H * forwardSamples; //diff measurement data and simulated data
-
-	Eigen::MatrixXd P = meas_cov + H * C * H.transpose(); //part which has to be inverted
-
-	Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(P);
-        auto P_rank = lu_decomp.rank();
-
-	if (P_rank < P.cols() || P_rank < P.rows())
-	{
-	    Info << "P not invertible, exiting" << endl;
-	    std::cout << P << std::endl;
-	    exit(10);
-	}
-	else
-	{
-	    P = P.inverse();
-	}
-
-	Eigen::MatrixXd posteriorSample = forwardSamples + C * H.transpose() * P * Y;
-	posteriorMean.col(timeI + 1) = posteriorSample.rowwise().mean();
+        else
+        {
+            posteriorSamples = forwardSamples;
+        }
+        posteriorMean.col(timeI + 1) = posteriorSamples.rowwise().mean();
+        minConfidence.col(timeI + 1) = ITHACAmuq::muq2ithaca::quantile(posteriorSamples, 0.05);
+        maxConfidence.col(timeI + 1) = ITHACAmuq::muq2ithaca::quantile(posteriorSamples, 0.95);
     }
+
     ITHACAstream::exportMatrix(posteriorMean, "posteriorMean", "eigen", outputFolder);
-
-
-
-     
-
+    ITHACAstream::exportMatrix(minConfidence, "minConfidence", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(maxConfidence, "maxConfidence", "eigen", outputFolder);
 
     return 0;
 }
