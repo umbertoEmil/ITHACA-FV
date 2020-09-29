@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      ITHACAdict;
+}
+
+interpolation       0;
+cgIterMax           200;
+Jtolerance          1e-3;
+JrelativeTolerance  1e-6;
+
+thermocouplesNumber 16;
+thermalConductivity 1.0;
+heatTranferCoeff    1.0;
+Tf                  0.0;
+
+NumberErrorTests  100;
+
+//Test to perform
+regularizationSetupTest  0;
+parameterizedBCerrorTest_TSVD 1;
+
+// Regularization method
+TSVDregularization  0;
+TikhonovRegularization  0;
+PCGregularization  1;

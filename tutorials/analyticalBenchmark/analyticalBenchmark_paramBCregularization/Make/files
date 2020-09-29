@@ -1,3 +1,0 @@
-analyticalBenchmark_paramBCregularization.C
-
-EXE = $(FOAM_USER_APPBIN)/analyticalBenchmark_paramBCregularization
