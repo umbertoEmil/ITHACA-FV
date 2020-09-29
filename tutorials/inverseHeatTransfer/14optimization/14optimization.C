@@ -1,0 +1,1734 @@
+/*---------------------------------------------------------------------------*\
+     ██╗████████╗██╗  ██╗ █████╗  ██████╗ █████╗       ███████╗██╗   ██╗
+     ██║╚══██╔══╝██║  ██║██╔══██╗██╔════╝██╔══██╗      ██╔════╝██║   ██║
+     ██║   ██║   ███████║███████║██║     ███████║█████╗█████╗  ██║   ██║
+     ██║   ██║   ██╔══██║██╔══██║██║     ██╔══██║╚════╝██╔══╝  ╚██╗ ██╔╝
+     ██║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██║      ██║      ╚████╔╝
+     ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝      ╚═╝       ╚═══╝
+
+ * In real Time Highly Advanced Computational Applications for Finite Volumes
+ * Copyright (C) 2017 by the ITHACA-FV authors
+-------------------------------------------------------------------------------
+License
+    This file is part of ITHACA-FV
+    ITHACA-FV is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    ITHACA-FV is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Lesser General Public License for more details.
+    You should have received a copy of the GNU Lesser General Public License
+    along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
+Description
+    Example of a heat transfer Reduction Problem
+SourceFiles
+    14optimization.C
+\*---------------------------------------------------------------------------*/
+
+#include <iostream>
+#include "fvCFD.H"
+#include "fvOptions.H"
+#include "simpleControl.H"
+#include "IOmanip.H"
+#include "Time.H"
+#include "laplacianProblem.H"
+#include "inverseLaplacianProblem.H"
+#include "reducedInverseLaplacian.H"
+// #include "reducedLaplacian.H"
+#include "ITHACAPOD.H"
+#include "ITHACAutilities.H"
+//#include "ITHACAbayesian.H"
+#include <Eigen/Dense>
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include "Foam2Eigen.H"
+#include "mixedFvPatchFields.H"
+#include "cellDistFuncs.H"
+
+using namespace SPLINTER;
+
+class Tutorial14: public inverseLaplacianProblem
+{
+    public:
+        explicit Tutorial14(int argc, char* argv[])
+            :
+            inverseLaplacianProblem(argc, argv),
+            T(_T()),
+            lambda(_lambda()),
+            deltaT(_deltaT()),
+            mesh(_mesh()),
+            runTime(_runTime())
+        {
+            hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
+            coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
+            interpolationPlaneDefined = 0;
+            cgIter = 0;
+            thermocouplesRead = 0;
+        }
+        volScalarField& T;
+        volScalarField& lambda;
+        volScalarField& deltaT;
+        fvMesh& mesh;
+        Time& runTime;
+
+        PtrList<volScalarField> gField;
+        PtrList<volScalarField> TredField;
+        PtrList<volScalarField> TfullField;
+        PtrList<volScalarField> lambdaFullField;
+        PtrList<volScalarField> deltaTfullField;
+        PtrList<volScalarField> TdiffField;
+        PtrList<volScalarField> gFullField;
+        PtrList<volScalarField> gDiffField;
+        PtrList<volScalarField> gRelErrField;
+
+        void readThermocouples()
+        {
+            fvMesh& mesh = _mesh();
+
+            if (!thermocouplesRead)
+            {
+                //Define the locations of the thermocouples
+                //All dimensions are in [m]
+                // Danieli's thermocouples
+                label thermocouplesRows = 10;
+                label thermocouplesCols = 9;
+                Eigen::VectorXd thermocouplesX = Eigen::ArrayXd::LinSpaced(9, 0.197, 1.773);
+                Eigen::VectorXd thermocouplesZ;
+                thermocouplesZ.resize(thermocouplesRows);
+                thermocouplesZ << 0.120, 0.2215, 0.3225, 0.4335, 0.5445, 0.6555, 0.7665, 0.8775,
+                               0.9885, 1.08;
+                scalar thermocouplesY = 0.015;
+                thermocouplesCellID.resize(thermocouplesNum);
+                thermocouplesCellProc.resize(thermocouplesNum);
+                thermocouplesCellC.resize(thermocouplesNum);
+                Tmeas.resize(thermocouplesNum);
+                Tdirect.resize(thermocouplesNum);
+                Tsens.resize(thermocouplesNum);
+                Tdiff.resize(thermocouplesNum);
+                label cellID = 0;
+
+                for (label rowI = 0; rowI < thermocouplesRows; rowI++)
+                {
+                    for (label colI = 0; colI < thermocouplesCols; colI++)
+                    {
+                        thermocouplesCellID[cellID] =
+                            mesh.findCell(point(thermocouplesX(colI),
+                                                thermocouplesY,
+                                                thermocouplesZ(rowI)));
+                        cellID++;
+                    }
+                }
+
+                //thermocouplesCellID [0]  = mesh.findCell(point( 0.3, 0.05, 0.9 ));
+                //thermocouplesCellID [1]  = mesh.findCell(point( 0.6, 0.05, 0.9 ));
+                //thermocouplesCellID [2]  = mesh.findCell(point( 0.9, 0.05, 0.9 ));
+                //thermocouplesCellID [3]  = mesh.findCell(point( 1.2, 0.05, 0.9 ));
+                //thermocouplesCellID [4]  = mesh.findCell(point( 1.5, 0.05, 0.9 ));
+                //thermocouplesCellID [5]  = mesh.findCell(point( 0.3, 0.05, 0.6 ));
+                //thermocouplesCellID [6]  = mesh.findCell(point( 0.6, 0.05, 0.6 ));
+                //thermocouplesCellID [7]  = mesh.findCell(point( 0.9, 0.05, 0.6 ));
+                //thermocouplesCellID [8]  = mesh.findCell(point( 1.2, 0.05, 0.6 ));
+                //thermocouplesCellID [9]  = mesh.findCell(point( 1.5, 0.05, 0.6 ));
+                //thermocouplesCellID [10] = mesh.findCell(point( 0.3, 0.05, 0.3 ));
+                //thermocouplesCellID [11] = mesh.findCell(point( 0.6, 0.05, 0.3 ));
+                //thermocouplesCellID [12] = mesh.findCell(point( 0.9, 0.05, 0.3 ));
+                //thermocouplesCellID [13] = mesh.findCell(point( 1.2, 0.05, 0.3 ));
+                //thermocouplesCellID [14] = mesh.findCell(point( 1.5, 0.05, 0.3 ));
+            }
+            else
+            {
+                WarningInFunction << "readThermocouples function called twice." << endl;
+                WarningInFunction << "I am not doing the second reading." << endl;
+            }
+
+            defineThermocouplesPlane();
+        }
+
+        scalar L2norm_g(volScalarField& field1, volScalarField& field2)
+        {
+            scalar L2 = 0;
+            //Access the mesh information for the boundary
+            const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+            //List of cells close to a boundary
+            const labelUList& faceCells = cPatch.faceCells();
+            forAll(cPatch, faceI)
+            {
+                scalar faceX = mesh.Cf().boundaryField()[hotSide_ind][faceI][0];
+                scalar faceZ = mesh.Cf().boundaryField()[hotSide_ind][faceI][2];
+
+                if (isInPlane(faceX, faceZ))
+                {
+                    //id of the owner cell having the face
+                    label faceOwner = faceCells[faceI] ;
+                    scalar faceArea = mesh.magSf().boundaryField()[hotSide_ind][faceI];
+                    scalar relErr = (field1[faceOwner] - field2[faceOwner]) / field2[faceOwner];
+                    L2 += faceArea * relErr * relErr;
+                }
+            }
+            return Foam::sqrt(L2);
+        }
+
+        scalar LinfinityErrorNorm(volScalarField& field1, volScalarField& field2)
+        {
+            scalar Linfty = 0;
+            //Access the mesh information for the boundary
+            const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+            //List of cells close to a boundary
+            const labelUList& faceCells = cPatch.faceCells();
+            label firstElement = 1;
+            forAll(cPatch, faceI)
+            {
+                scalar faceX = mesh.Cf().boundaryField()[hotSide_ind][faceI][0];
+                scalar faceZ = mesh.Cf().boundaryField()[hotSide_ind][faceI][2];
+
+                if (isInPlane(faceX, faceZ))
+                {
+                    //id of the owner cell having the face
+                    label faceOwner = faceCells[faceI] ;
+                    scalar fieldsDiff = field1[faceOwner] - field2[faceOwner];
+                    scalar value = fieldsDiff * fieldsDiff / (field2[faceOwner] *
+                                   field2[faceOwner]);
+                    value = Foam::sqrt(value);
+
+                    if (firstElement)
+                    {
+                        Linfty = value;
+                        firstElement = 0;
+                    }
+                    else if (Linfty < value)
+                    {
+                        Linfty = value;
+                    }
+                }
+            }
+            return Linfty;
+        }
+
+        void computeRelativeErrorFields()
+        {
+            //Access the mesh information for the boundary
+            const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+            //List of cells close to a boundary
+            const labelUList& faceCells = cPatch.faceCells();
+            gRelErrField = gField;
+            forAll(gField, testI)
+            {
+                forAll(cPatch, faceI)
+                {
+                    label faceOwner = faceCells[faceI] ;
+                    gRelErrField[testI][faceOwner] = (gField[testI][faceOwner] -
+                                                      gFullField[0][faceOwner]) /  (gFullField[0][faceOwner]);
+                }
+            }
+        }
+
+        PtrList<volScalarField> differenceField (PtrList<volScalarField>& field1,
+                PtrList<volScalarField>& field2)
+        {
+            PtrList<volScalarField> fieldDiff(field1);
+
+            if (field2.size() == fieldDiff.size())
+            {
+                for (label i = 0; i < fieldDiff.size(); i++)
+                {
+                    fieldDiff[i] = (field1[i] - field2[i]);
+                }
+            }
+            else if (field2.size() == 1)
+            {
+                for (label i = 0; i < fieldDiff.size(); i++)
+                {
+                    fieldDiff[i] = (field1[i] - field2[0]);
+                }
+            }
+            else
+            {
+                Info << "Don't know how to behave in differenceField" << endl;
+                Info << "the two fields have different size" << endl;
+                Info << "Size field1 = " << field1.size()
+                     << "Size field2 = " << field2.size() << endl;
+            }
+
+            return fieldDiff;
+        }
+
+        PtrList<volScalarField> relativeDifferenceField (PtrList<volScalarField>&
+                field1, PtrList<volScalarField>& field2)
+        {
+            PtrList<volScalarField> fieldDiff;
+
+            if (field2.size() == fieldDiff.size())
+            {
+                for (label i = 0; i < field1.size(); i++)
+                {
+                    fieldDiff.append((field1[i] - field2[i]) / field2[i]);
+                }
+            }
+            else if (field2.size() == 1)
+            {
+                for (label i = 0; i < field1.size(); i++)
+                {
+                    fieldDiff.append((field1[i] - field2[0]) / field2[0]);
+                }
+            }
+            else
+            {
+                Info << "WARNING:" << endl;
+                Info << "Don't know how to behave in relativeDifferenceField" << endl;
+                Info << "the two fields have different size" << endl;
+                Info << "Size field1 = " << field1.size()
+                     << ", Size field2 = " << field2.size() << endl;
+            }
+
+            return fieldDiff;
+        }
+
+        void computeTdiff()
+        {
+            TdiffField = TredField;
+            forAll(TdiffField, testI)
+            {
+                TdiffField[testI] = TredField[testI] - TfullField[0];
+            }
+        }
+
+        int isInPlane(double cx, double cz)
+        {
+            return (cx >= interpolationPlane.minX -
+                    interpolationPlane.thermocoupleCellDim[0] / 4 &&
+                    cz >= interpolationPlane.minZ - interpolationPlane.thermocoupleCellDim[2] / 4 &&
+                    cx <= interpolationPlane.maxX + interpolationPlane.thermocoupleCellDim[0] / 4 &&
+                    cz <= interpolationPlane.maxZ + interpolationPlane.thermocoupleCellDim[2] / 4
+                   );
+        }
+
+        // To be added to ITHACAutilities
+        scalar list2norm(List<scalar> list)
+        {
+            scalar norm = 0;
+            forAll(list, I)
+            {
+                norm += list[I] * list[I];
+            }
+            return Foam::sqrt(norm);
+        }
+
+        void parameterizedBC_postProcess(word folder, scalar innerField = 0.0)
+        {
+            Info << "Computing errors" << endl;
+            gFullField.resize(0);
+            ITHACAstream::read_fields(mesh, gFullField, "gParametrized",
+                                      folder);
+            solveTrue();
+            PtrList<volScalarField> gTrueField;
+            gTrueField.resize(0);
+            gTrueField.append(list2Field(gTrue, innerField));
+            gDiffField = relativeDifferenceField(gFullField,
+                                                 gTrueField);
+            forAll(gFullField, solutionI)
+            {
+                volScalarField relErrField = (gFullField[solutionI] - gTrueField[0]) /
+                                             gTrueField[0] ;
+                forAll(gFullField[solutionI], faceI)
+                {
+                    relErrField[faceI] =
+                        Foam::sqrt(relErrField[faceI] *
+                                   relErrField[faceI]);
+                }
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(solutionI + 1), folder,
+                                             "relErrField");
+            }
+            Eigen::MatrixXd errorG_L2norm;
+            errorG_L2norm.resize(gFullField.size(), 1);
+            Eigen::MatrixXd errorG_LinfNorm = errorG_L2norm;
+            gTrueField.resize(0);
+
+            for (int i = 0; i < errorG_L2norm.rows() ; i++)
+            {
+                gTrueField.append(list2Field(gTrue, innerField));
+                errorG_L2norm(i, 0) = L2norm_g(gFullField[i], gTrueField[0]);
+                errorG_LinfNorm(i, 0) = LinfinityErrorNorm(gFullField[i],
+                                        gTrueField[0]);
+            }
+
+            ITHACAstream::exportMatrix(errorG_L2norm, "relError_L2norm", "eigen",
+                                       folder);
+            ITHACAstream::exportMatrix(errorG_LinfNorm, "relError_LinfNorm", "eigen",
+                                       folder);
+            //ITHACAstream::exportFields(gDiffField, folder, "gDiff");
+            ITHACAstream::exportFields(gTrueField, folder, "gTrue");
+        }
+
+        void fullOrderTest()
+        {
+            Info << endl;
+            Info << "*********************************************************" << endl;
+            Info << "Performing test for the full order inverse solver" << endl;
+            Info << endl;
+            solveTrue();
+            ITHACAstream::exportSolution(T, "1", "./ITHACAoutput/fullOrderTest/",
+                                         "Ttrue");
+            volScalarField trueHeatFluxField = list2Field(gTrue);
+            ITHACAstream::exportSolution(trueHeatFluxField,
+                                         "1", "./ITHACAoutput/fullOrderTest/",
+                                         "gTrue");
+            saveSolInLists = 1;
+
+            if (conjugateGradient())
+            {
+                Info << "CG converged" << endl;
+                PtrList<volScalarField> heatFluxField;
+                volScalarField gTrueField = list2Field(gTrue);
+                Eigen::MatrixXd heatFluxL2norm;
+                Eigen::MatrixXd heatFluxLinftyNorm;
+                heatFluxL2norm.resize(gList.size(), 1);
+                heatFluxLinftyNorm.resize(gList.size(), 1);
+                //heatFluxField.append(list2Field(gList[0] * 0.0));
+                //heatFluxL2norm(0) = L2norm_g(heatFluxField[0], gTrueField);
+                //heatFluxLinftyNorm(0) = LinfinityErrorNorm(heatFluxField[0], gTrueField);
+                forAll(gList, solutionI)
+                {
+                    heatFluxField.append(list2Field(gList[solutionI]));
+                    List<scalar> heatFluxRelErrList;
+                    forAll(gTrue, faceI)
+                    {
+                        scalar errValue = (gList[solutionI][faceI] - gTrue[faceI]) / gTrue[faceI];
+                        heatFluxRelErrList.append( Foam::sqrt(errValue * errValue) );
+                    }
+                    volScalarField heatFluxRelErrField = list2Field(heatFluxRelErrList);
+                    ITHACAstream::exportSolution(heatFluxRelErrField, std::to_string(solutionI + 1),
+                                                 "./ITHACAoutput/fullOrderTest/",
+                                                 "g_relErr");
+                    ITHACAstream::exportSolution(heatFluxField[solutionI],
+                                                 std::to_string(solutionI + 1), "./ITHACAoutput/fullOrderTest/",
+                                                 "g");
+                    heatFluxL2norm(solutionI) = L2norm_g(heatFluxField[solutionI], gTrueField);
+                    heatFluxLinftyNorm(solutionI) = LinfinityErrorNorm(heatFluxField[solutionI],
+                                                    gTrueField);
+                }
+                ITHACAstream::exportMatrix(heatFluxL2norm, "heatFluxL2norm", "python",
+                                           "./ITHACAoutput/fullOrderTest/");
+                ITHACAstream::exportMatrix(heatFluxLinftyNorm, "heatFluxLinftyNorm", "python",
+                                           "./ITHACAoutput/fullOrderTest/");
+                // sigmaIn is only to see whether the inPlane function is working
+                volScalarField sigmaIn(T);
+                const polyPatch& cPatch = mesh.boundaryMesh()[hotSide_ind];
+                const labelUList& faceCells = cPatch.faceCells();
+                forAll(cPatch, faceI)
+                {
+                    label faceOwner = faceCells[faceI] ;
+                    scalar faceX = mesh.Cf().boundaryField()[hotSide_ind][faceI][0];
+                    scalar faceZ = mesh.Cf().boundaryField()[hotSide_ind][faceI][2];
+
+                    if (isInPlane(faceX, faceZ))
+                    {
+                        sigmaIn[faceOwner] = 1;
+                    }
+                    else
+                    {
+                        sigmaIn[faceOwner] = 0;
+                    }
+                }
+                ITHACAstream::exportSolution(sigmaIn, std::to_string(gList.size()),
+                                             "./ITHACAoutput/fullOrderTest/",
+                                             "sigmaIn");
+            }
+            else
+            {
+                Info << "CG did not converged" << endl;
+            }
+
+            Info << "*********************************************************" << endl;
+            Info << endl;
+        }
+
+        void fullOrderTestError()
+        {
+            Info << endl;
+            Info << "*********************************************************" << endl;
+            Info << "Performing test for the full order inverse solver" << endl;
+            Info << endl;
+            solveTrue();
+            ITHACAstream::exportSolution(T, "1", "./ITHACAoutput/fullOrderTest/",
+                                         "Ttrue");
+            volScalarField trueHeatFluxField = list2Field(gTrue);
+            ITHACAstream::exportSolution(trueHeatFluxField,
+                                         "1", "./ITHACAoutput/fullOrderTest/",
+                                         "gTrue");
+            saveSolInLists = 0;
+            int Ntests = 500;
+            PtrList<volScalarField> heatFluxField;
+            volScalarField gTrueField = list2Field(gTrue);
+            Eigen::MatrixXd heatFluxL2norm;
+            Eigen::MatrixXd heatFluxLinftyNorm;
+            heatFluxL2norm.resize(Ntests, 1);
+            heatFluxLinftyNorm.resize(Ntests, 1);
+
+            for (int i = 0; i < Ntests; i++)
+            {
+                solveTrue();
+
+                if (conjugateGradient())
+                {
+                    Info << "CG converged" << endl;
+                    heatFluxField.append(list2Field(g));
+                    List<scalar> heatFluxRelErrList;
+                    forAll(gTrue, faceI)
+                    {
+                        scalar errValue = (g[faceI] - gTrue[faceI]) / gTrue[faceI];
+                        heatFluxRelErrList.append( Foam::sqrt(errValue * errValue) );
+                    }
+                    volScalarField heatFluxRelErrField = list2Field(heatFluxRelErrList);
+                    ITHACAstream::exportSolution(heatFluxRelErrField, std::to_string(i + 1),
+                                                 "./ITHACAoutput/fullOrderTestError/",
+                                                 "g_relErr");
+                    ITHACAstream::exportSolution(heatFluxField[heatFluxField.size() - 1],
+                                                 std::to_string(i + 1), "./ITHACAoutput/fullOrderTestError/",
+                                                 "g");
+                    heatFluxL2norm(i) = L2norm_g(heatFluxField[heatFluxField.size() - 1],
+                                                 gTrueField);
+                    heatFluxLinftyNorm(i) = LinfinityErrorNorm(heatFluxField[heatFluxField.size() -
+                                                                 1],
+                                            gTrueField);
+                }
+                else
+                {
+                    Info << "CG did not converged" << endl;
+                }
+            }
+
+            ITHACAstream::exportMatrix(heatFluxL2norm, "heatFluxL2norm", "eigen",
+                                       "./ITHACAoutput/fullOrderTestError/");
+            ITHACAstream::exportMatrix(heatFluxLinftyNorm, "heatFluxLinftyNorm", "eigen",
+                                       "./ITHACAoutput/fullOrderTestError/");
+            Info << "*********************************************************" << endl;
+            Info << endl;
+        }
+
+};
+
+
+
+
+int main(int argc, char* argv[])
+{
+    solverPerformance::debug = 0; //No verbose output
+    double time;
+    Tutorial14 example(argc, argv);
+    //Read thermocouple samples matrix
+    example.muSamples = cnpy::load(example.muSamples, "thermocouplesSamples.npy");
+    // Reading parameters from ITHACAdict
+    ITHACAparameters para;
+    // Tests to do
+    label fullOrderTest = para.ITHACAdict->lookupOrDefault<int>("fullOrderTest", 0);
+    label fullOrderTestError =
+        para.ITHACAdict->lookupOrDefault<int>("fullOrderTestError", 0);
+    label parameterizedBC_RBFtest =
+        para.ITHACAdict->lookupOrDefault<int>("parameterizedBC_RBFtest", 0);
+    label parameterizedBC_RBFnumberTest =
+        para.ITHACAdict->lookupOrDefault<int>("parameterizedBC_RBFnumberTest", 0);
+    label parameterizedBC_PODtest =
+        para.ITHACAdict->lookupOrDefault<int>("parameterizedBC_PODtest", 0);
+    label parameterizedBCerrorTest =
+        para.ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest", 0);
+    label parameterizedBCerrorTest_TSVD =
+        para.ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest_TSVD", 0);
+    label parameterizedBCregularizationTest =
+        para.ITHACAdict->lookupOrDefault<int>("parameterizedBCregularizationTest", 0);
+    label MarquardtTest = para.ITHACAdict->lookupOrDefault<int>("MarquardtTest", 0);
+    label podHeatFluxMarquardtTest =
+        para.ITHACAdict->lookupOrDefault<int>("podHeatFluxMarquardtTest", 0);
+    label reducedMarquardtTest =
+        para.ITHACAdict->lookupOrDefault<int>("reducedMarquardtTest", 0);
+    label testNumberOfBasis =
+        para.ITHACAdict->lookupOrDefault<int>("testNumberOfBasis", 0);
+    label reducedCGimplementationTest =
+        para.ITHACAdict->lookupOrDefault<int>("reducedCGimplementationTest", 0);
+    label speedUpTest = para.ITHACAdict->lookupOrDefault<int>("speedUpTest", 0);
+    int NmodesParamBC = para.ITHACAdict->lookupOrDefault<int>("NmodesParamBC", 0);
+    int NmodesTout = para.ITHACAdict->lookupOrDefault<int>("NmodesTout", 15);
+    int NmodesTproj = para.ITHACAdict->lookupOrDefault<int>("NmodesTproj", 10);
+    int NmodesLambdaOut = para.ITHACAdict->lookupOrDefault<int>("NmodesLambdaOut",
+                          15);
+    int NmodesLambdaProj = para.ITHACAdict->lookupOrDefault<int>("NmodesLambdaProj",
+                           10);
+    int NmodesDeltaTout = para.ITHACAdict->lookupOrDefault<int>("NmodesDeltaTout",
+                          15);
+    int NmodesDeltaTproj = para.ITHACAdict->lookupOrDefault<int>("NmodesDeltaTproj",
+                           10);
+    example.NmodesT = NmodesTproj;
+    example.NmodesLambda = NmodesLambdaProj;
+    example.NmodesDeltaT = NmodesDeltaTproj;
+    example.cgIterMax = para.ITHACAdict->lookupOrDefault<int>("cgIterMax", 100);
+    example.thermocouplesNum =
+        para.ITHACAdict->lookupOrDefault<int>("thermocouplesNumber", 0);
+    M_Assert(example.thermocouplesNum > 0, "Number of thermocouples not specified");
+    example.interpolation = para.ITHACAdict->lookupOrDefault<int>("interpolation",
+                            1);
+    example.Jtol =  para.ITHACAdict->lookupOrDefault<double>("Jtolerance",
+                    0.000001);
+    example.JtolRel =
+        para.ITHACAdict->lookupOrDefault<double>("JrelativeTolerance",
+                0.001);
+    example.k = para.ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
+    M_Assert(example.k > 0, "thermalConductivity, k, not specified");
+    example.H = para.ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
+    double Tf = para.ITHACAdict->lookupOrDefault<double>("Tf", 300.0);
+    double refGrad = para.ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
+    double valueFraction = para.ITHACAdict->lookupOrDefault<double>("valueFraction",
+                           0.0);
+    // Setting BC at the cold side
+    example.coldSide_ind = example.mesh.boundaryMesh().findPatchID("coldSide");
+    label coldSideSize = example.T.boundaryField()[example.coldSide_ind].size();
+    example.Tf.resize(coldSideSize);
+    example.refGrad.resize(coldSideSize);
+    example.valueFraction.resize(coldSideSize);
+    forAll(example.Tf, faceI)
+    {
+        scalar faceZ =
+            example.mesh.boundaryMesh()[example.coldSide_ind].faceCentres()[faceI].z();
+        example.Tf[faceI] = Tf + 100 * Foam::sqrt(1.2 - faceZ);
+        //example.Tf[faceI] = Tf;
+        example.refGrad[faceI] = refGrad;
+        example.valueFraction[faceI] = valueFraction;
+    }
+    //// Perform an Offline Solve
+    //example.offlineSolve();
+    //Info << "Offline completed" << endl;
+    //// Perform a POD decomposition and get the modes
+    //ITHACAPOD::getModes(example.Tfield, example.Tmodes, example.podex, 0, 0,
+    //                    NmodesTout);
+    //ITHACAPOD::getModes(example.lambdaField, example.lambdaModes, example.podex, 0, 0,
+    //                    NmodesLambdaOut);
+    //ITHACAPOD::getModes(example.deltaTfield, example.deltaTmodes, example.podex, 0, 0,
+    //                    NmodesDeltaTout);
+    // Perform the Galerkin projection onto the space spanned by the POD modes
+    /// [project]
+    ///example.project();
+    /// [project]
+    // Create a reduced object
+    reducedInverseLaplacian reduced(example);
+    //example.solveTrue();
+
+    /// Full order test
+    if (fullOrderTest)
+    {
+        Info << "Testing the implementation of full order Conjugate Gradient inverse solver"
+             << endl;
+        example.fullOrderTest();
+    }
+
+    /// Full order test
+    if (fullOrderTestError)
+    {
+        Info << "Testing the implementation of full order Conjugate Gradient inverse solver"
+             << endl;
+        example.fullOrderTestError();
+    }
+
+    if (parameterizedBC_RBFtest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing different solution methods in the parameterized BC case"
+             <<
+             endl;
+        word folder = "./ITHACAoutput/parameterizedBC_RBF/";
+        List<List<scalar>> heatFluxWeights;
+        scalar innerField = 1.0;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     folder,
+                                     "Ttrue");
+        Eigen::VectorXd shapeParameter = Eigen::VectorXd::LinSpaced(10, 0.1, 1.0);
+        List<word> linSys_solvers;
+        linSys_solvers.resize(5);
+        linSys_solvers[0] = "fullPivLU";
+        linSys_solvers[1] = "jacobiSvd";
+        linSys_solvers[2] = "householderQr";
+        linSys_solvers[3] = "ldlt";
+        linSys_solvers[4] = "inverse";
+        example.set_gParametrized("rbf", 0.7);
+        Eigen::VectorXd residualNorms;
+        residualNorms.resize(linSys_solvers.size());
+        example.parameterizedBCoffline();
+        forAll(linSys_solvers, solverI)
+        {
+            Info << "Solver " << linSys_solvers[solverI] << endl;
+            Info << endl;
+            example.parameterizedBC(folder, linSys_solvers[solverI]);
+            volScalarField gParametrizedField = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(solverI + 1),
+                                         folder,
+                                         "gParametrized");
+            ITHACAstream::exportSolution(example.T,
+                                         std::to_string(solverI + 1),
+                                         folder,
+                                         "T");
+            residualNorms(solverI) = Foam::sqrt(
+                                         example.residual.squaredNorm());
+        }
+        Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+                                   folder);
+        example.parameterizedBC_postProcess(folder, innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (parameterizedBC_RBFnumberTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing effect of the shape parameter of the RBF in the parameterized BC case"
+             <<
+             endl;
+        word folder = "./ITHACAoutput/parameterizedBC_RBFnumberTest/";
+        List<List<scalar>> heatFluxWeights;
+        scalar innerField = 1.0;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     folder,
+                                     "Ttrue");
+        Eigen::VectorXd shapeParameter = Eigen::VectorXd::LinSpaced(10, 0.1, 1.0);
+        List<word> linSys_solvers;
+        linSys_solvers.resize(1);
+        linSys_solvers[0] = "fullPivLU";
+        //linSys_solvers[1] = "jacobiSvd";
+        //linSys_solvers[2] = "householderQr";
+        //linSys_solvers[3] = "ldlt";
+        //linSys_solvers[4] = "inverse";
+        example.set_gParametrized("rbf");
+        Eigen::VectorXd residualNorms;
+        residualNorms.resize(example.gWeights.size() * linSys_solvers.size());
+        label Ntests = shapeParameter.size();
+        Eigen::MatrixXd singularValues;
+        Eigen::VectorXd conditionNumber;
+        singularValues.resize(example.gWeights.size(), Ntests);
+        conditionNumber.resize(Ntests);
+
+        for (label i = 0; i < Ntests; i++)
+        {
+            Info << "Shape parameter = " << shapeParameter(i) << endl;
+            example.set_gParametrized("rbf", shapeParameter(i));
+            example.parameterizedBCoffline(1);
+            forAll(linSys_solvers, solverI)
+            {
+                Info << "Solver " << linSys_solvers[solverI] << endl;
+                Info << endl;
+                example.parameterizedBC(folder, linSys_solvers[solverI]);
+                volScalarField gParametrizedField = example.list2Field(example.g);
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(i * linSys_solvers.size() + solverI + 1),
+                                             folder,
+                                             "gParametrized");
+                ITHACAstream::exportSolution(example.T,
+                                             std::to_string(i * linSys_solvers.size() + solverI + 1),
+                                             folder,
+                                             "T");
+                residualNorms(i * linSys_solvers.size() + solverI) = Foam::sqrt(
+                            example.residual.squaredNorm());
+            }
+            Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
+                                                  Eigen::ComputeThinU | Eigen::ComputeThinV);
+            singularValues.col(i) = svd.singularValues();
+            conditionNumber(i) = singularValues.maxCoeff() / singularValues.minCoeff();
+            Info << "Condition number = " << conditionNumber(i) << endl;
+        }
+
+        ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
+                                   folder);
+        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+                                   folder);
+        ITHACAstream::exportVector(conditionNumber, "conditionNumber", "eigen",
+                                   folder);
+        example.parameterizedBC_postProcess(folder, innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (parameterizedBC_PODtest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of parametrized BC inverse solver" <<
+             endl;
+        word folder = "./ITHACAoutput/parameterizedBC_PODtest/";
+        List<List<scalar>> heatFluxWeights;
+        scalar innerField = 1.0;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     folder,
+                                     "Ttrue");
+        List<word> linSys_solvers;
+        linSys_solvers.resize(5);
+        linSys_solvers[0] = "fullPivLU";
+        linSys_solvers[1] = "jacobiSvd";
+        linSys_solvers[2] = "householderQr";
+        linSys_solvers[3] = "ldlt";
+        linSys_solvers[4] = "inverse";
+        //example.set_gParametrized("rbf");
+        example.set_gBaseFunctionsPOD(0);
+        bool forceOffline = 1;
+        //example.parameterizedBCoffline(folder, forceOffline);
+        Eigen::VectorXd residualNorms;
+        Info << " example.gWeights.size() = " << example.gWeights.size() << endl;
+        residualNorms.resize(example.gWeights.size() * linSys_solvers.size());
+        label N_RBF = example.gWeights.size();
+        N_RBF = 30;
+
+        for (label i = 0; i < N_RBF; i++)
+        {
+            Info << i + 1  << " POD modes" << endl;
+            example.set_gBaseFunctionsPOD(i + 1);
+            example.parameterizedBCoffline(1);
+            forAll(linSys_solvers, solverI)
+            {
+                Info << "Solver " << linSys_solvers[solverI] << endl;
+                Info << endl;
+                example.parameterizedBC(folder, linSys_solvers[solverI]);
+                volScalarField gParametrizedField = example.list2Field(example.g);
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(i * linSys_solvers.size() + solverI + 1),
+                                             folder,
+                                             "gParametrized");
+                ITHACAstream::exportSolution(example.T,
+                                             std::to_string(i * linSys_solvers.size() + solverI + 1),
+                                             folder,
+                                             "T");
+                residualNorms(i * linSys_solvers.size() + solverI) = Foam::sqrt(
+                            example.residual.squaredNorm());
+            }
+        }
+
+        Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
+                                              Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::MatrixXd singularValues = svd.singularValues();
+        ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
+                                   folder);
+        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+                                   folder);
+        example.parameterizedBC_postProcess(folder, innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (parameterizedBCerrorTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of parametrized BC inverse solver" <<
+             endl;
+        label Ntests = 100;
+        word folder = "./ITHACAoutput/parameterizedBCerrorTest/";
+        List<List<scalar>> heatFluxWeights;
+        Eigen::VectorXd residualNorms;
+        scalar innerField = 1.0;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     folder,
+                                     "Ttrue");
+        example.set_gParametrized("rbf", 0.7);
+        example.parameterizedBCoffline();
+        List<word> linSys_solvers;
+        linSys_solvers.resize(5);
+        linSys_solvers[0] = "fullPivLU";
+        linSys_solvers[1] = "jacobiSvd";
+        linSys_solvers[2] = "householderQr";
+        linSys_solvers[3] = "ldlt";
+        linSys_solvers[4] = "TSVD";
+        Info << "Introducing error in the measurements" << endl;
+        Info << "Performing " << Ntests << " tests." << endl;
+        residualNorms.resize(Ntests * linSys_solvers.size());
+        Eigen::VectorXd TmeasOrig = example.Tmeas;
+
+        for (label i = 0; i < Ntests; i++)
+        {
+            Info << "Test " << i << endl;
+            example.Tmeas = TmeasOrig;
+            Eigen::VectorXd measurementsError(example.Tmeas.size());
+
+            for (int i = 0; i < example.Tmeas.size(); i++)
+            {
+                measurementsError(i) = example.Tmeas.mean() * 0.02 *
+                                       stochastic::set_normal_random(0.0, 1.0);
+            }
+
+            example.Tmeas += measurementsError;
+            List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
+            List<scalar> solutionNorms;
+            forAll(linSys_solvers, solverI)
+            {
+                Info << "Solver " << linSys_solvers[solverI] << endl;
+                example.parameterizedBC(folder, linSys_solvers[solverI], 20);
+                Info << endl;
+                volScalarField gParametrizedField = example.list2Field(example.g);
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(i * linSys_solvers.size() + solverI + 1),
+                                             folder,
+                                             "gParametrized");
+                ITHACAstream::exportSolution(example.T,
+                                             std::to_string(i * linSys_solvers.size() + solverI + 1),
+                                             folder,
+                                             "T");
+                residualNorms(i * linSys_solvers.size() + solverI) = Foam::sqrt(
+                            example.residual.squaredNorm());
+            }
+            Info << "Measurements error L2 norm= " << measurementsError.norm() <<
+                 endl;
+        }
+
+        example.parameterizedBC_postProcess(folder, innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (parameterizedBCerrorTest_TSVD)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of parametrized BC inverse solver" <<
+             endl;
+        label Ntests = 100;
+        word folder = "./ITHACAoutput/parameterizedBCerrorTest_TSVD/";
+        List<List<scalar>> heatFluxWeights;
+        Eigen::VectorXd residualNorms;
+        scalar innerField = 1.0;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     folder,
+                                     "Ttrue");
+        example.set_gParametrized("rbf", 0.7);
+        example.parameterizedBCoffline();
+        List<word> linSys_solvers;
+        linSys_solvers.resize(1);
+        linSys_solvers[0] = "TSVD";
+        Info << "Introducing error in the measurements" << endl;
+        Info << "Performing " << Ntests << " tests." << endl;
+        Eigen::VectorXd TmeasOrig = example.Tmeas;
+        int singValTests = 20;
+        //for (label i = 0; i < Ntests; i++)
+        //{
+        //    Info << "Test " << i << endl;
+        //    example.Tmeas = TmeasOrig;
+        //    Eigen::VectorXd measurementsError(example.Tmeas.size());
+        //    for(int k = 0; k < example.Tmeas.size(); k++)
+        //    {
+        //        measurementsError(k) = example.Tmeas.mean() * 0.02 * stochastic::set_normal_random(0.0, 1.0);
+        //    }
+        //    example.Tmeas += measurementsError;
+        //    List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
+        //    List<scalar> solutionNorms;
+        //    for(int j = 0; j < singValTests; j++)
+        //    {
+        //        Info << "Singval " << j + 5 << endl;
+        //        example.parameterizedBC(folder, "TSVD", j+5);
+        //        Info << endl;
+        //        volScalarField gParametrizedField = example.list2Field(example.g);
+        //        ITHACAstream::exportSolution(gParametrizedField,
+        //                                     std::to_string(i * singValTests + j + 1),
+        //                                     folder,
+        //                                     "gParametrized");
+        //        ITHACAstream::exportSolution(example.T,
+        //                                     std::to_string(i * singValTests + j + 1),
+        //                                     folder,
+        //                                     "T");
+        //    }
+        //    Info << "Measurements error L2 norm= " << measurementsError.norm() <<
+        //         endl;
+        //}
+        example.parameterizedBC_postProcess(folder, innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (parameterizedBCregularizationTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of regularizing techniques for parametrized BC inverse solver"
+             <<
+             endl;
+        word folder = "./ITHACAoutput/parameterizedBCregularization/";
+        List<List<scalar>> heatFluxWeights;
+        Eigen::VectorXd residualNorms;
+        scalar innerField = 1.0;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     folder,
+                                     "Ttrue");
+        example.set_gParametrized("rbf", 0.7);
+        example.parameterizedBCoffline(1);
+        List<word> regTech;
+        regTech.resize(1);
+        regTech[0] = "TSVD";
+        Info << "Intorducing error in the measurements" << endl;
+        Eigen::VectorXd measurementsError = ITHACAutilities::rand(example.Tmeas.size(),
+                                            1, -2, 2);
+        example.Tmeas += measurementsError;
+        // TSVD
+        // I check the reulsts for truncating different singular values
+        Info << "example.gWeights.size() = " << example.gWeights.size() << endl;
+        heatFluxWeights.resize(example.gWeights.size() - 1);
+        residualNorms.resize(example.gWeights.size() - 1);
+
+        for (label singValueI = 0; singValueI < example.gWeights.size() - 1;
+                singValueI++)
+        {
+            Info << "Regularization technique " << regTech[0] << endl;
+            Info << "Filtering first " << singValueI + 1 << " singular values" << endl;
+            example.parameterizedBC(folder, regTech[0], singValueI + 1);
+            Info << endl;
+            volScalarField gParametrizedField = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gParametrizedField, std::to_string(singValueI + 1),
+                                         folder,
+                                         "gParametrized");
+            ITHACAstream::exportSolution(example.T, std::to_string(singValueI + 1),
+                                         folder,
+                                         "T");
+            heatFluxWeights[singValueI] = example.gWeights;
+            residualNorms(singValueI) = Foam::sqrt(example.residual.squaredNorm());
+        }
+
+        Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
+                                              Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::MatrixXd singularValues = svd.singularValues();
+        ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
+                                   folder);
+        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+                                   folder);
+        //Info << "Intorducing error in the measurements" << endl;
+        //Eigen::VectorXd measurementsError= ITHACAutilities::rand(example.Tmeas.size(), 1, -2, 2);
+        //example.Tmeas += measurementsError;
+        //List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
+        //List<scalar> solutionNorms;
+        //solutionNorms.resize(heatFluxWeights.size());
+        //forAll(linSys_solvers, solverI)
+        //{
+        //    Info << "Solver " << linSys_solvers[solverI] << "with error" << endl;
+        //
+        //    example.parameterizedBC(folder, linSys_solvers[solverI]);
+        //    Info << endl;
+        //
+        //    volScalarField gParametrizedField = example.list2Field(example.g);
+        //    ITHACAstream::exportSolution(gParametrizedField, std::to_string(solverI + linSys_solvers.size() + 1),
+        //                                 folder,
+        //                                 "gParametrized");
+        //    ITHACAstream::exportSolution(example.T, std::to_string(solverI + linSys_solvers.size() + 1),
+        //                                 folder,
+        //                                 "T");
+        //    heatFluxWeights_err[solverI] = example.gWeights;
+        //    List<scalar> diff = heatFluxWeights[solverI] - heatFluxWeights_err[solverI];
+        //    solutionNorms[solverI] = example.list2norm(diff);
+        //    residualNorms(solverI + linSys_solvers.size()) = Foam::sqrt(example.residual.squaredNorm());
+        //    //solutionNorms[solverI] /= example.list2norm(heatFluxWeights[solverI]);
+        //}
+        //Info << "Solution error = " << solutionNorms << endl;
+        //Eigen::VectorXd linSysError = example.Theta.transpose() * measurementsError;
+        //Info << "Measurements error = " << Foam::sqrt(linSysError.squaredNorm()) << endl;
+        std::cout << "Residual 2-norm = " << residualNorms << std::endl;
+        example.parameterizedBC_postProcess(folder, innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (MarquardtTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of full order Marquardt inverse solver" <<
+             endl;
+        List<word> testsList;
+        testsList.resize(2);
+        testsList[0] = "./ITHACAoutput/MarquardtTest/fixedJacobian/";
+        testsList[1] = "./ITHACAoutput/MarquardtTest/parameterizedBC/";
+        scalar innerField = 1.0;
+        Info << "START FIXED JACOBIAN" << endl;
+        example.solveTrue();
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     testsList[0],
+                                     "Ttrue");
+        example.set_gParametrized("rbf");
+        example.MarquardtMethodSetUp();
+        example.MarquardtMethod(1, testsList[0]);
+        Info << endl;
+        Info << "END FIXED JACOBIAN" << endl;
+        Info << endl;
+        Info << "START direct sol" << endl;
+        example.solveTrue();
+        example.set_gParametrized("rbf");
+        example.parameterizedBC(testsList[1]);
+        Info << endl;
+        Info << "END direct sol" << endl;
+        Info << endl;
+        Info << endl;
+        volScalarField gParametrizedField = example.list2Field(example.g);
+        ITHACAstream::exportSolution(gParametrizedField, std::to_string(1),
+                                     testsList[1],
+                                     "gParametrized");
+        ITHACAstream::exportSolution(example.T, std::to_string(1),
+                                     testsList[1],
+                                     "T");
+        // Compute errors
+        forAll (testsList, testI)
+        {
+            Info << "Reading data in " << testsList[testI] << endl;
+            example.gFullField.resize(0);
+            example.TfullField.resize(0);
+            ITHACAstream::read_fields(example.mesh, example.gFullField, "gParametrized",
+                                      testsList[testI]);
+            ITHACAstream::read_fields(example.mesh, example.TfullField, "T",
+                                      testsList[testI]);
+            example.solveTrue();
+            PtrList<volScalarField> gTrueField;
+            gTrueField.resize(0);
+            gTrueField.append(example.list2Field(example.gTrue, innerField));
+            example.gDiffField = example.relativeDifferenceField(example.gFullField,
+                                 gTrueField);
+            forAll(example.gDiffField, solutionI)
+            {
+                forAll(example.gDiffField[solutionI], faceI)
+                {
+                    example.gDiffField[solutionI][faceI] =
+                        Foam::sqrt(example.gDiffField[solutionI][faceI] *
+                                   example.gDiffField[solutionI][faceI]);
+                }
+            }
+            Eigen::MatrixXd errorG_L2norm;
+            errorG_L2norm.resize(example.gFullField.size(), 1);
+            Eigen::MatrixXd errorG_LinfNorm = errorG_L2norm;
+            gTrueField.resize(0);
+
+            for (int i = 0; i < errorG_L2norm.rows() ; i++)
+            {
+                gTrueField.append(example.list2Field(example.gTrue, innerField));
+                errorG_L2norm(i, 0) = example.L2norm_g(example.gFullField[i], gTrueField[0]);
+                errorG_LinfNorm(i, 0) = example.LinfinityErrorNorm(example.gFullField[i],
+                                        gTrueField[0]);
+            }
+
+            ITHACAstream::exportMatrix(errorG_L2norm, "relError_L2norm", "eigen",
+                                       testsList[testI]);
+            ITHACAstream::exportMatrix(errorG_LinfNorm, "relError_LinfNorm", "eigen",
+                                       testsList[testI]);
+            ITHACAstream::exportFields(example.gDiffField, testsList[testI], "gDiff");
+            ITHACAstream::exportFields(gTrueField, testsList[testI], "gTrue");
+        }
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (podHeatFluxMarquardtTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of reduced order Marquardt inverse solver"
+             << endl;
+        word folderOffline = "./ITHACAoutput/offlineMarquardt";
+        word folderPOD = "./ITHACAoutput/podMarquardt";
+        example.readThermocouples();
+        Eigen::MatrixXd D;
+        cnpy::load(D, "./thermocouplesTest.npy");
+        example.Tmeas.resize(D.rows());
+        // I use these functions to crate the POD bases of g
+        //example.samplingHeatFluxMarquardt(folderOffline);
+        //example.heatFluxPodMarquardt(folderPOD);
+        example.set_gParametrized("pod");
+        example.MarquardtMethodSetUp();
+        List<label> tests(10);
+        tests[0] = 12270;
+        tests[1] = 12280;
+        tests[2] = 12290;
+        tests[3] = 12300;
+        tests[4] = 12310;
+        tests[5] = 12320;
+        tests[6] = 12330;
+        tests[7] = 12340;
+        tests[8] = 12350;
+        tests[9] = 12360;
+        forAll(tests, testI)
+        {
+            Info << endl << endl;
+            example.Tmeas = D.col(tests[testI]);
+            example.set_gParametrized("pod");
+            std::cout << "Tmeas = " << example.Tmeas << std::endl << std::endl;
+            example.MarquardtMethod(1, "./ITHACAoutput/podHeatFluxMarquardtTest/pod");
+            volScalarField gPOD = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gPOD, std::to_string(testI + 1),
+                                         "./ITHACAoutput/podHeatFluxMarquardtTest/", "gPOD");
+            ITHACAstream::exportSolution(example.T, std::to_string(testI + 1),
+                                         "./ITHACAoutput/podHeatFluxMarquardtTest/", "T_POD");
+            Info << endl;
+        }
+        example.set_gParametrized("rbf");
+        example.MarquardtMethodSetUp();
+        forAll(tests, testI)
+        {
+            Info << endl << endl;
+            Info << "TEST " << testI << endl << endl;
+            example.Tmeas = D.col(tests[testI]);
+            example.set_gParametrized("rbf");
+            std::cout << "Tmeas = " << example.Tmeas.sum() << std::endl << std::endl;
+            example.MarquardtMethod(1, "./ITHACAoutput/podHeatFluxMarquardtTest/rbf");
+            volScalarField gRBF = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gRBF, std::to_string(testI + 1),
+                                         "./ITHACAoutput/podHeatFluxMarquardtTest/", "gRBF");
+            ITHACAstream::exportSolution(example.T, std::to_string(testI + 1),
+                                         "./ITHACAoutput/podHeatFluxMarquardtTest/", "T_RBF");
+            Info << endl;
+        }
+        // volScalarField gDiff = gPOD;
+        // forAll(gDiff, faceI)
+        // {
+        //     if(Foam::mag(gDiff[faceI]) > 1e-6)
+        //     {
+        //         gDiff[faceI] -= gRBF[faceI];
+        //         gDiff[faceI] /= gRBF[faceI];
+        //         gDiff[faceI] = Foam::mag(gDiff[faceI]);
+        //     }
+        // }
+        //
+        // ITHACAstream::exportSolution(gDiff, std::to_string(testI + 1),
+        //                 "./ITHACAoutput/podHeatFluxMarquardtTest/", "gDiff");
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (reducedMarquardtTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing the implementation of reduced order Marquardt inverse solver"
+             << endl;
+        word folderOffline = "./ITHACAoutput/Offline_Marquardt";
+        example.readThermocouples();
+        Eigen::MatrixXd D;
+        cnpy::load(D, "./thermocouplesTest.npy");
+        example.Tmeas.resize(D.rows());
+        example.Tmeas = D.col(6000);
+        std::cout << "Tmeas = " << example.Tmeas << std::endl;
+        example.set_gParametrized("rbf");
+        example.MarquardtMethodSetUp();
+        example.MarquardtMethod(1, "./ITHACAoutput/testRedMarquardt/full");
+
+        if (!example.podex)
+        {
+            example.MarquardtOffline(folderOffline);
+            Info << "Offline completed" << endl;
+        }
+        else
+        {
+            example.Tfield.append(example.T);
+        }
+
+        //example.podex = 0;
+        Info << "example.Tfield size = " << example.Tfield.size() << endl;
+        ITHACAPOD::getModes(example.Tfield, example.Tmodes, example.podex, 0, 0,
+                            NmodesTout);
+        example.NmodesT = 30;
+        reduced.Marquardt();
+        ITHACAstream::read_fields(example.mesh, example.gField, "gParametrized",
+                                  "./ITHACAoutput/testRedMarquardt/");
+        ITHACAstream::read_fields(example.mesh, example.gFullField, "gParametrized",
+                                  "./ITHACAoutput/testRedMarquardt/full/");
+        example.gDiffField.append(example.gField[example.gField.size() - 1] -
+                                  example.gFullField[example.gFullField.size() - 1]);
+        volScalarField gRelErrField = example.gField[example.gField.size() - 1];
+        volScalarField gFullField = example.gFullField[example.gFullField.size() - 1];
+        //Access the mesh information for the boundary
+        const polyPatch& cPatch = example.mesh.boundaryMesh()[example.hotSide_ind];
+        //List of cells close to a boundary
+        const labelUList& faceCells = cPatch.faceCells();
+        forAll(cPatch, faceI)
+        {
+            label faceOwner = faceCells[faceI] ;
+            example.gDiffField[0][faceOwner] = Foam::mag(example.gDiffField[0][faceOwner]);
+
+            if (Foam::mag(gFullField[faceOwner]) > 1)
+            {
+                gRelErrField[faceOwner] = (gRelErrField[faceOwner] -
+                                           gFullField[faceOwner]) /  (gFullField[faceOwner]);
+                gRelErrField[faceOwner] = Foam::mag(gRelErrField[faceOwner]);
+            }
+            else
+            {
+                gRelErrField[faceOwner] = 0.0;
+            }
+        }
+        example.gRelErrField.append(gRelErrField);
+        ITHACAstream::exportFields(example.gDiffField,
+                                   "./ITHACAoutput/testRedMarquardt/", "gDiff");
+        ITHACAstream::exportFields(example.gRelErrField,
+                                   "./ITHACAoutput/testRedMarquardt/", "gRelErr");
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    /// Test for implementation of reduced CG
+    if (reducedCGimplementationTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Performing implementation test for the reduced order inverse solver" <<
+             endl;
+        Info << endl;
+        example.interpolation = 1;
+        example.readThermocouples();
+        Eigen::MatrixXd D;
+        cnpy::load(D, "./thermocouplesTest.npy");
+        example.Tmeas.resize(D.rows());
+        example.Tmeas = D.col(2);
+        example.thermocouplesInterpolation();
+        Info << "Number of T modes = " <<  example.NmodesT << endl;
+        Info << "Number of lambda modes = " <<  example.NmodesLambda << endl;
+        Info << "Number of deltaT modes = " <<  example.NmodesDeltaT << endl;
+        Info << endl;
+        Info << "Full order test" << endl;
+        auto t1 = std::chrono::high_resolution_clock::now();
+
+        if (example.conjugateGradient())
+        {
+            Info << "CG converged" << endl;
+        }
+        else
+        {
+            Info << "CG did not converged" << endl;
+        }
+
+        auto t2 = std::chrono::high_resolution_clock::now();
+        example.writeFields(1, "./ITHACAoutput/reducedCGimplementationTest");
+        Info << endl;
+        auto time_span = std::chrono::duration_cast<std::chrono::duration<double>>
+                         (t2 - t1);
+        time = time_span.count();
+        std::cout << "CPU time = " << time << std::endl;
+        Info << endl;
+        Info << "Reduced test" << endl;
+        reduced.conjugateGradientOffline();
+        t1 = std::chrono::high_resolution_clock::now();
+
+        if (reduced.conjugateGradient())
+        {
+            Info << "CG converged" << endl;
+        }
+        else
+        {
+            Info << "WARNING: CG did not converged" << endl;
+        }
+
+        t2 = std::chrono::high_resolution_clock::now();
+        reduced.writeFields(3, "./ITHACAoutput/reducedCGimplementationTest");
+        Info << endl;
+        time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+        time = time_span.count();
+        std::cout << "CPU time = " << time << std::endl;
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    /// Test number of basis for each problem
+    if (testNumberOfBasis)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Performing convergence test for the number" << endl;
+        Info << "of basis for the reduced order models" << endl;
+        Info << endl;
+        example.readThermocouples();
+        Eigen::MatrixXd D;
+        cnpy::load(D, "./thermocouplesTest.npy");
+        example.Tmeas.resize(D.rows());
+        int Ntests = 1;
+        int NmodesTmax = 40;
+        int NmodesLambdaMax = 30;
+        int NmodesDeltaTmax = 30;
+        word fieldName("g");
+        word fieldNameTfull("T");
+        word fieldNameLambdaFull("lambda");
+        word fieldNameDeltaTfull("deltaT");
+        Info << "Full order test" << endl;
+
+        for (int i = 0; i < Ntests; i++)
+        {
+            Info << "TEST FULL " << i << endl;
+            example.Tmeas = D.col(2);
+            example.thermocouplesInterpolation();
+
+            if (example.conjugateGradient())
+            {
+                Info << "CG converged" << endl;
+            }
+            else
+            {
+                Info << "CG did not converged" << endl;
+            }
+
+            example.writeFields(i, "./ITHACAoutput/testNumberOfBasis/full");
+        }
+
+        ITHACAstream::read_fields(example.mesh, example.gFullField, fieldName,
+                                  "./ITHACAoutput/testNumberOfBasis/full/");
+        Eigen::MatrixXd errorG;
+        Eigen::MatrixXd iterationsToConverge;
+        Eigen::MatrixXd JatConvergence;
+        label testI = 0;
+        // TEST REDUCED
+        example.Tmeas = D.col(2);
+        example.thermocouplesInterpolation();
+        Info << "Reduced order test" << endl;
+
+        for (int i = 5; i <= NmodesLambdaMax; i += 2)
+        {
+            example.NmodesLambda = i + 1;
+
+            for (int j = 5 ; j <= NmodesDeltaTmax; j += 2)
+            {
+                example.NmodesDeltaT = j + 1;
+
+                for (int k = 1; k <= NmodesTmax; k += 2)
+                {
+                    example.NmodesT = k + 1;
+                    Info << endl;
+                    Info << "TEST " << testI + 1 << endl;
+                    Info << "Number of T modes = " <<  example.NmodesT << endl;
+                    Info << "Number of lambda modes = " <<  example.NmodesLambda << endl;
+                    Info << "Number of deltaT modes = " <<  example.NmodesDeltaT << endl;
+                    reducedInverseLaplacian reducedTest(example);
+                    label CGoutput = reducedTest.conjugateGradient();
+
+                    if (CGoutput == 2)
+                    {
+                        Info << "WARNING:CG diverged" << endl;
+                        reducedTest.writeFields(testI, "./ITHACAoutput/testNumberOfBasis");
+                        errorG.resize(testI + 1, 1);
+                        iterationsToConverge.resize(testI + 1, 1);
+                        iterationsToConverge(testI) = reducedTest.problem->cgIter;
+                        JatConvergence.resize(testI + 1, 1);
+                        JatConvergence(testI) = reducedTest.J;
+                    }
+                    else if (CGoutput == 1)
+                    {
+                        Info << "CG converged" << endl;
+                        reducedTest.writeFields(testI, "./ITHACAoutput/testNumberOfBasis");
+                        errorG.resize(testI + 1, 1);
+                        iterationsToConverge.resize(testI + 1, 1);
+                        iterationsToConverge(testI) = reducedTest.problem->cgIter;
+                        JatConvergence.resize(testI + 1, 1);
+                        JatConvergence(testI) = reducedTest.J;
+                    }
+                    else
+                    {
+                        Info << "WARNING: CG did not converged" << endl;
+                        reducedTest.writeFields(testI, "./ITHACAoutput/testNumberOfBasis");
+                        errorG.resize(testI + 1, 1);
+                        iterationsToConverge.resize(testI + 1, 1);
+                        iterationsToConverge(testI) = reducedTest.problem->cgIter;
+                        JatConvergence.resize(testI + 1, 1);
+                        JatConvergence(testI) = reducedTest.J;
+                    }
+
+                    testI++;
+                }
+            }
+        }
+
+        ITHACAstream::exportMatrix(iterationsToConverge, "iterations", "python",
+                                   "./ITHACAoutput/testNumberOfBasis/error/");
+        ITHACAstream::exportMatrix(JatConvergence, "J", "python",
+                                   "./ITHACAoutput/testNumberOfBasis/error/");
+        Info << "COMPLETED reduced order" << endl;
+        // Compute errors
+        ITHACAstream::read_fields(example.mesh, example.gField, fieldName,
+                                  "./ITHACAoutput/testNumberOfBasis/");
+        ITHACAstream::read_fields(example.mesh, example.TredField, fieldNameTfull,
+                                  "./ITHACAoutput/testNumberOfBasis/");
+        ITHACAstream::read_fields(example.mesh, example.TfullField, fieldNameTfull,
+                                  "./ITHACAoutput/testNumberOfBasis/full/");
+        ITHACAstream::read_fields(example.mesh, example.lambdaFullField,
+                                  fieldNameLambdaFull, "./ITHACAoutput/testNumberOfBasis/full/");
+        ITHACAstream::read_fields(example.mesh, example.deltaTfullField,
+                                  fieldNameDeltaTfull, "./ITHACAoutput/testNumberOfBasis/full/");
+        example.computeTdiff();
+        example.gDiffField = example.differenceField(example.gField,
+                             example.gFullField);
+        example.computeRelativeErrorFields();
+        ITHACAstream::exportFields(example.TdiffField,
+                                   "./ITHACAoutput/testNumberOfBasis/", "Tdiff");
+        ITHACAstream::exportFields(example.gDiffField,
+                                   "./ITHACAoutput/testNumberOfBasis/", "gDiff");
+        ITHACAstream::exportFields(example.gFullField,
+                                   "./ITHACAoutput/testNumberOfBasis/", "gFull");
+        ITHACAstream::exportFields(example.TfullField,
+                                   "./ITHACAoutput/testNumberOfBasis/", "Tfull");
+        ITHACAstream::exportFields(example.lambdaFullField,
+                                   "./ITHACAoutput/testNumberOfBasis/", "lambdaFull");
+        ITHACAstream::exportFields(example.deltaTfullField,
+                                   "./ITHACAoutput/testNumberOfBasis/", "deltaTfull");
+        ITHACAstream::exportFields(example.gRelErrField,
+                                   "./ITHACAoutput//testNumberOfBasis", "gRelErr");
+        errorG.resize(example.gField.size(), 1);
+
+        for (int i = 0; i < errorG.rows() ; i++)
+        {
+            errorG(i, 0) = example.L2norm_g(example.gField[i], example.gFullField[0]);
+        }
+
+        ITHACAstream::exportMatrix(errorG, "relError", "python",
+                                   "./ITHACAoutput/testNumberOfBasis/error/");
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    /////////////////////
+    /// SPEED UP test ///
+    /////////////////////
+    if (speedUpTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Performing speedup test" << endl;
+        Info << "Number of T modes = " <<  example.NmodesT << endl;
+        Info << "Number of lambda modes = " <<  example.NmodesLambda << endl;
+        Info << "Number of deltaT modes = " <<  example.NmodesDeltaT << endl;
+        Info << endl;
+        word fieldName("g");
+        word fieldNameTfull("T");
+        word fieldNameLambdaFull("lambda");
+        word fieldNameDeltaTfull("deltaT");
+        example.readThermocouples();
+        Eigen::MatrixXd D;
+        cnpy::load(D, "./thermocouplesTest.npy");
+        example.Tmeas.resize(D.rows());
+        label totalNumberSamples = D.cols();
+        label Ntest = 30;
+        const char* fullResultsDir = "./ITHACAoutput/speedUptest/Full/";
+        const char* reducedResultsDir = "./ITHACAoutput/speedUptest/Reduced/";
+        DenseMatrix timeFull = Eigen::MatrixXd::Zero(Ntest, 1);
+        DenseMatrix timeRed = timeFull;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto t3 = std::chrono::high_resolution_clock::now();
+        auto time_span = std::chrono::duration_cast<std::chrono::duration<double>>
+                         (t2 - t1);
+
+        if (1)
+        {
+            for (label testI = 0; testI < Ntest; testI++)
+            {
+                label sample = int(totalNumberSamples / Ntest * testI);
+                Info << "Testing with sample " << sample << endl;
+                example.Tmeas = D.col(sample);
+                example.thermocouplesInterpolation();
+                example.NmodesT = NmodesTproj;
+                example.NmodesLambda = NmodesLambdaProj;
+                example.NmodesDeltaT = NmodesDeltaTproj;
+                Info << "Full order test" << endl;
+                t1 = std::chrono::high_resolution_clock::now();
+
+                if (example.conjugateGradient())
+                {
+                    Info << "CG converged" << endl;
+                }
+                else
+                {
+                    Info << "CG did not converged" << endl;
+                }
+
+                t2 = std::chrono::high_resolution_clock::now();
+                example.writeFields(testI, fullResultsDir);
+                Info << endl;
+                time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+                time = time_span.count();
+                timeFull(testI) = time;
+                std::cout << "CPU time = " << time << std::endl;
+                Info << endl;
+                Info << "Reduced test" << endl;
+                t1 = std::chrono::high_resolution_clock::now();
+                reducedInverseLaplacian reducedSpeedUpTest(example);
+                reducedSpeedUpTest.conjugateGradientOffline();
+                t2 = std::chrono::high_resolution_clock::now();
+                time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+                time = time_span.count();
+                std::cout << "CPU time to assemble matrices = " << time << std::endl;
+
+                if (reducedSpeedUpTest.conjugateGradient())
+                {
+                    Info << "CG converged" << endl;
+                }
+                else
+                {
+                    Info << "WARNING: CG did not converged" << endl;
+                }
+
+                t3 = std::chrono::high_resolution_clock::now();
+                reducedSpeedUpTest.writeFields(testI, reducedResultsDir);
+                Info << endl;
+                time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t3 - t2);
+                time = time_span.count();
+                timeRed(testI) = time;
+                std::cout << "CPU time = " << time << std::endl;
+                Info << endl;
+            }
+        }
+
+        ITHACAstream::read_fields(example.mesh, example.gField, fieldName,
+                                  reducedResultsDir);
+        ITHACAstream::read_fields(example.mesh, example.gFullField, fieldName,
+                                  fullResultsDir);
+        ITHACAstream::read_fields(example.mesh, example.TredField, fieldNameTfull,
+                                  reducedResultsDir);
+        ITHACAstream::read_fields(example.mesh, example.TfullField, fieldNameTfull,
+                                  fullResultsDir);
+        ITHACAstream::read_fields(example.mesh, example.lambdaFullField,
+                                  fieldNameLambdaFull, fullResultsDir);
+        ITHACAstream::read_fields(example.mesh, example.deltaTfullField,
+                                  fieldNameDeltaTfull, fullResultsDir);
+        example.computeRelativeErrorFields();
+        ITHACAstream::exportFields(example.gFullField, reducedResultsDir, "gFull");
+        ITHACAstream::exportFields(example.TfullField, reducedResultsDir, "Tfull");
+        ITHACAstream::exportFields(example.lambdaFullField, reducedResultsDir,
+                                   "lambdaFull");
+        ITHACAstream::exportFields(example.deltaTfullField, reducedResultsDir,
+                                   "deltaTfull");
+        ITHACAstream::exportFields(example.gRelErrField, reducedResultsDir, "gRelErr");
+        DenseMatrix errorG;
+        errorG.resize(example.gField.size(), 1);
+
+        for (int i = 0; i < errorG.rows() ; i++)
+        {
+            errorG(i, 0) = example.L2norm_g(example.gField[i], example.gFullField[i]);
+        }
+
+        ITHACAstream::exportMatrix(errorG, "relError", "python", reducedResultsDir);
+        ITHACAstream::exportMatrix(timeRed, "timeRed", "python", reducedResultsDir);
+        ITHACAstream::exportMatrix(timeFull, "timeFull", "python", reducedResultsDir);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    return 0;
+}
+
+
+/*
+void basisNumberConvergenceTest(Tutorial14 example, reducedInverseLaplacian reduced)
+{
+    example.readThermocouples();
+    Eigen::MatrixXd D;
+    cnpy::load(D, "./thermocouplesTest.npy");
+    example.Tmeas.resize(D.rows());
+    int Ntests = 1;
+    int NmodesTmax = 30;
+    int NmodesLambdaMax = 30;
+    int NmodesDeltaTmax = 30;
+    word fieldName("g");
+    word fieldNameTfull("T");
+    word fieldNameLambdaFull("lambda");
+    word fieldNameDeltaTfull("deltaT");
+
+    Eigen::MatrixXd errorG;
+
+    // TEST FULL
+    if(!ITHACAutilities::check_folder("./ITHACAoutput/testFull"))
+    {
+        Info << "Full order test" << endl;
+        for(int i = 0; i < Ntests; i++)
+        {
+            Info << "TEST FULL "<< i << endl;
+            example.Tmeas = D.col(2);
+            example.thermocouplesInterpolation();
+
+            if(example.conjugateGradient())
+            {
+                Info << "CG converged"<< endl;
+            }
+            else
+            {
+                Info << "CG did not converged"<< endl;
+            }
+            example.writeFields(i, "./ITHACAoutput/testFull");
+        }
+    }
+    else
+    {
+        Info << "Full order tests already computed" << endl;
+    }
+    ITHACAstream::read_fields(example.mesh, example.gFullField, fieldName, "./ITHACAoutput/testFull/");
+    label testI = 0;
+    // TEST REDUCED
+    if(!ITHACAutilities::check_folder("./ITHACAoutput/test"))
+    {
+        example.Tmeas = D.col(2);
+        example.thermocouplesInterpolation();
+        Info << "Reduced order test" << endl;
+    for(int i = 2; i < NmodesLambdaMax; i++)
+    {
+        example.NmodesLambda = i + 1;
+        for(int j = 2 ; j < NmodesDeltaTmax; j++)
+            {
+            example.NmodesDeltaT = j + 1;
+            for(int k = 0; k < NmodesTmax; k++)
+            {
+                example.NmodesT = k + 1;
+                Info << endl;
+                Info << "TEST "<< testI + 1 << endl;
+            Info << "Number of T modes = " <<  example.NmodesT << endl;
+            Info << "Number of lambda modes = " <<  example.NmodesLambda << endl;
+            Info << "Number of deltaT modes = " <<  example.NmodesDeltaT << endl;
+
+                    if(reduced.conjugateGradient())
+                    {
+                        Info << "CG converged"<< endl;
+                    }
+                    else
+                    {
+                        Info << "WARNING: CG did not converged"<< endl;
+                    }
+                    reduced.writeFields(testI, "./ITHACAoutput/test");
+
+                errorG.resize(testI + 1, 1);
+                testI++;
+                }
+        }
+    }
+    }
+    else
+    {
+        Info << "Reduced tests computed" << endl;
+    }
+
+
+    // Compute errors
+    ITHACAstream::read_fields(example.mesh, example.gField, fieldName, "./ITHACAoutput/test/");
+    ITHACAstream::read_fields(example.mesh, example.TredField, fieldNameTfull, "./ITHACAoutput/test/");
+    ITHACAstream::read_fields(example.mesh, example.TfullField, fieldNameTfull, "./ITHACAoutput/testFull/");
+    ITHACAstream::read_fields(example.mesh, example.lambdaFullField, fieldNameLambdaFull, "./ITHACAoutput/testFull/");
+    ITHACAstream::read_fields(example.mesh, example.deltaTfullField, fieldNameDeltaTfull, "./ITHACAoutput/testFull/");
+
+    example.computeTdiff();
+    example.gDiffField = example.differenceField(example.gField, example.gFullField);
+    example.computeRelativeErrorFields();
+
+    ITHACAstream::exportFields(example.TdiffField, "./ITHACAoutput/test/" , "Tdiff");
+    ITHACAstream::exportFields(example.gDiffField, "./ITHACAoutput/test/" , "gDiff");
+    ITHACAstream::exportFields(example.gFullField, "./ITHACAoutput/test/" , "gFull");
+    ITHACAstream::exportFields(example.TfullField, "./ITHACAoutput/test/" , "Tfull");
+    ITHACAstream::exportFields(example.lambdaFullField, "./ITHACAoutput/test/" , "lambdaFull");
+    ITHACAstream::exportFields(example.deltaTfullField, "./ITHACAoutput/test/" , "deltaTfull");
+    ITHACAstream::exportFields(example.gRelErrField, "./ITHACAoutput/test/" , "gRelErr");
+
+    for(int i = 0; i < errorG.rows() ; i++)
+    {
+        errorG(i,0) = example.L2norm_g(example.gField[i], example.gFullField[0]);
+    }
+    ITHACAstream::exportMatrix(errorG, "relError", "python", "./ITHACAoutput/test/error/");
+};
+*/

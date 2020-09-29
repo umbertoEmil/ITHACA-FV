@@ -1,2 +1,0 @@
-immersedBody.C
-LIB = $(FOAM_USER_LIBBIN)/libHFDIBM

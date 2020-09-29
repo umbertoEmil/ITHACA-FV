@@ -107,6 +107,21 @@ Eigen::MatrixXd EnsembleKalmanFilter(PtrList<volScalarField>& prior,
                                      Eigen::MatrixXd observedState);
 
 //--------------------------------------------------------------------------
+/// @brief      Ensemble Kalman Filter
+///
+/// @param[in]  prior           Samples of the prior
+/// @param[in]  measurements    Measured data
+/// @param[in]  measurementsCov Covariance matrix for the measurements, gaussian noise with zero mean is assumed
+/// @param[in]  observedState   Ensemble of the observed state 
+///
+/// @return     Ensamble of the posterior
+///
+Eigen::MatrixXd EnsembleKalmanFilter(PtrList<volScalarField>& prior,
+                Eigen::VectorXd measurements,
+                Eigen::MatrixXd measurementsCov,
+                Eigen::MatrixXd observedState);
+
+//--------------------------------------------------------------------------
 /// @brief      Returns quantile for a vector of samples
 ///
 /// @param[in]  samps   Samples

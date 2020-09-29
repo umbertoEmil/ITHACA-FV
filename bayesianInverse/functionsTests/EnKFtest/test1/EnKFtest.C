@@ -81,9 +81,10 @@ int main(int argc, char* argv[])
     std::cout << "A_wrong =\n" << Aw << std::endl;
 
 
-    int Ntimes = 21;
-    int sampleDeltaStep = 3;
+    int Ntimes = 201;
+    int sampleDeltaStep = 10;
     double endTime = 10;
+    double deltaTime = endTime / Ntimes;
     Eigen::VectorXd time = Eigen::VectorXd::LinSpaced(Ntimes, 0, endTime);
  
     Eigen::VectorXd xOld = x0;
@@ -97,7 +98,7 @@ int main(int argc, char* argv[])
 
     for(int timeI = 0; timeI < Ntimes - 1; timeI++)
     {
-        Eigen::VectorXd xNew = A * xOld;
+        Eigen::VectorXd xNew = (A * deltaTime + Eigen::MatrixXd::Identity(A.rows(), A.cols()))  * xOld;
         xOld = xNew;
         Eigen::VectorXd dNew = H * xNew;
         X.col(timeI + 1) = xNew;
@@ -117,11 +118,11 @@ int main(int argc, char* argv[])
     Eigen::VectorXd x = x0;
 
     Eigen::VectorXd prior_mu = x * 0.0;
-    Eigen::MatrixXd prior_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.7;
+    Eigen::MatrixXd prior_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.5;
     auto priorDensity = std::make_shared<muq::Modeling::Gaussian>(prior_mu, prior_cov);
 
     Eigen::VectorXd modelError_mu = x * 0.0;
-    Eigen::MatrixXd modelError_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.1;
+    Eigen::MatrixXd modelError_cov = Eigen::MatrixXd::Identity(stateSize, stateSize) * 0.7;
     auto modelErrorDensity = std::make_shared<muq::Modeling::Gaussian>(modelError_mu, modelError_cov);
 
     Eigen::MatrixXd posteriorSamples(stateSize, Nseeds);
@@ -141,7 +142,7 @@ int main(int argc, char* argv[])
     Eigen::MatrixXd minConfidence = posteriorMean;
     Eigen::MatrixXd maxConfidence = minConfidence;
 
-    posteriorMean.col(0) = x0;
+    posteriorMean.col(0) = posteriorSamples.rowwise().mean();
 
     sampleFlag = sampleDeltaStep;
     sampleI = 0;
@@ -155,7 +156,8 @@ int main(int argc, char* argv[])
         //Forecast step
         for(int i = 0; i < Nseeds; i++)
         {
-            forwardSamples.col(i) = A * priorSamples.col(i) + modelErrorDensity->Sample();
+            //forwardSamples.col(i) = A * priorSamples.col(i) + modelErrorDensity->Sample();
+            forwardSamples.col(i) = (A * deltaTime + Eigen::MatrixXd::Identity(A.rows(), A.cols())) * priorSamples.col(i) + modelErrorDensity->Sample();
         }
 
         sampleFlag--;
