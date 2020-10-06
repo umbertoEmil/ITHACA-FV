@@ -1,0 +1,3 @@
+18bayesian.C
+
+EXE = $(FOAM_USER_APPBIN)/18bayesian

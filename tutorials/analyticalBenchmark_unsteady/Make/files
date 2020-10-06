@@ -1,3 +1,0 @@
-analyticalBenchmark_unsteady.C
-
-EXE = $(FOAM_USER_APPBIN)/analyticalBenchmark_unsteady

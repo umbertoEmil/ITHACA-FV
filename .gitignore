@@ -1,17 +1,12 @@
-**/results
 **/ITHACAoutput
 **/ITHACAoutput*
 Working_examples
-*.unv
-*.eps
-*.pvsm
-*.o
-*.dat
 *.bak
+*.swp
+*.txt
+*.o
 *.so
 *.exe
-*.swp
-*log.txt
 **/linux**
 **/processor*
 **/linux*
@@ -26,6 +21,5 @@ examples
 tutorials_dev
 **/StreamTest
 **/UtilitiesTest
-**/unitTests
 *~
 *.foam
