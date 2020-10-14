@@ -48,6 +48,7 @@ SourceFiles
 #include "analyticalBenchmark.H"
 
 
+
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
@@ -69,8 +70,12 @@ int main(int argc, char* argv[])
     label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
+    label parameterizedBCtest_RBFwidth =
+        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest_RBFwidth", 0);
     label parameterizedBCerrorTest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest", 0);
+    label parameterizedBCerrorTest_TSVD =
+        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest_TSVD", 0);
     // Reading parameters from ITHACAdict
     example.cgIterMax = para->ITHACAdict->lookupOrDefault<int>("cgIterMax", 100);
     example.thermocouplesNum =
@@ -217,20 +222,21 @@ int main(int argc, char* argv[])
         List<word> linSys_solvers;
         linSys_solvers.resize(1);
         linSys_solvers[0] = "fullPivLU";
-        //linSys_solvers[1] = "jacobiSvd";
-        //linSys_solvers[2] = "householderQr";
-        //linSys_solvers[3] = "ldlt";
-        //linSys_solvers[4] = "TSVD";
         Eigen::VectorXd residualNorms;
         residualNorms.resize(linSys_solvers.size());
-        example.set_gParametrized("rbf", 0.7);
+        auto tO1 = std::chrono::high_resolution_clock::now();
+        example.set_gParametrized("rbf", 0.1);
         example.parameterizedBCoffline();
+        auto tO2 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>
+                        ( tO2 - tO1 ).count() / 1e6;
+        std::cout << "Duration offline part = " << duration << " seconds" << std::endl;
         forAll(linSys_solvers, solverI)
         {
             Info << "Solver " << linSys_solvers[solverI] << endl;
             Info << endl;
             auto t1 = std::chrono::high_resolution_clock::now();
-            example.parameterizedBC(linSys_solvers[solverI], 3);
+            example.parameterizedBC(linSys_solvers[solverI], 6);
             auto t2 = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>
                             ( t2 - t1 ).count() / 1e6;
@@ -256,6 +262,101 @@ int main(int argc, char* argv[])
         Info << endl;
     }
 
+    if (parameterizedBCtest_RBFwidth)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Performing test for the parameterized BC inverse solver" << endl;
+        Info << endl;
+        word outputFolder = "./ITHACAoutput/parameterizedBCtest_RBFparameter/";
+        volScalarField gTrueField = example.list2Field(example.gTrue);
+        ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+        
+        int rbfWidth_size = 9;
+        Eigen::VectorXd rbfWidth(rbfWidth_size);
+        rbfWidth << 100, 10, 1, 0.33, 0.1, .033, 0.01, 0.001, 0.0001;
+
+        Eigen::VectorXd residualNorms;
+        residualNorms.resize(rbfWidth_size);
+        Eigen::VectorXd heatFluxL2norm(rbfWidth_size);
+        Eigen::VectorXd heatFluxLinfNorm = heatFluxL2norm;
+        Eigen::VectorXd condNumber = heatFluxL2norm;
+        Eigen::MatrixXd singVal;
+
+        for(int i = 0; i < rbfWidth_size; i++)
+        {
+            Info << "*********************************************************" << endl;
+            Info << "RBF parameter " << rbfWidth(i) << endl;
+            Info << endl;
+
+            example.set_gParametrized("rbf", rbfWidth(i));
+            example.parameterizedBCoffline(1);
+            example.parameterizedBC("fullPivLU");
+
+            volScalarField gParametrizedField = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(i + 1),
+                                         outputFolder,
+                                         "gParametrized");
+	    volScalarField& T(example._T());
+            ITHACAstream::exportSolution(T,
+                                         std::to_string(i + 1),
+                                         outputFolder,
+                                         "T");
+            residualNorms(i) = Foam::sqrt(
+                                         example.residual.squaredNorm());
+            Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
+                                          Eigen::ComputeThinU | Eigen::ComputeThinV);
+            Eigen::MatrixXd singularValues = svd.singularValues();
+            singVal.conservativeResize(singularValues.rows(), singVal.cols() + 1);
+            singVal.col(i) = singularValues;
+            double conditionNumber = singularValues.maxCoeff() / singularValues.minCoeff();
+            Info << "Condition number = " << conditionNumber << endl;
+            condNumber(i) = conditionNumber;
+
+
+            volScalarField gDiffField = gParametrizedField - gTrueField;
+            scalar EPS = 1e-6;
+            volScalarField relativeErrorField(gTrueField);
+            for (label i = 0; i < relativeErrorField.internalField().size(); i++)
+            {
+                if (std::abs(gTrueField.ref()[i]) < EPS)
+                {
+                    relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
+                }
+                else
+                {
+                    relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / gTrueField.ref()[i];
+                }
+            }
+            ITHACAstream::exportSolution(relativeErrorField,
+                                         std::to_string(i + 1), outputFolder,
+                                         "relativeErrorField");
+            heatFluxL2norm(i) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
+                                        "hotSide");
+            heatFluxLinfNorm(i) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
+                                        "hotSide");
+        }
+
+        ITHACAstream::exportVector(condNumber, "condNumber", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportVector(heatFluxL2norm, "relError_L2norm", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportVector(heatFluxLinfNorm, "relError_LinfNorm", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportMatrix(singVal, "singularValues", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+                                   outputFolder);
+        example.postProcess(outputFolder, "gParametrized");
+        Info << "*********************************************************" << endl;
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
     if (CGnoiseTest)
     {
         Info << endl;
@@ -264,40 +365,27 @@ int main(int argc, char* argv[])
         Info << "Performing " << Ntests << " tests." << endl;
         Info << endl;
         word outputFolder = "./ITHACAoutput/CGnoiseTest/";
-        example.gTrue = -example.heatFlux_hotSide / example.k;
         volScalarField gTrueField = example.list2Field(example.gTrue);
         ITHACAstream::exportSolution(gTrueField,
                                      "1", outputFolder,
                                      "gTrue");
         example.saveSolInLists = 1;
-        Eigen::VectorXd variance = example.Tmeas * 0.02;
+        double variance = 0.02;
+        Eigen::VectorXd varianceVect = example.Tmeas * variance;
         std::cout  << "variance = " << variance << std::endl;
         std::cout  << "example.Tmeas = " << example.Tmeas << std::endl;
-        Info << "Noise variance mean = " << variance.mean() << endl;
+        Info << "Noise variance mean = " << varianceVect.mean() << endl;
         Eigen::VectorXd TmeasOrig = example.Tmeas;
         Info << "I use the discrepancy principle as stopping criterium for CG" << endl;
-        example.Jtol = example.Tmeas.size() * variance.maxCoeff() *
-                       variance.maxCoeff() / 2;
+        example.Jtol = example.Tmeas.size() * varianceVect.maxCoeff() *
+                       varianceVect.maxCoeff() / 2;
         Info << "Stopping for J < " << example.Jtol << endl;
 
         for (label i = 0; i < Ntests; i++)
         {
             Info << "Test " << i << endl;
-            example.Tmeas = TmeasOrig;
-            Eigen::VectorXd measurementsError(example.Tmeas.size());
+            example.addNoise(variance);
 
-            for (int i = 0; i < example.Tmeas.size(); i++)
-            {
-                //measurementsError(i) = variance(i) * stochastic::set_normal_random(0.0, 1.0);
-		Info << "add stochastic.H" << endl;
-		exit(10);
-			
-            }
-
-            example.Tmeas += measurementsError;
-            Info << "Measurements error L2 norm= " << measurementsError.norm() <<
-                 endl;
-            Info << "example.gList.size() = " << example.gList.size() << endl;
 
             if (example.conjugateGradient())
             {
@@ -316,6 +404,7 @@ int main(int argc, char* argv[])
                 Info << "************************************" << endl;
                 Info << endl << endl;
             }
+            example.Tmeas = TmeasOrig;
         }
 
         example.postProcess(outputFolder, "g_CG");
@@ -329,8 +418,7 @@ int main(int argc, char* argv[])
         Info << "*********************************************************" << endl;
         Info << "Testing parameterized BC inverse solver with NOISY data" <<
              endl;
-        word outputFolder = "./ITHACAoutput/parameterizedBCerrorTest/";
-        example.gTrue = -example.heatFlux_hotSide / example.k;
+        word outputFolder = "./ITHACAoutput/parameterizedBCnoiseTest/";
         volScalarField gTrueField = example.list2Field(example.gTrue);
         ITHACAstream::exportSolution(gTrueField,
                                      "1", outputFolder,
@@ -338,15 +426,14 @@ int main(int argc, char* argv[])
         List<List<scalar>> heatFluxWeights;
         Eigen::VectorXd residualNorms;
         scalar innerField = 1.0;
-        example.set_gParametrized("rbf", 0.7);
+        example.set_gParametrized("rbf", 0.1);
         example.parameterizedBCoffline();
         List<word> linSys_solvers;
-        linSys_solvers.resize(1);
-        linSys_solvers[0] = "TSVD";
-        //linSys_solvers[0] = "fullPivLU";
-        //linSys_solvers[1] = "jacobiSvd";
-        //linSys_solvers[2] = "householderQr";
-        //linSys_solvers[3] = "ldlt";
+        linSys_solvers.resize(4);
+        linSys_solvers[0] = "fullPivLU";
+        linSys_solvers[1] = "jacobiSvd";
+        linSys_solvers[2] = "householderQr";
+        linSys_solvers[3] = "ldlt";
         //linSys_solvers[4] = "TSVD";
         Info << "Introducing error in the measurements" << endl;
         Info << "Performing " << Ntests << " tests." << endl;
@@ -356,18 +443,9 @@ int main(int argc, char* argv[])
         for (label i = 0; i < Ntests; i++)
         {
             Info << "Test " << i << endl;
-            example.Tmeas = TmeasOrig;
-            Eigen::VectorXd measurementsError(example.Tmeas.size());
+            double variance = 0.02;
+            example.addNoise(variance);
 
-            for (int i = 0; i < example.Tmeas.size(); i++)
-            {
-                //measurementsError(i) = example.Tmeas.mean() * 0.02 *
-                //                       stochastic::set_normal_random(0.0, 1.0);
-		Info << "add stochastic.H" << endl;
-		exit(10);
-            }
-
-            example.Tmeas += measurementsError;
             List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
             List<scalar> solutionNorms;
             forAll(linSys_solvers, solverI)
@@ -387,8 +465,64 @@ int main(int argc, char* argv[])
                 residualNorms(i * linSys_solvers.size() + solverI) = Foam::sqrt(
                             example.residual.squaredNorm());
             }
-            Info << "Measurements error L2 norm= " << measurementsError.norm() <<
-                 endl;
+            example.Tmeas = TmeasOrig;
+        }
+
+        example.postProcess(outputFolder, "gParametrized", innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (parameterizedBCerrorTest_TSVD)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing parameterized BC TSVD with NOISY data" <<
+             endl;
+        word outputFolder = "./ITHACAoutput/parameterizedBCnoiseTest_TSVD/";
+        volScalarField gTrueField = example.list2Field(example.gTrue);
+        ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+        List<List<scalar>> heatFluxWeights;
+        scalar innerField = 1.0;
+        example.set_gParametrized("rbf", 0.1);
+        example.parameterizedBCoffline();
+
+        Info << "Introducing error in the measurements" << endl;
+        Info << "Performing " << Ntests << " tests." << endl;
+        Eigen::VectorXd TmeasOrig = example.Tmeas;
+
+        Eigen::VectorXi TSVDtruc(1);
+        TSVDtruc << 3;
+        //TSVDtruc << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15;
+        std::cout << "debug : TSVDtruc = " << TSVDtruc << std::endl;
+        
+
+        int Ntrunc = TSVDtruc.size();
+
+        for (label i = 0; i < Ntests; i++)
+        {
+            Info << "Test " << i << endl;
+            double variance = 0.02;
+            example.addNoise(variance);
+
+            List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
+            List<scalar> solutionNorms;
+            for(int truncI = 0; truncI < Ntrunc; truncI++)
+            {
+                example.parameterizedBC("TSVD", TSVDtruc(truncI));
+                volScalarField gParametrizedField = example.list2Field(example.g);
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(i * Ntrunc + truncI + 1),
+                                             outputFolder,
+                                             "gParametrized");
+                ITHACAstream::exportSolution(example.T,
+                                             std::to_string(i * Ntrunc + truncI + 1),
+                                             outputFolder,
+                                             "T");
+            }
+            example.Tmeas = TmeasOrig;
         }
 
         example.postProcess(outputFolder, "gParametrized", innerField);

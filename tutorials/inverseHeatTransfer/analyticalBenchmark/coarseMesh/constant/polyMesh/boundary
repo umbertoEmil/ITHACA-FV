@@ -20,38 +20,38 @@ FoamFile
     hotSide
     {
         type            patch;
-        nFaces          100;
-        startFace       2700;
+        nFaces          1600;
+        startFace       187200;
     }
     coldSide
     {
         type            patch;
-        nFaces          100;
-        startFace       2800;
+        nFaces          1600;
+        startFace       188800;
     }
     gammaEx1
     {
         type            patch;
-        nFaces          100;
-        startFace       2900;
+        nFaces          1600;
+        startFace       190400;
     }
     gammaEx2
     {
         type            patch;
-        nFaces          100;
-        startFace       3000;
+        nFaces          1600;
+        startFace       192000;
     }
     gammaEx3
     {
         type            patch;
-        nFaces          100;
-        startFace       3100;
+        nFaces          1600;
+        startFace       193600;
     }
     gammaEx4
     {
         type            patch;
-        nFaces          100;
-        startFace       3200;
+        nFaces          1600;
+        startFace       195200;
     }
 )
 

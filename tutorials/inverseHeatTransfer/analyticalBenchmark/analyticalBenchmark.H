@@ -1,6 +1,7 @@
 #ifndef analyticalBenchmark_H
 #define analyticalBenchmark_H
 
+#include "MUQ/Modeling/Distributions/Gaussian.h"
 
 class analyticalBenchmark: public inverseLaplacianProblem
 {
@@ -331,6 +332,17 @@ class analyticalBenchmark: public inverseLaplacianProblem
             //Reinitializing runTime
             instantList Times = runTime.times();
             runTime.setTime(Times[1], 1);
+        }
+
+        void addNoise(double variance_)
+        {
+            Eigen::VectorXd variance = Tmeas * variance_;
+            Eigen::VectorXd measurementsError(Tmeas.size());
+
+            auto density = std::make_shared<muq::Modeling::Gaussian>(measurementsError.size());
+            measurementsError = variance.cwiseProduct(density->Sample());
+
+            Tmeas += measurementsError;
         }
 
 

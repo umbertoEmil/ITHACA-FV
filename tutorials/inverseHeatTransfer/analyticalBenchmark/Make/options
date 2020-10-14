@@ -28,6 +28,9 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedSteadyNS \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedLaplacian \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/NonLinearSolvers \
+    -I$(LIB_ITHACA_SRC)/ITHACA_MUQ \
+    -I$(MUQ_LIBRARIES)/include \
+    -I$(MUQ_EXT_LIBRARIES)/include\
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAutilities \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAbayesian \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAPOD \
@@ -43,10 +46,25 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_THIRD_PARTY/splinter/include \
     -I/home/umberto/PhD/MUQinstall/include \
     -I/home/umberto/PhD/MiniInverseProblems/include \
+    -I$(MUQ_LIBRARIES)/include \
+    -I$(MUQ_EXT_LIBRARIES)/include\
     -DOFVER=$${WM_PROJECT_VERSION%.*} \
     -Wno-comment \
-    -std=c++11 \
     -g \
+    -std=c++11 \
+    -Wno-int-in-bool-context \
+    -Wno-maybe-uninitialized \
+    -Wno-sign-compare \
+    -Wno-unknown-pragmas \
+    -Wno-unused-variable \
+    -Wno-unused-local-typedefs \
+    -Wno-old-style-cast \
+    -fopenmp \
+    -pthread \
+    -ldl \
+    -O3 \
+    -msse4
+
 
 EXE_LIBS = \
     -lturbulenceModels \
@@ -63,4 +81,13 @@ EXE_LIBS = \
     -lITHACA_FOMPROBLEMS \
     -lITHACA_THIRD_PARTY \
     -lITHACA_CORE \
-    -L$(FOAM_USER_LIBBIN) 
+    -L$(FOAM_USER_LIBBIN) \
+    -L/home/umberto/OpenFOAM/MUQinstall/lib \
+    -lITHACA_MUQ \
+    -lmuqApproximation \
+    -lmuqInference \
+    -lmuqModeling \
+    -lmuqOptimization \
+    -lmuqSamplingAlgorithms \
+    -lmuqUtilities
+
