@@ -112,6 +112,18 @@ Eigen::VectorXd  TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b,
 //--------------------------------------------------------------------------
 /// @brief      Truncated Singular Value regularization
 ///
+/// @param[in]  A                Matrix of coefficient
+/// @param[in]  b                Column vector of solutions
+/// @param[in]  parameterMethod  Regularization parameter selection method
+///
+/// @return     Column vector of variables    
+///
+Eigen::VectorXd  TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b, 
+        double noiseVariance, word parameterMethod);
+
+//--------------------------------------------------------------------------
+/// @brief      Truncated Singular Value regularization
+///
 /// @param[in]  A      Matrix of coefficient
 /// @param[in]  b      Column vector of solutions
 ///
@@ -119,7 +131,6 @@ Eigen::VectorXd  TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b,
 ///
 Eigen::VectorXd  Tikhonov(Eigen::MatrixXd A, Eigen::MatrixXd b,
                           double regularizationParameter);
-
 };
 
 

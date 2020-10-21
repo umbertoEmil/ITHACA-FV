@@ -81,7 +81,6 @@ sequentialIHTP::sequentialIHTP(int argc, char* argv[])
     para = ITHACAparameters::getInstance(mesh, runTime);
     offline = ITHACAutilities::check_off();
     podex = ITHACAutilities::check_pod();
-    nProcs = Pstream::nProcs();
     startTime = runTime.startTime().value();
     deltaTime = runTime.deltaTValue();
     endTime = runTime.endTime().value();
@@ -104,79 +103,49 @@ void sequentialIHTP::setDiffusivity(scalar _diff)
     diffusivity = _diff;
 }
 
-void sequentialIHTP::set_g()
-{
-    volScalarField& T = _T();
-    g.resize(timeSteps.size());
-    forAll(timeSteps, timeI)
-    {
-        g[timeI].resize(T.boundaryField()[hotSide_ind].size(), 0.0);
-        forAll (T.boundaryField()[hotSide_ind], faceI)
-        {
-            g[timeI][faceI] = 0.0;
-        }
-    }
-}
-
-void sequentialIHTP::set_gBaseFunctions(word type,
+void sequentialIHTP::setSpaceBasis(word type,
         scalar shapeParameter)
 {
+    if (!thermocouplesRead)
+    {
+        readThermocouples();
+    }
     volScalarField& T = _T();
     fvMesh& mesh = _mesh();
-    gBasisSize = thermocouplesNum * (NtimeStepsBetweenSamples);
-    gBasisSize = thermocouplesNum * 1;
+    NbasisInSpace = thermocouplesNum;
+    heatFluxSpaceBasis.resize(NbasisInSpace);
 
     if (type == "rbf")
     {
         Info << "Radial Basis Functions are used." << endl;
-        // The center of each function is the projection of each thermocouple
-        // on the boundary hotSide
+        Info << "The center of each function is at the projection " << endl;
+        Info << "of each thermocouple on the boundary hotSide.\n\n";
 
-        if (thermocouplesCellID.size() == 0)
-        {
-            readThermocouples();
-        }
-
-        gBaseFunctions.resize(gBasisSize);
-        gWeights.resize(gBasisSize);
         int thermocouplesCounter = 0;
         int rbfCenterTimeI = 0;
 	scalar maxX =  Foam::max(mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::X));
 	scalar maxZ =  Foam::max(mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::Z));
 
-        forAll(gBaseFunctions, funcI)
+        forAll(heatFluxSpaceBasis, funcI)
         {
-            gBaseFunctions[funcI].resize(timeSteps.size());
             scalar thermocoupleX =
                 mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
             scalar thermocoupleZ =
                 mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
-            //scalar sTime = timeSteps[rbfCenterTimeI];
-            
-	    for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
+            heatFluxSpaceBasis[funcI].resize(T.boundaryField()[hotSide_ind].size());
+            forAll (T.boundaryField()[hotSide_ind], faceI)
             {
-                gBaseFunctions[funcI][timeI].resize(T.boundaryField()[hotSide_ind].size());
-                scalar time = timeSteps[timeI];
-                forAll (T.boundaryField()[hotSide_ind], faceI)
-                {
-                    scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
-                    scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
+                scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
+                scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-                    scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - thermocoupleX) / maxX / maxX +
-                                               (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ) / maxZ / maxZ);// +
-                    
-                                               //(time - sTime) * (time - sTime) / timeSamplesDeltaT / timeSamplesDeltaT );
-	            gBaseFunctions[funcI][timeI][faceI] = Foam::sqrt(1 + (shapeParameter * radius) * (shapeParameter * radius));
+                scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - 
+                        thermocoupleX) / maxX / maxX + (faceZ - thermocoupleZ) * 
+                        (faceZ - thermocoupleZ) / maxZ / maxZ);
+	        heatFluxSpaceBasis[funcI][faceI] = Foam::sqrt(1 + (shapeParameter *
+                            radius) * (shapeParameter * radius));
 
-                }
             }
             thermocouplesCounter++;
-
-            if (thermocouplesCounter == thermocouplesNum)
-            {
-                thermocouplesCounter = 0;
-                rbfCenterTimeI++;
-            }
         }
     }
     else if (type == "pod")
@@ -186,118 +155,32 @@ void sequentialIHTP::set_gBaseFunctions(word type,
     }
 }
 
-void sequentialIHTP::set_gBaseFunctions(word type,
-        scalar shapeParameter_space, scalar shapeParameter_time)
+void sequentialIHTP::set_gParametrized(word spaceBaseFuncType,
+        scalar shapeParameter_space)
 {
     volScalarField& T = _T();
-    fvMesh& mesh = _mesh();
-    gBasisSize = thermocouplesNum * basisDeltaSample;
-    //Info << "debug: thermocouplesNum = " << thermocouplesNum << " , timeSamplesNum = " << timeSamplesNum << endl;
+    setSpaceBasis(spaceBaseFuncType, shapeParameter_space);
 
-    if (type == "rbf")
+    Info << "Using CONSTANT basis in time" << endl;
+    NbasisInTime = 1;
+    NsamplesWindow = 1;
+    Nbasis = NbasisInTime * NbasisInSpace;
+    gBaseFunctions.resize(Nbasis);
+    NtimestepsInSequence = NtimeStepsBetweenSamples * NbasisInTime + 1;
+    forAll(gBaseFunctions, baseI)
     {
-        Info << "Radial Basis Functions are used." << endl;
-        // The center of each function is the projection of each thermocouple
-        // on the boundary hotSide
-
-        if (thermocouplesCellID.size() == 0)
+        gBaseFunctions[baseI].resize(NtimestepsInSequence);
+        for(int timeI = 0; timeI < NtimestepsInSequence; timeI++)
         {
-            readThermocouples();
-        }
-
-        gBaseFunctions.resize(gBasisSize);
-        gWeights.resize(gBasisSize);
-        int thermocouplesCounter = 0;
-        int samplingTimeI = 0;
-        forAll(gBaseFunctions, funcI)
-        {
-            gBaseFunctions[funcI].resize(timeSteps.size());
-            scalar thermocoupleX =
-                mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
-            scalar thermocoupleZ =
-                mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
-            scalar sTime = samplingTime[samplingTimeI];
-            
-	    for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
-            {
-                gBaseFunctions[funcI][timeI].resize(T.boundaryField()[hotSide_ind].size());
-                scalar time = timeSteps[timeI];
-		scalar timeBase = 0;
-
-		if(timeBasisType == "constant")
-		{
-		    Info << "\nUsing CONSTANT time basis\n";
-		    timeBase = 1;
-		}
-		else if(timeBasisType == "linear")
-		{
-		    Info << "\nUsing LINEAR time basis\n";
-		    if(std::abs(time - sTime) < timeSamplesDeltaT)
-		    {
-		        Info << "time = " <<time << endl;
-		        Info << "sTime = " <<sTime << endl;
-		        Info << "std::abs(time - sTime) = " << std::abs(time - sTime) << endl;
-		        timeBase = 1 - std::abs(time - sTime) / timeSamplesDeltaT;
-		    }
-		}
-		else if(timeBasisType == "rbf")
-		{
-		    Info << "\nUsing RBF time basis\n";
-                    scalar radius_time = Foam::sqrt((time - sTime) * (time - sTime));
-		    timeBase = Foam::exp( - (shapeParameter_time * radius_time) * (shapeParameter_time * radius_time) );
-		}
-		else
-		{
-		Info << "debug : " << timeBasisType << endl; 
-		    Info << "Type of time base for the heat flux not defined. EXITING" << endl;
-		    exit(101);
-		}
-
-
-                forAll (T.boundaryField()[hotSide_ind], faceI)
-                {
-                    scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
-                    scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                    scalar radius_space = Foam::sqrt((faceX - thermocoupleX) * (faceX - thermocoupleX) +
-                                               (faceZ - thermocoupleZ) * (faceZ - thermocoupleZ));
-
-		    scalar exponent = shapeParameter_space * radius_space;// + shapeParameter_time * radius_time;
-                    gBaseFunctions[funcI][timeI][faceI] = Foam::exp(- exponent * exponent) * timeBase;
-                }
-            }
-            thermocouplesCounter++;
-
-            if (thermocouplesCounter == thermocouplesNum)
-            {
-                thermocouplesCounter = 0;
-                samplingTimeI++;
-            }
+            gBaseFunctions[baseI][timeI] = heatFluxSpaceBasis[baseI];
         }
     }
-    else if (type == "pod")
-    {
-        Info << "Not yet implemented, exiting" << endl;
-        exit(10);
-    }
-}
 
-void sequentialIHTP::set_gParametrized(word baseFuncType,
-        scalar shapeParameter_space, scalar shapeParameter_time)
-{
-    volScalarField& T = _T();
-    if(shapeParameter_time > 1e-16)
-    {
-        set_gBaseFunctions(baseFuncType, shapeParameter_space, shapeParameter_time);
-    }
-    else
-    {
-	Info << "Using NORMALIZED RBF" << endl;    
-        set_gBaseFunctions(baseFuncType, shapeParameter_space);
-    }
     g.resize(timeSteps.size());
+    gWeights.resize(Nbasis);
     forAll (gWeights, weigthI)
     {
-        gWeights[weigthI] = 0; //-10000;
+        gWeights[weigthI] = 0;
     }
     forAll(timeSteps, timeI)
     {
@@ -305,22 +188,69 @@ void sequentialIHTP::set_gParametrized(word baseFuncType,
     }
 }
 
+List<List<scalar>> sequentialIHTP::interpolateWeights(List<scalar> Wold, List<scalar> Wnew)
+{
+    M_Assert(Wold.size() == Wnew.size(), "Input weights vectors must have the same size");
+
+    double t0 = 0;
+    double t1 = NtimeStepsBetweenSamples * deltaTime;
+    List<List<scalar>> Wout;
+    Wout.resize(Wold.size());
+    forAll (Wold, wI)
+    {
+        Wout[wI].resize(NtimeStepsBetweenSamples + 1);
+        for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
+        {
+            double time = (timeI + 1) * deltaTime;
+            double a = Wold[wI] - (Wnew[wI] - Wold[wI]) / (t1 - t0) * t0;
+            double b = (Wnew[wI] - Wold[wI]) / (t1 - t0);
+            Wout[wI][timeI] = a + b * time;
+        }
+    }
+    return Wout;
+}
+
 void sequentialIHTP::update_gParametrized(List<scalar> weights)
 {
-    M_Assert(weights.size() == gBaseFunctions.size(),
+    M_Assert(weights.size() == Nbasis,
              "weigths size different from basis functions size");
     volScalarField& T = _T();
     label firstTimeI = timeSampleI * NtimeStepsBetweenSamples;
-    label shortTime = 0;
+    List<List<scalar>> interpolatedWeights;
 
-    for(int timeI = firstTimeI; timeI < firstTimeI + NtimeStepsBetweenSamples + 1; timeI++)
+    if(interpolationFlag && !offlineFlag)
+    {
+        if(timeSampleI > 0)
+        {
+            interpolatedWeights = interpolateWeights(gWeightsOld, weights);
+        }
+    }
+
+    int lastTimeStep = firstTimeI + NtimeStepsBetweenSamples + 1;
+
+    label shortTime = 0;
+    for(int timeI = firstTimeI; timeI < lastTimeStep; timeI++)
     {
         forAll (T.boundaryField()[hotSide_ind], faceI)
         {
             g[timeI][faceI] = 0.0;
             forAll (weights, weightI)
             {
-                g[timeI][faceI] += weights[weightI] * gBaseFunctions[weightI][shortTime][faceI];
+                if(interpolationFlag && !offlineFlag)
+                {
+                    if(timeSampleI > 0)
+                    {
+                        g[timeI][faceI] += interpolatedWeights[weightI][shortTime] * gBaseFunctions[weightI][shortTime][faceI];
+                    }
+                    else
+                    {
+                        g[timeI][faceI] += weights[weightI] * gBaseFunctions[weightI][shortTime][faceI];
+                    }
+                }
+                else
+                {
+                    g[timeI][faceI] += weights[weightI] * gBaseFunctions[weightI][shortTime][faceI];
+                }
             }
         }
 	shortTime++;
@@ -347,39 +277,15 @@ volScalarField sequentialIHTP::list2Field(List<scalar> list,
     return field;
 }
 
-Eigen::VectorXd  sequentialIHTP::TSVD(Eigen::MatrixXd A,
-        Eigen::MatrixXd b, label filter)
-{
-    // Add check on b
-    Info << "Using truncated SVD for regularization" << endl;
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
-                                          Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::MatrixXd U = svd.matrixU();
-    Eigen::MatrixXd V = svd.matrixV();
-    Eigen::VectorXd x;
-
-    for (label i = 0; i < filter; i++)
-    {
-        scalar coeff = (U.col(i).transpose() * b)(0, 0);
-
-        if (i == 0)
-        {
-            // / svd.singularValues()(i) << endl;
-            x = coeff / svd.singularValues()(i) * V.col(i);
-        }
-        else
-        {
-            x += coeff / svd.singularValues()(i) * V.col(i);
-        }
-    }
-
-    return x;
-}
-
 void sequentialIHTP::parameterizedBCoffline(bool force)
 {
     fvMesh& mesh = _mesh();
     Tbasis.resize(0);
+    T0field.resize(0);
+    M_Assert(diffusivity > 0.0, "Call setDiffusivity to set up the diffusivity");
+
+    offlineTimestepsSize = NtimeStepsBetweenSamples;
+    offlineEndTime = NtimeStepsBetweenSamples * NbasisInTime * deltaTime;
 
     if (ITHACAutilities::check_file(folderOffline + "/Theta_mat.txt") && force == 0)
     {
@@ -388,26 +294,23 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
              << endl;
         Theta = ITHACAstream::readMatrix(folderOffline + "Theta_mat.txt");
         addSol = ITHACAstream::readMatrix(folderOffline + "addSol_mat.txt");
-        T0_vector = ITHACAstream::readMatrix(folderOffline + "T0_vector_mat.txt");
         ITHACAstream::read_fields(Tad_time, "Tad", folderOffline);
-        ITHACAstream::read_fields(T0_time, "T0_field", folderOffline);
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
         {
             Ttime.resize(0);
             ITHACAstream::read_fields(Ttime, "T" + std::to_string(baseI + 1),
                                       folderOffline);
-            Tbasis.append(Ttime);
+            Tbasis.append(Ttime.clone());
         }
     }
     else
     {
         Info << "\nComputing offline" << endl;
-        solveAdditional();
-        //solveT0();
-        Theta.resize(thermocouplesNum * basisDeltaSample, gWeights.size());
-	label offline = 1;
+        Theta.resize(Nbasis, gWeights.size());
+	offlineFlag = 1;
         Info << "Theta size = " << Theta.rows() << ", " << Theta.cols() << endl;
+        solveAdditional();
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
         {
@@ -417,29 +320,27 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             restart();
             Ttime.resize(0);
             gWeights = Foam::zero();
-            gWeights[baseI] =  1; //1e5
+            gWeights[baseI] =  1;
 	    timeSampleI = 0;
             update_gParametrized(gWeights);
-            solveDirect(offline);
+            solveDirect();
 
-            for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
+            for(int timeI = 0; timeI < offlineTimestepsSize; timeI++)
             {
                 volScalarField& T = Ttime[timeI];
                 /// Saving basis
                 volScalarField gParametrizedField = list2Field(g[timeI]);
                 ITHACAstream::exportSolution(gParametrizedField,
-                                             std::to_string(timeSteps[timeI]),
+                                             std::to_string(timeSteps[timeI + 1]),
                                              folderOffline,
                                              "g" + std::to_string(baseI + 1));
-                ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
+                ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI + 1]),
                                              folderOffline,
                                              "T" + std::to_string(baseI + 1));
             }
-            Tbasis.append(Ttime);
+            Tbasis.append(Ttime.clone());
             Tcomp = fieldValueAtThermocouples(Ttime);
             M_Assert(Tcomp.size() == addSol.size(), "Something wrong in reading values at the observations points");
-            std::cout << "Tcom = " << Tcomp << std::endl;
-
             for(int i = 0; i < Tcomp.size(); i++)
             {
                 Theta(i, baseI) = Tcomp(i) + addSol(i);
@@ -447,23 +348,19 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
-        ITHACAstream::exportVector(addSol, "addSol", "eigen", folderOffline);
-        ITHACAstream::exportVector(T0_vector, "T0_vector", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
     }
 
-            Info << "debug 1" << endl;
     Eigen::MatrixXd A = Theta.transpose() * Theta;
-            Info << "debug 2" << endl;
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
                                           Eigen::ComputeThinU | Eigen::ComputeThinV);
-            Info << "debug 333" << endl;
     Eigen::MatrixXd singularValues = svd.singularValues();
        std::cout << "singularValues = " << std::endl;
     double conditionNumber = singularValues.maxCoeff() / singularValues.minCoeff();
-            Info << "debug 5" << endl;
     Info << "Condition number = " << conditionNumber << endl;
     ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
                                folderOffline);
+    offlineFlag = 0;
     Info << "\nOffline ENDED" << endl;
 }
 
@@ -471,9 +368,21 @@ void sequentialIHTP::reconstrucT(word outputFolder)
 {
     Info << "Reconstructing field T" << endl;
     Ttime.resize(0);
-    for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
+    Info << "\nExporting solution in the time domain (" << timeSteps[NtimeStepsBetweenSamples * timeSampleI] << ", " << timeSteps[NtimeStepsBetweenSamples + NtimeStepsBetweenSamples * timeSampleI] << "]\n" << endl;
+    restart();
+    if(timeSampleI == 0)
     {
-        restart();
+        ITHACAstream::exportSolution(T0_time[0], std::to_string(timeSteps[0]),
+                                     outputFolder,
+                                     "Treconstructed");
+        volScalarField gParametrizedField = list2Field(g[0]);
+        ITHACAstream::exportSolution(gParametrizedField,
+                                     std::to_string(timeSteps[0]),
+                                     outputFolder,
+                                     "gReconstructed");
+    }
+    for(int timeI = 0; timeI < NtimeStepsBetweenSamples; timeI++)
+    {
         volScalarField T(_T);
         ITHACAutilities::assignIF(T, homogeneousBC);
         forAll(Tbasis, baseI)
@@ -481,44 +390,64 @@ void sequentialIHTP::reconstrucT(word outputFolder)
             T += gWeights[baseI] * (Tbasis[baseI][timeI] + Tad_time[timeI]);
         }
         T += - Tad_time[timeI] + T0_time[timeI];
-        ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI + NtimeStepsBetweenSamples * timeSampleI]),
+
+        label realTimeStep = timeI + NtimeStepsBetweenSamples * timeSampleI + 1;
+        ITHACAstream::exportSolution(T, std::to_string(timeSteps[realTimeStep]),
                                      outputFolder,
                                      "Treconstructed");
-        volScalarField gParametrizedField = list2Field(g[timeI]);
+        volScalarField gParametrizedField = list2Field(g[realTimeStep - 1]);
         ITHACAstream::exportSolution(gParametrizedField,
-                                     std::to_string(timeSteps[timeI + NtimeStepsBetweenSamples * timeSampleI]),
+                                     std::to_string(timeSteps[realTimeStep]),
                                      outputFolder,
                                      "gReconstructed");
-        Ttime.append(T);
+        Ttime.append(T.clone());
     }
 }
 
-void sequentialIHTP::parameterizedBC(word outputFolder,
+Eigen::VectorXd sequentialIHTP::reconstrucT(Eigen::VectorXi cells)
+{
+    Eigen::VectorXd Tout(cells.size());
+    int timeI = NtimeStepsBetweenSamples - 1;
+    for(int cellI = 0; cellI < cells.size(); cellI++)
+    {
+        forAll(Tbasis, baseI)
+        {
+            Tout(cellI) += gWeights[baseI] * (Tbasis[baseI][timeI].internalField()[cellI] 
+                    + Tad_time[timeI].internalField()[cellI]);
+        }
+        Tout(cellI) += - Tad_time[timeI].internalField()[cellI] + T0_time[timeI].internalField()[cellI];
+    }
+
+    return Tout;
+}
+
+void sequentialIHTP::parameterizedBC(word outputFolder, volScalarField initialField,
         word linSys_solver,
         label TSVD_filter)
 {
     Info << endl << "Using quasilinearity of direct problem" << endl;
     //parameterizedBCoffline(folder, forceOffline);
-    //std::cout << "debug: addsol " << addsol <<  std::endl;
-    //std::cout << "debug: T0_vector " << T0_vector <<  std::endl;
-
+    std::cout << "debug: addSol " << addSol <<  std::endl;
+    std::cout << "debug: T0_vector " << T0_vector <<  std::endl;
     timeSampleI = 0;
-    while(timeSampleI < timeSamplesNum - 1)
+
+    while(timeSampleI < timeSamplesNum)
     {
-        //TODO update initial field for T0
-	solveT0();
+        Info << "\nTime sample " << timeSampleI + 1 << endl;
+
+        if(timeSampleI > 0)
+        {
+             reconstrucT("./ITHACAoutput/debugReconstrucT/");
+             ITHACAutilities::assignIF(initialField, Ttime[NtimeStepsBetweenSamples -1]);
+        }
+	solveT0(initialField);
         List<Eigen::MatrixXd> linSys;
         linSys.resize(2);
-	Info << "debug : Theta = " << Theta.rows() << " x " << Theta.cols() << endl;
-	Info << "debug : Tmeas.size() = " << Tmeas.size() << endl;
-	Info << "debug : addSol.size() = " << addSol.size() << endl;
-	Info << "debug : T0_vector.size() = " << T0_vector.size() << endl;
-	TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum * basisDeltaSample);
-	Info << "debug : TmeasShort.size() = " << TmeasShort.size() << endl;
+
+	TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum * NsamplesWindow);
         linSys[0] = Theta.transpose() * Theta;
         linSys[1] = Theta.transpose() * (TmeasShort + addSol - T0_vector);
         Eigen::VectorXd weigths;
-        Info << "\n Time sample " << timeSampleI + 1 << endl;
 
         if (linSys_solver == "fullPivLU")
         {
@@ -544,7 +473,7 @@ void sequentialIHTP::parameterizedBC(word outputFolder,
         }
         else if (linSys_solver == "TSVD")
         {
-            weigths = TSVD(linSys[0], linSys[1], TSVD_filter);
+            weigths = ITHACAregularization::TSVD(linSys[0], linSys[1], TSVD_filter);
         }
         else
         {
@@ -552,6 +481,7 @@ void sequentialIHTP::parameterizedBC(word outputFolder,
                  << "fullPivLU, jacobiSvd, householderQr, ldlt" << endl;
             exit(1);
         }
+        gWeightsOld = gWeights;
         gWeights.resize(weigths.size());
         forAll(gWeights, weightI)
         {
@@ -563,6 +493,7 @@ void sequentialIHTP::parameterizedBC(word outputFolder,
         parameterizedBC_postProcess(linSys, weigths, outputFolder, verbose);
 	timeSampleI++;
     }
+    ITHACAstream::exportMatrix(Jlist, "costFunction", "eigen", outputFolder);
     Info << "End" << endl;
     Info << endl;
 }
@@ -572,13 +503,11 @@ void sequentialIHTP::set_valueFraction()
     fvMesh& mesh = _mesh();
     valueFraction.resize(mesh.boundaryMesh()["coldSide"].size());
     homogeneousBCcoldSide.resize(mesh.boundaryMesh()["coldSide"].size());
-    valueFractionAdj.resize(mesh.boundaryMesh()["coldSide"].size());
     Eigen::VectorXd faceCellDist =
         ITHACAutilities::boudaryFaceToCellDistance(mesh, coldSide_ind);
     forAll (valueFraction, faceI)
     {
         valueFraction[faceI] = 1 / (1 + (k / H / faceCellDist(faceI)));
-        valueFractionAdj[faceI] =  1 / (1 + (1 / k / H / faceCellDist(faceI)));
         homogeneousBCcoldSide[faceI] =  0;
     }
     refGrad = homogeneousBCcoldSide;
@@ -606,47 +535,36 @@ void sequentialIHTP::assignDirectBC(label timeI)
     }
 }
 
-void sequentialIHTP::solveT0()
+void sequentialIHTP::solveT0(volScalarField initialField)
 {
-    Info << "Solving T0 problem" << endl;
+    Info << "\nSolving FULL T0 problem" << endl;
     restartOffline();
     fvMesh& mesh = _mesh();
     simpleControl& simple = _simple();
     fv::options& fvOptions(_fvOptions());
-    volScalarField T0_field(_T);
+    volScalarField T0(_T);
     Foam::Time& runTime = _runTime();
     set_valueFraction();
     List<scalar> RobinBC = Tf * 0.0;
-    word outpurFolder = "./ITHACAoutput/debug/";
-    if(timeSampleI == 0 & timeSamplesT0 < startTime + 1e-16)
-    {
-        assignT0_IF(T0_field);
-    }
-    else
-    {
-        //TODO probably there is no need of reconstructing again T
-        reconstrucT(outpurFolder);
-        ITHACAutilities::assignIF(T0_field, Ttime[NtimeStepsBetweenSamples]);
-    }
+    word outputFolder = "./ITHACAoutput/debugT0/";
 
+    ITHACAutilities::assignIF(T0, initialField);
+
+    T0field.append(T0.clone());
     T0_time.resize(0);
     label timeI = 0;
     forAll(mesh.boundaryMesh(), patchI)
     {
         if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
         {
-            ITHACAutilities::assignMixedBC(T0_field, patchI, RobinBC, refGrad,
+            ITHACAutilities::assignMixedBC(T0, patchI, RobinBC, refGrad,
                                            valueFraction);
         }
         else
         {
-            ITHACAutilities::assignBC(T0_field, patchI, homogeneousBC);
+            ITHACAutilities::assignBC(T0, patchI, homogeneousBC);
         }
     }
-    T0_time.append(T0_field);
-    ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI]),
-                                 folderOffline,
-                                 "T0_field");
 
     while (runTime.loop())
     {
@@ -657,23 +575,177 @@ void sequentialIHTP::solveT0()
         {
             fvScalarMatrix TEqn
             (
-                fvm::ddt(T0_field) - fvm::laplacian(DT * diffusivity, T0_field)
+                fvm::ddt(T0) - fvm::laplacian(DT * diffusivity, T0)
             );
             fvOptions.constrain(TEqn);
             TEqn.solve();
-            fvOptions.correct(T0_field);
+            fvOptions.correct(T0);
         }
 
-        ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI]),
-                                     folderOffline,
-                                     "T0_field");
-        T0_time.append(T0_field);
+        T0_time.append(T0.clone());
+        T0field.append(T0.clone());
+        ITHACAstream::exportSolution(T0, std::to_string(timeSteps[samplingSteps[timeSampleI] - NtimeStepsBetweenSamples + timeI]),
+                                     outputFolder,
+                                     "T0");
         runTime.printExecutionTime(Info);
         runTime.write();
     }
 
     T0_vector = fieldValueAtThermocouples(T0_time);
-    Info << "END \n" << endl;
+    Info << "SolveT0 ENDED\n" << endl;
+}
+
+void sequentialIHTP::getT0modes()
+{
+    word outputFolder = "./ITHACAoutput/modes/";
+    Info << "Computing T0 modes" << endl;
+    ITHACAPOD::getModes(T0field, T0modes, "T0",
+                        0, 0, 0,
+                        NmodesT0);
+    PtrList<volScalarField> modes = T0modes.toPtrList();
+    forAll(modes, modeI)
+    {
+        ITHACAstream::exportSolution(modes[modeI], std::to_string(modeI + 1),
+                outputFolder, "T0modes");
+    }
+    Info << "T0 modes COMPUTED\n" << endl;
+}
+
+void sequentialIHTP::projectT0()
+{
+    Info << "\n*****************************************************" << endl;
+    Info << "Computing projection matrices" << endl;
+    fvMesh& mesh = _mesh();
+    simpleControl& simple = _simple();
+    fv::options& fvOptions(_fvOptions());
+    volScalarField T0(_T);
+    Foam::Time& runTime = _runTime();
+    set_valueFraction();
+    List<scalar> RobinBC = Tf * 0.0;
+
+    forAll(mesh.boundaryMesh(), patchI)
+    {
+        if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
+        {
+            ITHACAutilities::assignMixedBC(T0, patchI, RobinBC, refGrad,
+                                           valueFraction);
+        }
+        else
+        {
+            ITHACAutilities::assignBC(T0, patchI, homogeneousBC);
+        }
+    }
+
+    Eigen::SparseMatrix<double> T0implicitMatrix;
+    Eigen::SparseMatrix<double> T0explicitMatrix;
+
+    ITHACAutilities::assignIF(T0, 1.0);
+    fvScalarMatrix Teq(fvm::ddt(T0) - fvm::laplacian(DT * diffusivity, T0));
+    Eigen::VectorXd b;
+    Foam2Eigen::fvMatrix2Eigen(Teq, T0implicitMatrix, b);
+
+    T0modes.toEigen();
+    T0implicitMatrix_red = T0modes.EigenModes[0].transpose() 
+        * T0implicitMatrix * T0modes.EigenModes[0];
+    T0explicitMatrix_red = T0modes.EigenModes[0].transpose() 
+        * b.asDiagonal() * T0modes.EigenModes[0];
+    Info << "Projection matrices COMPUTED\n" << endl;
+}
+
+void sequentialIHTP::projectDirectOntoT0()
+{
+    /// Creation of the matrices to project direct solution to reduced space
+    Info << "Computing direct problem projection matrices" << endl;
+    int internalFieldSize = Tbasis[0][0].internalField().size();
+    Eigen::MatrixXd Tbasis_Eigen(internalFieldSize, Nbasis);
+    Eigen::VectorXd Tad_Eigen = 
+        Foam2Eigen::field2Eigen(Tad_time[NtimeStepsBetweenSamples - 1]);
+
+    PtrList<volScalarField> Tbasis_lastTime;
+    M_Assert(Tbasis[0].size() == NtimeStepsBetweenSamples, 
+            "The basis for the direct problem have wrong dimention in time");
+
+    forAll(Tbasis, baseI)
+    {
+        volScalarField temp = Tbasis[baseI][NtimeStepsBetweenSamples - 1] 
+            + Tad_time[NtimeStepsBetweenSamples - 1];
+        Tbasis_lastTime.append(temp.clone());
+    }
+
+    Tbasis_projectionMat = T0modes.project(Tbasis_lastTime); 
+    Tad_projected = T0modes.project(Tad_time[NtimeStepsBetweenSamples - 1]);
+}
+void sequentialIHTP::pointProjectionOffline(Eigen::VectorXi cells)
+{
+
+    int Ncells = cells.size();
+    int lastTimestepID = NtimeStepsBetweenSamples - 1;
+    pointsProjectionMatrix.resize(Ncells, NmodesT0);
+
+    Eigen::MatrixXd M_vol = ITHACAutilities::getMassMatrixFV(T0_time[lastTimestepID]);
+
+    Eigen::MatrixXd M = T0modes.EigenModes[0].transpose() * M_vol.asDiagonal();
+    for(int cellI = 0; cellI < Ncells; cellI++)
+    {
+        pointsProjectionMatrix.row(cellI) = T0modes.EigenModes[0].row(cells(cellI));
+    }
+}
+
+void sequentialIHTP::projectionErrorOffline()
+{
+    /// I compute the L2 norm of the Tbasis and Tad perpendicular to the projection
+    Info << "Computing the offline part for the projection error" << endl;
+
+    //TODO You can consider all modes when computing the error and then 
+    //choose the right ammount of modes based on the behaviour of the error
+    int lastTimestepID = NtimeStepsBetweenSamples - 1;
+    projectionErrorTbasis.resize(0);
+    word outputFolder = "./ITHACAoutput/projectionError";
+
+
+    forAll(Tbasis, baseI)
+    {
+        volScalarField base = Tbasis[baseI][lastTimestepID];
+        volScalarField baseProj(base);
+        T0modes.projectSnapshot(base, baseProj, NmodesT0, "L2");
+        volScalarField temp = base - baseProj;
+        projectionErrorTbasis.append(temp.clone());
+        ITHACAstream::exportSolution(projectionErrorTbasis[baseI], std::to_string(baseI + 1),
+                outputFolder, "projectionErrorTbasis");
+    }
+    projectionErrorTad.resize(0);
+    volScalarField TadProj(Tbasis[0][lastTimestepID]);
+    T0modes.projectSnapshot(Tad_time[lastTimestepID], TadProj, NmodesT0, "L2");
+    volScalarField temp(Tad_time[lastTimestepID] - TadProj);
+    projectionErrorTad.append(temp.clone());
+    ITHACAstream::exportSolution(projectionErrorTad[0], std::to_string(1),
+            outputFolder, "projectionErrorTad");
+
+    //forAll(Tbasis, baseI)
+    //{
+    //    volScalarField base = Tbasis[baseI][lastTimestepID];
+    //    volScalarField baseProj(base);
+    //    T0modes.projectSnapshot(base, baseProj, NmodesT0, "L2");
+    //    volScalarField basePerp = base - baseProj;
+    //    projectionErrorTbasis(baseI) = ITHACAutilities::L2Norm(basePerp);
+    //    Info << "Projection error Tbase["<< baseI << "] = " << projectionErrorTbasis(baseI) << endl;
+    //}
+    //volScalarField TadProj(Tad_time[lastTimestepID]);
+    //T0modes.projectSnapshot(Tad_time[lastTimestepID], TadProj, NmodesT0, "L2");
+    //volScalarField TadPerp = Tad_time[lastTimestepID] - TadProj;
+    //projectionErrorTad = ITHACAutilities::L2Norm(TadPerp);
+    //Info << "Projection error Tad = " << projectionErrorTad << endl;
+}
+
+void sequentialIHTP::T0offline(Eigen::VectorXi cells)
+{
+    getT0modes();
+    projectT0();
+    projectDirectOntoT0();
+    projectionErrorOffline();
+    Info << "debug : getting in" << endl;
+    std::cout << "cells = \n" << cells << std::endl;
+    pointProjectionOffline(cells);
 }
 
 void sequentialIHTP::solveAdditional()
@@ -702,10 +774,6 @@ void sequentialIHTP::solveAdditional()
             ITHACAutilities::assignBC(Tad, patchI, homogeneousBC);
         }
     }
-    Tad_time.append(Tad);
-    ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
-                                 folderOffline,
-                                 "Tad");
 
     while (runTime.loop())
     {
@@ -735,11 +803,10 @@ void sequentialIHTP::solveAdditional()
             TEqn.solve();
             fvOptions.correct(Tad);
         }
-
+        Tad_time.append(Tad.clone());
         ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
                                      folderOffline,
                                      "Tad");
-        Tad_time.append(Tad);
         runTime.printExecutionTime(Info);
         runTime.write();
     }
@@ -750,9 +817,9 @@ void sequentialIHTP::solveAdditional()
     Info << "END \n" << endl;
 }
 
-void sequentialIHTP::solveDirect(label offline)
+void sequentialIHTP::solveDirect()
 {
-    if(offline)
+    if(offlineFlag)
     {
         restartOffline();
     }
@@ -760,15 +827,18 @@ void sequentialIHTP::solveDirect(label offline)
     {
         restart();
     }
-    assignDirectBC(0);
     M_Assert(diffusivity>1e-36, "Set the diffusivity value");
     volScalarField& T = _T();
+    assignDirectBC(0);
+    if(offlineFlag)
+    {
+        ITHACAutilities::assignIF(T, homogeneousBC);
+    }
     simpleControl& simple = _simple();
     Foam::Time& runTime = _runTime();
     fv::options& fvOptions(_fvOptions());
     label timeI = 0;
     Ttime.resize(0);
-    Ttime.append(T);
 
     while (runTime.loop())
     {
@@ -786,12 +856,12 @@ void sequentialIHTP::solveDirect(label offline)
             TEqn.solve();
             fvOptions.correct(T);
         }
-
-        Ttime.append(T);
+        Ttime.append(T.clone());
 
         runTime.printExecutionTime(Info);
         runTime.write();
     }
+    Info << "Direct computation ENDED" << endl;
     
 }
 
@@ -826,7 +896,7 @@ void sequentialIHTP::readThermocouples()
             {
                 thermocouplesField.ref()[thermocouplesCellID[tcI]] = 1;
             }
-            ITHACAstream::exportSolution(thermocouplesField, "1", "./ITHACAoutput/debug/",
+            ITHACAstream::exportSolution(thermocouplesField, "1", "./ITHACAoutput/thermocouplesField/",
                                          "thermocouplesField,");
             Eigen::MatrixXi thermocouplesCellID_eigen = Foam2Eigen::List2EigenMatrix(
                         thermocouplesCellID);
@@ -842,8 +912,6 @@ void sequentialIHTP::readThermocouples()
         }
         sampling2symulationTime();
 	NtimeStepsBetweenSamples = timeSamplesDeltaT / deltaTime;
-        Info << "debug: NtimeStepsBetweenSamples = " << NtimeStepsBetweenSamples << endl;
-        Info << "debug: samplingTimes = " << samplingTime << endl;
         residual.resize(thermocouplesNum * timeSamplesNum);
     }
     else
@@ -897,37 +965,31 @@ Eigen::VectorXd sequentialIHTP::fieldValueAtThermocouples(
                 fieldValueAtThermocouples(fieldList, samplingSteps[sampleTimeI]);
         }
     }
-    else if ( fieldList.size() == NtimeStepsBetweenSamples + 1 )
+    else if ( fieldList.size() == NtimeStepsBetweenSamples )
     {
-        Info << "\n Sampling ONLY between two sampling times \n\n" << endl;
-        fieldInt.resize(basisDeltaSample * thermocouplesNum);
-        for(int i = 0; i < basisDeltaSample; i++)
-        {
-            fieldInt.segment(thermocouplesNum * i, thermocouplesNum) =
-                fieldValueAtThermocouples(fieldList, NtimeStepsBetweenSamples * i);
-        }
-        Info << "debug : fieldInt.size() = "<< fieldInt.size() << endl;
+        Info << "\nField size = " << fieldList.size() << ".\nSampling ONLY the last timestep\n\n" << endl;
+        fieldInt =
+            fieldValueAtThermocouples(fieldList, NtimeStepsBetweenSamples - 1);
     }
     else
     {
-	M_Assert(0,  "The fieldList must be filled for all the timesteps");
+        Info << "The input fieldList of sequentialIHTP::fieldValueAtThermocouples can have size Ntimes + 1 (=" << Ntimes + 1 << ") or\n";
+        Info << " NtimeStepsBetweenSamples  (=" <<  NtimeStepsBetweenSamples << ") but has size " << fieldList.size() << endl;
+        Info << "Exiting." << endl;
+        exit(23);
     }
-    Info << "\n Sampling done \n" << endl;
+    Info << "\nSampling done \n" << endl;
     return fieldInt;
 }
 
 
-void sequentialIHTP::restart(word fieldName)
+void sequentialIHTP::restart()
 {
     Time& runTime = _runTime();
     instantList Times = runTime.times();
     runTime.setTime(Times[1], 0);
     _simple.clear();
-
-    if (fieldName == "T" || fieldName == "all")
-    {
-        _T.clear();
-    }
+   _T.clear();
 
     Foam::fvMesh& mesh = _mesh();
     _simple = autoPtr<simpleControl>
@@ -938,38 +1000,46 @@ void sequentialIHTP::restart(word fieldName)
                   )
               );
 
-    if (fieldName == "T" || fieldName == "all")
-    {
-        //Info << "ReReading field T\n" << endl;
-        _T = autoPtr<volScalarField>
+    _T = autoPtr<volScalarField>
+         (
+             new volScalarField
              (
-                 new volScalarField
+                 IOobject
                  (
-                     IOobject
-                     (
-                         "T",
-                         runTime.timeName(),
-                         mesh,
-                         IOobject::MUST_READ,
-                         IOobject::AUTO_WRITE
-                     ),
-                     mesh
-                 )
-             );
-    }
+                     "T",
+                     runTime.timeName(),
+                     mesh,
+                     IOobject::MUST_READ,
+                     IOobject::AUTO_WRITE
+                 ),
+                 mesh
+             )
+         );
+    
 
     Info << "Ready for new computation" << endl;
 }
 
 void sequentialIHTP::restartOffline()
 {
-    Info << "Setting endTime to timeSamplesDeltaT" << endl;
+    Info << "Setting endTime to offlineEndTime" << endl;
+    restart();
+    Time& runTime = _runTime();
+    instantList Times = runTime.times();
+    runTime.setTime(0.0, 0);
+    runTime.setEndTime(offlineEndTime);
+    Info << "Ready for new offline computation" << endl;
+}
+
+void sequentialIHTP::restartT0()
+{
+    Info << "Setting endTime to offlineEndTime" << endl;
     restart();
     Time& runTime = _runTime();
     instantList Times = runTime.times();
     runTime.setTime(0.0, 0);
     runTime.setEndTime(timeSamplesDeltaT);
-    Info << "Ready for new computation" << endl;
+    Info << "Ready for new T0 computation" << endl;
 }
 
 void sequentialIHTP::sampling2symulationTime()
@@ -983,10 +1053,11 @@ void sequentialIHTP::sampling2symulationTime()
                            timeSamplesDeltaT / deltaTime)) < EPSILON,
              "timeSamplesDeltaT should be a multiple of deltaTime");
     label n0 = (timeSamplesT0 - startTime) / deltaTime;
+    M_Assert(n0 > 0, "First sampling step cannot be 0");
     //Info << "debug: n0 = " << n0 << endl;
     //Info << "debug: (timeSamplesT0 - startTime) / deltaTime = " << (timeSamplesT0 - startTime) / deltaTime << endl;
     M_Assert(std::fabs(n0 * deltaTime - timeSamplesT0) < EPSILON,
-             "The first sampling time must coincide with a symulation timestep");
+             "The first sampling time must coincide with a simulation timestep");
     scalar samplingEndTime = timeSamplesDeltaT * (timeSamplesNum - 1) + timeSamplesT0;
     //Info << "debug: samplingEndTime = " << samplingEndTime << endl;
     //Info << "debug: EndTime = " << endTime << endl;
@@ -1032,23 +1103,11 @@ void sequentialIHTP::parameterizedBC_postProcess(
     }
 
     reconstrucT(outputFolder);
-    update_gParametrized(gWeights);
-    Info << "\nExporting solution in the time domain [" << timeSteps[NtimeStepsBetweenSamples * timeSampleI] << ", " << timeSteps[NtimeStepsBetweenSamples + NtimeStepsBetweenSamples * timeSampleI] << "]\n" << endl;
-    for(int timeI = 0; timeI < NtimeStepsBetweenSamples + 1; timeI++)
-    {
-	label realTimeStep = timeI + NtimeStepsBetweenSamples * timeSampleI;
-        ITHACAstream::exportSolution(Ttime[timeI], std::to_string(timeSteps[realTimeStep]),
-                                     outputFolder,
-                                     "Treconstructed");
-        volScalarField gParametrizedField = list2Field(g[realTimeStep]);
-        ITHACAstream::exportSolution(gParametrizedField,
-                                     std::to_string(timeSteps[realTimeStep]),
-                                     outputFolder,
-                                     "gReconstructed");
-    }
     Tcomp = fieldValueAtThermocouples(Ttime);
     std::cout << "Tcomp = \n" << Tcomp.transpose() << std::endl;
     std::cout << "TmeasShort = \n" << TmeasShort.transpose() << std::endl;
-    J = 0.5 * (Tcomp - TmeasShort).dot(Tcomp - TmeasShort);
+    J = 0.5 * Foam::sqrt((Tcomp - TmeasShort).dot(Tcomp - TmeasShort));
     Info << "J = " << J << endl;
+    Jlist.conservativeResize(Jlist.size() + 1);
+    Jlist(Jlist.size() - 1) = J;
 }

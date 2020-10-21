@@ -674,7 +674,7 @@ int main(int argc, char* argv[])
                                          example.residual.squaredNorm());
         }
         Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    folder);
         example.parameterizedBC_postProcess(folder, innerField);
         Info << "*********************************************************" << endl;
@@ -744,9 +744,9 @@ int main(int argc, char* argv[])
 
         ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
                                    folder);
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    folder);
-        ITHACAstream::exportVector(conditionNumber, "conditionNumber", "eigen",
+        ITHACAstream::exportMatrix(conditionNumber, "conditionNumber", "eigen",
                                    folder);
         example.parameterizedBC_postProcess(folder, innerField);
         Info << "*********************************************************" << endl;
@@ -813,7 +813,7 @@ int main(int argc, char* argv[])
         Eigen::MatrixXd singularValues = svd.singularValues();
         ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
                                    folder);
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    folder);
         example.parameterizedBC_postProcess(folder, innerField);
         Info << "*********************************************************" << endl;
@@ -1003,7 +1003,7 @@ int main(int argc, char* argv[])
         Eigen::MatrixXd singularValues = svd.singularValues();
         ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
                                    folder);
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    folder);
         //Info << "Intorducing error in the measurements" << endl;
         //Eigen::VectorXd measurementsError= ITHACAutilities::rand(example.Tmeas.size(), 1, -2, 2);

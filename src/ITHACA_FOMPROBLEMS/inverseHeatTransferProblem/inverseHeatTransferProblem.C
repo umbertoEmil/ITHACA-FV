@@ -394,7 +394,7 @@ void inverseHeatTransferProblem::parameterizedBCoffline(bool force)
             Ttime.resize(0);
             ITHACAstream::read_fields(Ttime, "T" + std::to_string(baseI + 1),
                                       folderOffline);
-            Tbasis.append(Ttime);
+            Tbasis.append(Ttime.clone());
         }
     }
     else
@@ -427,7 +427,7 @@ void inverseHeatTransferProblem::parameterizedBCoffline(bool force)
                                              folderOffline,
                                              "T" + std::to_string(baseI + 1));
             }
-            Tbasis.append(Ttime);
+            Tbasis.append(Ttime.clone());
             Tcomp = fieldValueAtThermocouples(Ttime);
             forAll(samplingSteps, sampleI)
             {
@@ -440,8 +440,8 @@ void inverseHeatTransferProblem::parameterizedBCoffline(bool force)
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
-        ITHACAstream::exportVector(addSol, "addSol", "eigen", folderOffline);
-        ITHACAstream::exportVector(T0_vector, "T0_vector", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(T0_vector, "T0_vector", "eigen", folderOffline);
     }
 
     Eigen::MatrixXd A = Theta.transpose() * Theta;
@@ -478,7 +478,7 @@ void inverseHeatTransferProblem::reconstrucT(word outputFolder)
                                      std::to_string(timeSteps[timeI]),
                                      outputFolder,
                                      "gReconstructed");
-        Ttime.append(T);
+        Ttime.append(T.clone());
     }
     Tcomp = fieldValueAtThermocouples(Ttime);
 }
@@ -608,7 +608,7 @@ void inverseHeatTransferProblem::solveT0()
             ITHACAutilities::assignBC(T0_field, patchI, homogeneousBC);
         }
     }
-    T0_time.append(T0_field);
+    T0_time.append(T0_field.clone());
     ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI]),
                                  folderOffline,
                                  "T0_field");
@@ -632,7 +632,7 @@ void inverseHeatTransferProblem::solveT0()
         ITHACAstream::exportSolution(T0_field, std::to_string(timeSteps[timeI]),
                                      folderOffline,
                                      "T0_field");
-        T0_time.append(T0_field);
+        T0_time.append(T0_field.clone());
         runTime.printExecutionTime(Info);
         runTime.write();
     }
@@ -667,7 +667,7 @@ void inverseHeatTransferProblem::solveAdditional()
             ITHACAutilities::assignBC(Tad, patchI, homogeneousBC);
         }
     }
-    Tad_time.append(Tad);
+    Tad_time.append(Tad.clone());
     ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
                                  folderOffline,
                                  "Tad");
@@ -704,7 +704,7 @@ void inverseHeatTransferProblem::solveAdditional()
         ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
                                      folderOffline,
                                      "Tad");
-        Tad_time.append(Tad);
+        Tad_time.append(Tad.clone());
         runTime.printExecutionTime(Info);
         runTime.write();
     }
@@ -729,7 +729,7 @@ void inverseHeatTransferProblem::solve(const char* problemID, word outputFolder)
     fv::options& fvOptions(_fvOptions());
     label timeI = 0;
     Ttime.resize(0);
-    Ttime.append(T);
+    Ttime.append(T.clone());
 
     if (strcmp( problemID, "direct") == 0)
     {
@@ -750,7 +750,7 @@ void inverseHeatTransferProblem::solve(const char* problemID, word outputFolder)
                 fvOptions.correct(T);
             }
 
-            Ttime.append(T);
+            Ttime.append(T.clone());
 
             if (outputFolder != "noFolder")
             {

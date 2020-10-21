@@ -339,6 +339,8 @@ int inverseLaplacianProblem_CG::conjugateGradient()
             ITHACAstream::exportMatrix(Jlist, "costFunctionFull", "eigen", "./");
             return (1);
         }
+        Jlist.conservativeResize(cgIter + 1, 1);
+        Jlist(cgIter) = J;
 
         Jlist.conservativeResize(cgIter + 1, 1);
         Jlist(cgIter) = J;

@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      ITHACAdict;
+}
+
+gIntegralWeight     2;
+
+interpolation       0;
+cgIterMax           50;
+Jtolerance          1e-4;
+JrelativeTolerance  1e-2;
+
+thermocouplesNumber 16;
+thermalConductivity 3.0;
+heatTranferCoeff    5.0;
+Tf                  0.0;
+
+// Number of modes to output and to use for projection
+NmodesTout 100;
+NmodesTproj 60;
+NmodesLambdaOut 100;
+NmodesLambdaProj 40;
+NmodesDeltaTout 100;
+NmodesDeltaTproj 40;
+
+NumberErrorTests  200;
+noiseLevelTC       0.04;
+noiseLevelG        0.1;
+
+//Test to perform
+CGtest                          0;
+CG_gWeightTest                  0;
+CGnoiseTest                     0;
+CGnoiseLevelTest                0;
+ParamBCnoiseLevelTest           0;
+parameterizedBCtest             0;
+paramBC_gWeightTest             0;
+TSVDregulatization_noiseTest    1;
+CGandParamErrorTest             0;
+parameterizedBCtest_RBFwidth    0;
+parameterizedBCerrorTest        0;
+parameterizedBCerrorTest_TSVD   0;

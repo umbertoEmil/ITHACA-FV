@@ -46,7 +46,6 @@ SourceFiles
 #include "Foam2Eigen.H"
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
-#include "sampledTriSurfaceMesh.H"
 
 #include "analyticalInverseUnsteady.H"
 using namespace SPLINTER;
@@ -55,15 +54,16 @@ using namespace SPLINTER;
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
-    // Reading tests to perform
-    ITHACAparameters para;
-    scalar k = para.ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
-    scalar density = para.ITHACAdict->lookupOrDefault<double>("density", 0);
-    scalar specificHeat = para.ITHACAdict->lookupOrDefault<double>("specificHeat", 0);
+    analyticalInverseUnsteady example(argc, argv);
+    ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
+                             example._runTime());
+    scalar k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
+    scalar density = para->ITHACAdict->lookupOrDefault<double>("density", 0);
+    scalar specificHeat = para->ITHACAdict->lookupOrDefault<double>("specificHeat",
+                          0);
     scalar diffusivity = k / (density * specificHeat);
-    
-    analyticalInverseUnsteady example(argc, argv, diffusivity);
-    
+    M_Assert( diffusivity > 0, "diffusivity not specified");
+    example.setDiffusivity(diffusivity);
     M_Assert( diffusivity > 0, "diffusivity not specified");
     example.k = k;
     M_Assert(example.k > 0, "thermalConductivity, k, not specified");
@@ -71,40 +71,41 @@ int main(int argc, char* argv[])
     M_Assert(example.density > 0, "Density not specified");
     example.specificHeat = specificHeat;
     M_Assert(example.specificHeat > 0, "specificHeat not specified");
-    example.H = para.ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    example.H = para->ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
     M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
-    example.exponentialSolution = para.ITHACAdict->lookupOrDefault<unsigned>("exponentialSolution", 0);
-    example.quadraticSolution = para.ITHACAdict->lookupOrDefault<unsigned>("quadraticSolution", 0);
+    example.exponentialSolution =
+        para->ITHACAdict->lookupOrDefault<unsigned>("exponentialSolution", 0);
+    example.quadraticSolution =
+        para->ITHACAdict->lookupOrDefault<unsigned>("quadraticSolution", 0);
     M_Assert(example.exponentialSolution || example.quadraticSolution,
-        "Chose one between quadraticSolution and exponentialSolution");
-
-    unsigned directProblemTest = para.ITHACAdict->lookupOrDefault<unsigned>("directProblemTest", 0);
-    unsigned parameterizedBCtest = para.ITHACAdict->lookupOrDefault<unsigned>("parameterizedBCtest", 0);
-    
-    
+             "Chose one between quadraticSolution and exponentialSolution");
+    unsigned directProblemTest =
+        para->ITHACAdict->lookupOrDefault<unsigned>("directProblemTest", 0);
+    unsigned parameterizedBCtest =
+        para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBCtest", 0);
     //example.heatFlux = cnpy::load(example.heatFlux, "DanieliHeatFluxAndCastingSpeed.npy");
     //std::cout << "heatFlux.rows = " << example.heatFlux.rows() << std::endl;
-
     example.readThermocouples();
     example.analyticalSolution();
-    if(directProblemTest)
+
+    if (directProblemTest)
     {
         example.solveTrue();
         example.directProblemPostProcess();
     }
 
-    if(parameterizedBCtest)
+    if (parameterizedBCtest)
     {
         word outputFolder = "./ITHACAoutput/testInverse/";
         example.assignTrueIF();
         example.set_gParametrized("rbf", 0.7);
         example.parameterizedBCoffline();
         example.parameterizedBC(outputFolder, "fullPivLU");
-	example.inverseProblemPostProcess(outputFolder);
+        example.inverseProblemPostProcess(outputFolder);
     }
+
     //example.reconstrucT();
     //example.solveUnsteady();
-    
     return 0;
 }
 

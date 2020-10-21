@@ -456,7 +456,58 @@ void Modes<Type, PatchField, GeoMesh>::operator=(const
     }
 }
 
+void Modes<Type, PatchField, GeoMesh>::projectSnapshot(
+    GeometricField<Type, PatchField, GeoMesh> snapshot,
+    GeometricField<Type, PatchField, GeoMesh>& projSnapshot,
+    label numberOfModes,
+    word innerProduct)
+{
+    if (EigenModes.size() == 0)
+    {
+        toEigen();
+    }
 
+    M_Assert(numberOfModes <= this->size(),
+             "The number of Modes used for the projection cannot be bigger than the number of available modes");
+    M_Assert(innerProduct == "L2" || innerProduct == "Frobenius",
+             "The chosen inner product is not implemented");
+    Eigen::MatrixXd Modes;
+
+    if (numberOfModes == 0)
+    {
+        Modes = EigenModes[0];
+    }
+    else
+    {
+        Modes = EigenModes[0].leftCols(numberOfModes);
+    }
+
+    Eigen::MatrixXd M_vol;
+    Eigen::MatrixXd M;
+    Eigen::MatrixXd projSnapI;
+    Eigen::MatrixXd projSnapCoeff;
+
+    Eigen::MatrixXd F_eigen = Foam2Eigen::field2Eigen(snapshot);
+
+    if (innerProduct == "L2")
+    {
+        M_vol = ITHACAutilities::getMassMatrixFV(snapshot);
+    }
+    else if (innerProduct == "Frobenius")
+    {
+        M_vol =  Eigen::VectorXd::Identity(F_eigen.rows(), 1);
+    }
+    else
+    {
+        std::cout << "Inner product not defined" << endl;
+        exit(0);
+    }
+
+    M = Modes.transpose() * M_vol.asDiagonal() * Modes;
+    projSnapI = Modes.transpose() * M_vol.asDiagonal() * F_eigen;
+    projSnapCoeff = M.fullPivLu().solve(projSnapI);
+    reconstruct(projSnapshot, projSnapCoeff, "projSnap");
+}
 template class Modes<scalar, fvPatchField, volMesh>;
 template class Modes<vector, fvPatchField, volMesh>;
 template class Modes<scalar, fvsPatchField, surfaceMesh>;

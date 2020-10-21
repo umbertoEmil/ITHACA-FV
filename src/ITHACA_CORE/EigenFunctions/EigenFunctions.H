@@ -29,10 +29,13 @@ SourceFiles
     EigenFunctions.C
 \*---------------------------------------------------------------------------*/
 
+
 /// \file
-/// Header file of the EigenFunctions class.
+/// Header file of the EigenFunctions namespace, it contains the implementation of
+/// several additional Eigen functions.
 /// \dir
-/// Directory containing the header and source files for the EigenFunctions class.
+/// Directory containing the header and source files for the EigenFunction namespace.
+
 
 #ifndef EigenFunctions_H
 #define EigenFunctions_H

@@ -26,14 +26,6 @@ Tf                  0.0;
 moldWidth           1.97;
 castWidth           1.52;
 
-// Number of modes to output and to use for projection
-NmodesTout 100;
-NmodesTproj 60;
-NmodesLambdaOut 100;
-NmodesLambdaProj 40;
-NmodesDeltaTout 100;
-NmodesDeltaTproj 40;
-
 NumberErrorTests  100;
 
 userDefinedTemperatures 0;

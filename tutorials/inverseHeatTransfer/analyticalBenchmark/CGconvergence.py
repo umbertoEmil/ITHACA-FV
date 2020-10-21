@@ -23,9 +23,9 @@ iterationTicks = np.linspace(1, 100, 11)
 
 f = plt.figure(2,figsize=(12,8))
 #plt.semilogy(iterations, relErr_L2norm,'b-', linewidth=2)
-plt.plot(iterations, relErr_L2norm,'b-', linewidth=2, label = r'$||\epsilon_{rel}||_{L^2(\Gamma_{s_in})}$')
-plt.plot(iterations, relErr_LinfNorm,'k--', linewidth=2, label = r'$||\epsilon_{rel}||_{L^\infty(\Gamma_{s_in})}$')
-plt.ylim(0,1)
+plt.semilogy(iterations, relErr_L2norm,'b-', linewidth=2, label = r'$||\epsilon||_{L^2(\Gamma_{s_{in}})}$')
+plt.semilogy(iterations, relErr_LinfNorm,'k--', linewidth=2, label = r'$||\epsilon||_{L^\infty(\Gamma_{s_{in}})}$')
+#plt.ylim(1e-2,1)
 plt.xlim(1,len(iterations))
 
 #plt.xticks(iterationTicks)

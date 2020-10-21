@@ -2,12 +2,14 @@
 #define numericalBenchmark_H
 
 
-class numericalBenchmark: public inverseLaplacianProblem
+#include "MUQ/Modeling/Distributions/Gaussian.h"
+
+class numericalBenchmark_CG: public inverseLaplacianProblem_CG
 {
     public:
-        explicit numericalBenchmark(int argc, char* argv[])
+        explicit numericalBenchmark_CG(int argc, char* argv[])
             :
-            inverseLaplacianProblem(argc, argv),
+            inverseLaplacianProblem_CG(argc, argv),
             T(_T()),
             lambda(_lambda()),
             deltaT(_deltaT()),
@@ -26,9 +28,11 @@ class numericalBenchmark: public inverseLaplacianProblem
         fvMesh& mesh;
         Time& runTime;
 
-        double a;
-        double b;
-        double c;
+        double g_0;
+        double g_Z;
+        double g_X;
+        double Tf_0;
+        double Tf_delta;
         double d;
 
         //Boudary Conditions
@@ -44,133 +48,109 @@ class numericalBenchmark: public inverseLaplacianProblem
         PtrList<volScalarField> gRelErrField;
 
 
-        volScalarField analyticalErrorField (volScalarField& field1,
-                                             volScalarField& field2)
-        {
-            volScalarField fieldDiff(field1 - field2);
-            return fieldDiff;
-        }
-
-        void computeTdiff()
-        {
-            TdiffField = TredField;
-            forAll(TdiffField, testI)
-            {
-                TdiffField[testI] = TredField[testI] - TfullField[0];
-            }
-        }
-
-        int isInPlane(double cx, double cz)
-        {
-            return (cx >= interpolationPlane.minX -
-                    interpolationPlane.thermocoupleCellDim[0] / 4 &&
-                    cz >= interpolationPlane.minZ - interpolationPlane.thermocoupleCellDim[2] / 4 &&
-                    cx <= interpolationPlane.maxX + interpolationPlane.thermocoupleCellDim[0] / 4 &&
-                    cz <= interpolationPlane.maxZ + interpolationPlane.thermocoupleCellDim[2] / 4
-                   );
-        }
-
         void postProcess(word folder, word heatFluxFieldName, scalar innerField = 0.0)
         {
-            Info << "Computing errors" << endl;
-            gFullField.resize(0);
-            ITHACAstream::read_fields(mesh, gFullField, heatFluxFieldName,
-                                      folder);
-            volScalarField gTrueField = list2Field(gTrue, innerField);
-            label Nsolutions = gFullField.size();
-            Eigen::MatrixXd heatFluxL2norm;
-            heatFluxL2norm.resize(Nsolutions, 1);
-            Eigen::MatrixXd heatFluxLinfNorm = heatFluxL2norm;
-            forAll(gFullField, solutionI)
-            {
-                volScalarField gDiffField = gFullField[solutionI] - gTrueField;
-                ITHACAstream::exportSolution(gDiffField,
-                                             std::to_string(solutionI + 1), folder,
-                                             "gDiffField");
-                ITHACAstream::exportSolution(gTrueField,
-                                             std::to_string(solutionI + 1), folder,
-                                             "gTrueField");
-
-	        scalar EPS = 1e-6;
-	        volScalarField relativeErrorField(gDiffField);
-	        for (label i = 0; i < relativeErrorField.internalField().size(); i++)
-                {
-		    if (std::abs(gTrueField.ref()[i]) < EPS)
-		    {
-		        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
-		    }
-	            else
-	            {
-                        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / gTrueField.ref()[i];
-	            }
-                }
-                ITHACAstream::exportSolution(relativeErrorField,
-                                             std::to_string(solutionI + 1), folder,
-                                             "relativeErrorField");
-                heatFluxL2norm(solutionI) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
-                                            "hotSide");
-                heatFluxLinfNorm(solutionI) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
-                                            "hotSide");
-
-            }
-            ITHACAstream::exportMatrix(heatFluxL2norm, "relError_L2norm", "eigen",
-                                       folder);
-            ITHACAstream::exportMatrix(heatFluxLinfNorm, "relError_LinfNorm", "eigen",
-                                       folder);
+#include "postProcess.H"
         }
 
-	void set_Tf()
+        void set_Tf()
         {
-            fvMesh& mesh = _mesh();
-	    volScalarField& T(_T());
-            // Setting BC at the cold side
-            coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
-            label coldSideSize = T.boundaryField()[coldSide_ind].size();
-            Tf.resize(coldSideSize);
-            refGrad.resize(coldSideSize);
-            valueFraction.resize(coldSideSize);
-            forAll(Tf, faceI)
-            {
-                scalar faceZ =
-                    mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].z();
-                scalar faceY =
-                    mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].y();
-                scalar faceX =
-                    mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].x();
-
-                Tf[faceI] = k / H * (a * faceZ + c);
-            }
-	}
+#include "setTf.H"
+        }
 
         void solveTrue()
         {
-            volScalarField& T = _T();
-            fvMesh& mesh = _mesh();
-            Foam::Time& runTime = _runTime();
-            //ITHACAutilities::assignIF(T, homogeneousBC);
-            simpleControl simple(mesh);
-            Info << "DT = " << DT << endl;
-	    assignDirectBC();
+#include"solveTrue.H"
+        }
 
-            while (simple.loop())
+        void addNoise(double noiseStdDev_)
+        {
+            std::cout << "debug : Tmeas1 = \n" << Tmeas.transpose() << std::endl;
+            double variance = Tmeas.mean() * noiseStdDev_ * noiseStdDev_;
+            std::cout << "debug : noiseStdDev_ = " << noiseStdDev_  << std::endl;
+            std::cout << "debug : Tmeas.mean() = " << Tmeas.mean()  << std::endl;
+            std::cout << "debug : variance = " << variance  << std::endl;
+            auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>
+                                (Eigen::VectorXd::Zero(Tmeas.size()), Eigen::MatrixXd::Identity(Tmeas.size(),
+                                        Tmeas.size()) * variance);
+            Tmeas += noiseDensity->Sample();
+            //Set CG tolerance using Discrepancy principle
+            Jtol = Tmeas.size() * variance *
+                   variance / 2;
+
+            if ( Jtol < 1e-1 )
             {
-                while (simple.correctNonOrthogonal())
-                {
-                    fvScalarMatrix TEqn
-                    (
-                        fvm::laplacian(DT, T)
-                    );
-                    TEqn.solve();
-                }
+                Jtol = 1e-1;
             }
 
-            Info << "Exporting" << endl;
-            ITHACAstream::exportSolution(T, "1", "./ITHACAoutput/true/", T.name());
-
-            //Reinitializing runTime
-            instantList Times = runTime.times();
-            runTime.setTime(Times[1], 0);
+            std::cout << "debug : Tmeas2 = \n" << Tmeas.transpose() << std::endl;
         }
+
+};
+
+class numericalBenchmark_paramBC: public inverseLaplacianProblem_paramBC
+{
+    public:
+        explicit numericalBenchmark_paramBC(int argc, char* argv[])
+            :
+            inverseLaplacianProblem_paramBC(argc, argv),
+            T(_T()),
+            mesh(_mesh()),
+            runTime(_runTime())
+        {
+            hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
+            coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
+            thermocouplesRead = 0;
+        }
+        volScalarField& T;
+        fvMesh& mesh;
+        Time& runTime;
+
+        double g_0;
+        double g_Z;
+        double g_X;
+        double Tf_0;
+        double Tf_delta;
+        double d;
+
+        //Boudary Conditions
+        List<scalar> heatFlux_hotSide;
+
+        PtrList<volScalarField> gField;
+        PtrList<volScalarField> TredField;
+        PtrList<volScalarField> TfullField;
+        PtrList<volScalarField> TdiffField;
+        PtrList<volScalarField> gFullField;
+        PtrList<volScalarField> gRelErrField;
+
+
+        void postProcess(word folder, word heatFluxFieldName, scalar innerField = 0.0)
+        {
+#include "postProcess.H"
+        }
+
+        void set_Tf()
+        {
+#include "setTf.H"
+        }
+
+        void solveTrue()
+        {
+#include"solveTrue.H"
+        }
+
+        void addNoise(double noiseStdDev_)
+        {
+            double variance = Tmeas.mean() * noiseStdDev_ * noiseStdDev_;
+            std::cout << "debug : noiseStdDev_ = " << noiseStdDev_  << std::endl;
+            std::cout << "debug : Tmeas.mean() = " << Tmeas.mean()  << std::endl;
+            std::cout << "debug : variance = " << variance  << std::endl;
+            auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>
+                                (Eigen::VectorXd::Zero(Tmeas.size()), Eigen::MatrixXd::Identity(Tmeas.size(),
+                                        Tmeas.size()) * variance);
+            Tmeas += noiseDensity->Sample();
+        }
+
 };
 
 #endif

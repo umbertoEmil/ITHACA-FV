@@ -471,5 +471,3 @@ double integralOnPatch(fvMesh& mesh, List<scalar> field,
 
 
 }
-
-

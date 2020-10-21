@@ -108,15 +108,8 @@ class inverseLaplacianProblem: public laplacianProblem
 
         ITHACAparameters* para;
 
-        // Dummy variables to transform inverseLaplacianFoam into a class
         /// Temperature field
         autoPtr<volScalarField> _T;
-
-        /// Adjoint field
-        autoPtr<volScalarField> _lambda;
-
-        /// Sensibility temperature field
-        autoPtr<volScalarField> _deltaT;
 
         /// Mesh
         mutable autoPtr<fvMesh> _mesh;
@@ -133,104 +126,76 @@ class inverseLaplacianProblem: public laplacianProblem
         /// Dummy thermal conductivity with unitary value
         dimensionedScalar DT;
 
-        /// Members for parameterized heat flux
-	word folderOffline = "./ITHACAoutput/offlineParamBC/";
-        PtrList<volScalarField> Tbasis;
-        PtrList<volScalarField> Tad_base;
-        
-	Eigen::VectorXd residual;
-        Eigen::MatrixXd Theta;
-        Eigen::MatrixXd gPODmodes;
-        Eigen::VectorXd addSol;
+        /// Thermal diffusivity [W/(m K)]
+        double k;
 
+        /// Heat transfer coefficient [W/(m2 K)]
+        double H;
 
-        /// List of snapshots for the solutions
-        PtrList<volScalarField> Tfield;
-        PtrList<volScalarField> lambdaField;
-        PtrList<volScalarField> deltaTfield;
+        /// Flag to know if thermocouples file was read
+        bool thermocouplesRead = 0;
 
-        /// List of POD modes
-        volScalarModes lambdaModes;
-        volScalarModes deltaTmodes;
-
-        /// Number of POD modes
-        int NmodesT;
-        int NmodesLambda;
-        int NmodesDeltaT;
-
-
-        int interpolation;
-        int interpolationPlaneDefined;
-        int cgIter;
-        int cgIterMax;
-        int offlineSolutionI;
-        int offlinePhase;
-        int thermocouplesRead;
+        /// Number of thermocouples
         int thermocouplesNum;
-        label saveSolInLists = 0;
-        double J; //cost funtion  [K^2]
-        Eigen::MatrixXd Jlist; //cost funtion  [K^2]
-        double gradJ_L2norm;
-        double Jtol;
-        double JtolRel;
-        double k;  //thermal diffusivity [W/(m K)]
-        double H;  //heat transfer coefficient [W/(m2 K)]
+
+        /// Cost funtion  [K^2]
+        double J;
         double L2norm;
         double LinfNorm;
-        double gamma;
-        double gamma_den;
-        double beta;
-        double castWidth = 0;
 
-        scalar v = 0.0;
+        /// Homogenerous BC
         scalar homogeneousBC = 0.0;
-        List<scalar> homogeneousBCcoldSide;
-        List<scalar> Tf; //temperature at coldSide [K]
-        List<scalar> refGrad;
-        List<scalar> valueFraction;
-        List<scalar> valueFractionAdj;
 
-        label nProcs;
+        /// List of zeros of the size of coldSide patch
+        List<scalar> homogeneousBCcoldSide;
+
+        /// Temperature at coldSide [K]
+        List<scalar> Tf; 
+
+        /// Reference gradient for the Robin BC
+        List<scalar> refGrad;
+
+        /// Value fraction for the Robin BC
+        List<scalar> valueFraction;
+
+        /// Index of the hotSide patch
         label hotSide_ind;
+
+        /// Index of the coldSide patch
         label coldSide_ind;
 
-        List<scalar>
-        g;           //Heat flux at hotSide for the direct problem [W/m2]
-        List<List<scalar>> gBaseFunctions;
-        List<scalar> gWeights;
+        /// Heat flux at hotSide [W/m2]
+        List<scalar> g;
+
+        /// List of boundary heat fluxes
         List<List<scalar>> gList;
-        List<scalar> gTrue;       //True heat flux at hotSide [w/m2]
-        List<scalar> faceCellArea; //[m2]
-        List<scalar> P;           //Search direction SHOULD BE [W/m2]
-        List<scalar> err;         //relative error []
-        List<scalar> gradJ;
 
+        /// True heat flux at hotSide [w/m2]
+        List<scalar> gTrue;
 
-        // Marquardt method
-        Eigen::MatrixXd Jacobian;
-        Eigen::MatrixXd diagJacobian;
-        label MarquardtHeatFluxSampling = 0;
-        label MarquardtHeatFluxPOD = 0;
+        /// List of patch faces areas [m2]
+        List<scalar> faceCellArea;
 
-        thermocouplesPlane interpolationPlane;
+        /// List containing the positions of the thermocouples
         List<vector> thermocouplesPos;
+
+        /// List of cells indices containing a thermocouple
         List<int> thermocouplesCellID;
+
+        /// List of incedes of the processors contining each thermocouple
         List<int> thermocouplesCellProc;
-        List<Foam::vector> thermocouplesCellC;
-        Eigen::VectorXd Tmeas;   //Temperature at the thermocouples locations [K]
+
+        /// Vector of measured temperatures at the thermocouples locations [K]
+        Eigen::VectorXd Tmeas;
+
+        /// Vector of computed temperatures at the thermocouples locations [K]
         Eigen::VectorXd Tdirect;
+
+        /// Difference between computed and measured temperatures at the thermocouples
         Eigen::VectorXd Tdiff;
-        Eigen::VectorXd Tsens;
-        Eigen::MatrixXd muSamples;
 
-        Eigen::VectorXd cellsInPlane;
-
-
-        // Reduced Matrices
-        /// A matrices
-        List<Eigen::MatrixXd> ArbT;
-        List<Eigen::MatrixXd> ArbLambda;
-        List<Eigen::MatrixXd> ArbDeltaT;
+        /// Number of processors
+        label nProcs;
 
 
         // Functions
@@ -240,132 +205,32 @@ class inverseLaplacianProblem: public laplacianProblem
         void set_g();
 
         //--------------------------------------------------------------------------
-
-        /// Define the base functions used for the parametrization of g
-        virtual void set_gBaseFunctions(word type, scalar shapeParameter = 1);
-
-        //--------------------------------------------------------------------------
-
-        /// Performs POD on the RBF
-        void set_gBaseFunctionsPOD(label Nmodes);
-
-        //--------------------------------------------------------------------------
-
-        /// Set initial heat flux for the Levenberg-Marquardt method
-        void set_gParametrized(word baseFuncType, scalar shapeParameter = 1);
-
-        //--------------------------------------------------------------------------
-
-        /// Convert list of boundary heat flux into field
+        /// Create a field with the hotSide boundary heat flux at the hotSide 
+        /// bounday cells for visualization
+        ///
+        /// @param[in]  list        List of boundary heat flux
+        /// @param[in]  innerField  Value of the inner field
+        ///
+        /// @return     Field with the heat flux value at the boundary cells
+        ///
         volScalarField list2Field(List<scalar> list, scalar innerField = 0.0);
 
         //--------------------------------------------------------------------------
-
-        /// Convert Eigen matrix of boundary heat flux into field
-        volScalarField eigen2Field(Eigen::MatrixXd matrix);
-
-        //--------------------------------------------------------------------------
-
-        /// Update the boundary condition g whe g is parameterized
-        ///
-        /// @param[in]  weigths  New values of the weights of the basis functions
-        ///
-        void update_gParametrized(List<scalar> weigths);
-
-        //--------------------------------------------------------------------------
-
-        ///
-        ///
-        Eigen::VectorXd TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b, label filter);
-
-        //--------------------------------------------------------------------------
-
-        /// Performs offline computation for the parameterized BC method, if
-        /// the offline directory ""./ITHACAoutputs/offlineParamBC" exists,
-        /// it reads the solution from there
-        ///
-        /// @param[in]  force   If 1, force the offline phase to be computed
-        ///
-        void parameterizedBCoffline(bool force = 0);
-
-        //--------------------------------------------------------------------------
-
-        ///
-        ///
-	Eigen::VectorXd parameterizedBC(word linSys_solver = "fullPivLU",
-                             label TSVD_filter = 0);
-
-        //--------------------------------------------------------------------------
-
-        ///
-        ///
-        void parameterizedBCpostProcess(Eigen::VectorXd weigths);
-
-        //--------------------------------------------------------------------------
-
-        /// Makes all the preliminary computations for the Marquardt method
-        ///
-        void MarquardtMethodSetUp();
-
-        //--------------------------------------------------------------------------
-
-        /// Update Jacobian matrix
-        ///
-        /// @param[in]  gWeightsOld    Weigths of parameterized BC at previous iteration
-        /// @param[in]  weigthsUpdate  Update of the weigths in the present iteration
-        /// @param[in]  Tcomp          Computed temperature at current iteration
-        /// @param[in]  TcompOld       Computed temperature at previous iteration
-        ///
-        /// @param[out] Jacobian       Jacobian matrix
-        ///
-        Eigen::MatrixXd MarquardtUpdateJacobian(List<scalar> gWeightsOld,
-                                                Eigen::VectorXd weigthsUpdate, Eigen::VectorXd Tcomp,
-                                                Eigen::VectorXd TcompOld);
-
-
-        //--------------------------------------------------------------------------
-
         /// Set valueFraction list values for Robin condition
+        ///
         void set_valueFraction();
 
         //--------------------------------------------------------------------------
-
-        /// Perform a solution which is used to fill the value of the temperature
-        /// in the "virtual" thermocouples
-        virtual void solveTrue();
+        /// Solve the direct problem with the true heat flux as boundary condition
+        /// and fills the measured temeprature vector
+        ///
+        virtual void solveTrue(){};
 
         //--------------------------------------------------------------------------
-
-        /// Set BC of the direct problem
+        /// Set boundary condition of the direct problem
         virtual void assignDirectBC();
 
         //--------------------------------------------------------------------------
-
-        /// Set BC of the adjoint problem
-        void assignAdjointBC();
-
-        //--------------------------------------------------------------------------
-
-        /// Assign the BC for the adjoint problem and returs the source field
-        ///
-        /// @param[out]  f  Source field of the adjoint problem
-        ///
-        volScalarField assignAdjointBCandSource();
-
-        //--------------------------------------------------------------------------
-
-        /// Set BC and IF of the sensitivity problem
-        ///
-        void assignSensitivityBC();
-
-        //--------------------------------------------------------------------------
-
-        /// Set BC and IF of the additional problem for the parameterized heat flux
-        ///
-        virtual void solveAdditional();
-
-        //--------------------------------------------------------------------------
-
         /// Solve direct problem
         ///
         void solveDirect();
@@ -389,7 +254,7 @@ class inverseLaplacianProblem: public laplacianProblem
 
         //--------------------------------------------------------------------------
         /// Identifies in the mesh the cells corresponding to the
-        /// termocouples locations and creates the interpolation plane
+        /// termocouples locations
         ///
         virtual void readThermocouples();
 
@@ -398,20 +263,13 @@ class inverseLaplacianProblem: public laplacianProblem
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @return  Vector of field values at thermocouples points
         ///
         Eigen::VectorXd fieldValueAtThermocouples(volScalarField& field);
 
-
         //--------------------------------------------------------------------------
-
-        /// Identifies the plane defined by the thermocouples
-        ///
-        void defineThermocouplesPlane();
-
-        //--------------------------------------------------------------------------
-
         /// Computes the difference between direct problem solution and measures
+        /// Saves the difference vector in Tdiff
         ///
         void differenceBetweenDirectAndMeasure();
 
@@ -507,63 +365,11 @@ class inverseLaplacianProblem: public laplacianProblem
         ///
         Foam::vector cellDim(const faceList& ff, const pointField& pp,
                              const cell& cc, labelList pLabels, pointField pLocal);
-
+        
         //--------------------------------------------------------------------------
-
-        /// Interpolates the thermocouples measurements in the plane defined
-        /// in readThermocouples() using radial basis functions
-        ///
-        void thermocouplesInterpolation(DenseMatrix& RBFweights, DenseMatrix& RBFbasis);
-
-        //--------------------------------------------------------------------------
-
-        /// Interpolates the thermocouples measurements in the plane defined
-        /// in readThermocouples() using radial basis functions
-        ///
-        void thermocouplesInterpolation();
-
-        //--------------------------------------------------------------------------
-
-        /// Performs offline solution
-        ///
-        void offlineSolve();
-
-        //--------------------------------------------------------------------------
-
-        /// Samples the Tmeas and saves the heat fluxes
-        ///
-        void samplingHeatFluxMarquardt(word folder);
-
-        //--------------------------------------------------------------------------
-
-        /// Performs POD on the heat fluxes
-        ///
-        void heatFluxPodMarquardt(word folder);
-
-        //--------------------------------------------------------------------------
-
-        /// Offline sampling of direct problem with respect to heat flux parameters
-        ///
-        void MarquardtOffline(word folder);
-
-        //--------------------------------------------------------------------------
-
         /// Restart fields
         ///
-        void restart(word fieldName = "all");
-
-        //--------------------------------------------------------------------------
-
-        /// Reconsttuct online the field T 
-        ///
-        void reconstructT();
-
-        //--------------------------------------------------------------------------
-
-        ///// Offline sampling of direct problem with respect to heat flux parameters
-        /////
-        //void MarquardtOffline2(word folder);
-
+        void restart();
 };
 
 #endif

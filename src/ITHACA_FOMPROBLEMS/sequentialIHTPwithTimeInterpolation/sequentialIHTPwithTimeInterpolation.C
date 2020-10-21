@@ -395,7 +395,7 @@ void sequentialIHTPwithTimeInterpolation::parameterizedBCoffline(bool force)
             Ttime.resize(0);
             ITHACAstream::read_fields(Ttime, "T" + std::to_string(baseI + 1),
                                       folderOffline);
-            Tbasis.append(Ttime);
+            Tbasis.append(Ttime.clone());
         }
     }
     else
@@ -417,7 +417,7 @@ void sequentialIHTPwithTimeInterpolation::parameterizedBCoffline(bool force)
             update_gParametrized(gWeights);
             Info << "Solving for base = " << baseI << endl;
             solveDirect(offline);
-            Tbasis.append(Ttime);
+            Tbasis.append(Ttime.clone());
             Tcomp = fieldValueAtThermocouples(Ttime);
 
             /// Saving basis
@@ -443,8 +443,8 @@ void sequentialIHTPwithTimeInterpolation::parameterizedBCoffline(bool force)
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
-        ITHACAstream::exportVector(addSol, "addSol", "eigen", folderOffline);
-        ITHACAstream::exportVector(T0_vector, "T0_vector", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(T0_vector, "T0_vector", "eigen", folderOffline);
     }
 
     Eigen::MatrixXd A = Theta.transpose() * Theta;
@@ -481,7 +481,7 @@ void sequentialIHTPwithTimeInterpolation::reconstrucT(word outputFolder)
                                      std::to_string(timeSteps[timeI + NtimeStepsBetweenSamples * timeSampleI]),
                                      outputFolder,
                                      "gReconstructed");
-        Ttime.append(T);
+        Ttime.append(T.clone());
     }
     Tcomp = fieldValueAtThermocouples(Ttime);
 }
@@ -658,7 +658,7 @@ void sequentialIHTPwithTimeInterpolation::solveT0()
             ITHACAutilities::assignBC(T0_field, patchI, homogeneousBC);
         }
     }
-    T0_time.append(T0_field);
+    T0_time.append(T0_field.clone());
 
     while (runTime.loop())
     {
@@ -676,7 +676,7 @@ void sequentialIHTPwithTimeInterpolation::solveT0()
             fvOptions.correct(T0_field);
         }
 
-        T0_time.append(T0_field);
+        T0_time.append(T0_field.clone());
         runTime.printExecutionTime(Info);
         runTime.write();
     }
@@ -711,7 +711,7 @@ void sequentialIHTPwithTimeInterpolation::solveAdditional()
             ITHACAutilities::assignBC(Tad, patchI, homogeneousBC);
         }
     }
-    Tad_time.append(Tad);
+    Tad_time.append(Tad.clone());
     ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
                                  folderOffline,
                                  "Tad");
@@ -748,7 +748,7 @@ void sequentialIHTPwithTimeInterpolation::solveAdditional()
         ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
                                      folderOffline,
                                      "Tad");
-        Tad_time.append(Tad);
+        Tad_time.append(Tad.clone());
         runTime.printExecutionTime(Info);
         runTime.write();
     }
@@ -777,7 +777,7 @@ void sequentialIHTPwithTimeInterpolation::solveDirect(label offline)
     fv::options& fvOptions(_fvOptions());
     label timeI = 0;
     Ttime.resize(0);
-    Ttime.append(T);
+    Ttime.append(T.clone());
 
     while (runTime.loop())
     {
@@ -796,7 +796,7 @@ void sequentialIHTPwithTimeInterpolation::solveDirect(label offline)
             fvOptions.correct(T);
         }
 
-        Ttime.append(T);
+        Ttime.append(T.clone());
 
         runTime.printExecutionTime(Info);
         runTime.write();

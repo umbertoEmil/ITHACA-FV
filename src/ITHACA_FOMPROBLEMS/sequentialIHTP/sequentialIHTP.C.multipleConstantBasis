@@ -451,7 +451,7 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
-        ITHACAstream::exportVector(addSol, "addSol", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
     }
 
     Eigen::MatrixXd A = Theta.transpose() * Theta;

@@ -30,7 +30,9 @@ License
 
 #include "EigenFunctions.H"
 
-// * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
+/// \file
+/// Source file of the EigenFunctions namespace.
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -120,4 +122,20 @@ vectorTensorProduct(
     const Eigen::Matrix<float, Eigen::Dynamic, 1>& g,
     const Eigen::Tensor<float, 3 >& c,
     const Eigen::Matrix<float, Eigen::Dynamic, 1>& a);
+
+Eigen::VectorXd ExpSpaced(double first, double last, int n)
+{
+    Eigen::VectorXd vector(n); // native C++ array or vector can be used of course
+    double m = (double) 1 / (n * 1.0 - 1);
+    double quotient = std::pow(last / first, m);
+
+    vector(0) = first;
+
+    for (int i = 1; i < n; i++)
+    {
+        vector(i) = vector(i - 1) * quotient;
+    }
+
+    return vector;
+}
 }

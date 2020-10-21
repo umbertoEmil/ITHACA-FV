@@ -248,6 +248,17 @@ class Modes : public PtrList<GeometricField<Type, PatchField, GeoMesh>>
                               word innerProduct);
 
         void operator=(const PtrList<GeometricField<Type, PatchField, GeoMesh>>& modes);
+
+        //----------------------------------------------------------------------
+        /// @brief      Function to project a list of fields into the modes manifold
+        ///
+        /// @param[in]  snapshots  The list of snapshots to be projected
+        /// @param[in]  numberOfModes       The number of modes you want to use
+        /// @param[in]  innerProduct        The inner product to be applied
+        ///
+        void projectSnapshot(GeometricField<Type, PatchField, GeoMesh>
+                              snapshot, GeometricField<Type, PatchField, GeoMesh>& projSnapshot,
+                              label numberOfModes = 0, word innerProduct = "L2");
 };
 
 typedef Modes<scalar, fvPatchField, volMesh> volScalarModes;
