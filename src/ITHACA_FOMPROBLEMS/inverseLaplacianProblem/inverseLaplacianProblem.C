@@ -313,27 +313,18 @@ Eigen::MatrixXd inverseLaplacianProblem::MarquardtUpdateJacobian(
 Eigen::VectorXd  inverseLaplacianProblem::TSVD(Eigen::MatrixXd A,
         Eigen::MatrixXd b, label filter)
 {
-    // Add check on b
+    M_Assert(b.cols() == 1, "The b input in TSVD must have only one column");
     Info << "Using truncated SVD for regularization" << endl;
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
                                           Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = svd.matrixU();
     Eigen::MatrixXd V = svd.matrixV();
-    Eigen::VectorXd x;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+
 
     for (label i = 0; i < filter; i++)
     {
-        scalar coeff = (U.col(i).transpose() * b)(0, 0);
-
-        if (i == 0)
-        {
-            // / svd.singularValues()(i) << endl;
-            x = coeff / svd.singularValues()(i) * V.col(i);
-        }
-        else
-        {
-            x += coeff / svd.singularValues()(i) * V.col(i);
-        }
+        x += (U.col(i).dot(b.col(0)) / svd.singularValues()(i)) * (V.col(i));
     }
 
     return x;
@@ -362,7 +353,7 @@ void inverseLaplacianProblem::parameterizedBCoffline(bool force)
     {
         Info << "\nComputing offline" << endl;
         solveAdditional();
-	ITHACAstream::exportVector(addSol, "addSol", "eigen", folderOffline);
+	ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
 	M_Assert(Tmeas.size() > 0, "Initialize Tmeas");
 	M_Assert(gWeights.size() > 0, "Initialize gWeights");
         Theta.resize(Tmeas.size(), gWeights.size());
@@ -405,7 +396,7 @@ void inverseLaplacianProblem::parameterizedBCoffline(bool force)
 }
 
 Eigen::VectorXd inverseLaplacianProblem::parameterizedBC(word linSys_solver,
-        label TSVD_filter)
+        double regPar)
 {
     Info << endl << "Using quasilinearity of direct problem" << endl;
     //parameterizedBCoffline(folder, forceOffline);
@@ -440,7 +431,11 @@ Eigen::VectorXd inverseLaplacianProblem::parameterizedBC(word linSys_solver,
     }
     else if (linSys_solver == "TSVD")
     {
-        weigths = TSVD(linSys[0], linSys[1], TSVD_filter);
+        weigths = TSVD(linSys[0], linSys[1], int(regPar));
+    }
+    else if (linSys_solver == "Tikhonov")
+    {
+        weigths = ITHACAregularization::Tikhonov(linSys[0], linSys[1], regPar);
     }
     else
     {
@@ -1375,6 +1370,9 @@ int inverseLaplacianProblem::conjugateGradient()
     gamma_den = 0.0;
     label sampleI = 1;
     gList.resize(0);
+    Tfield.resize(0);
+    lambdaField.resize(0);
+    deltaTfield.resize(0);
 
     while (cgIter < cgIterMax)
     {
@@ -1388,8 +1386,8 @@ int inverseLaplacianProblem::conjugateGradient()
         }
 
         volScalarField& T = _T();
-        ITHACAstream::exportSolution(T, std::to_string(sampleI),
-                                     "./ITHACAoutput/CGtest/", T.name());
+        //ITHACAstream::exportSolution(T, std::to_string(sampleI),
+        //                             "./ITHACAoutput/CGtest/", T.name());
         differenceBetweenDirectAndMeasure();
 
         if (conjugateGradientConvergenceCheck())
@@ -1404,27 +1402,17 @@ int inverseLaplacianProblem::conjugateGradient()
         Jlist(cgIter) = J;
         solveAdjoint();
         volScalarField& lambda = _lambda();
-        ITHACAstream::exportSolution(lambda, std::to_string(sampleI),
-                                     "./ITHACAoutput/CGtest/", lambda.name());
+        //ITHACAstream::exportSolution(lambda, std::to_string(sampleI),
+        //                             "./ITHACAoutput/CGtest/", lambda.name());
         computeGradJ();
         searchDirection();
         solveSensitivity();
         volScalarField& deltaT = _deltaT();
-        ITHACAstream::exportSolution(deltaT, std::to_string(sampleI),
-                                     "./ITHACAoutput/CGtest/", deltaT.name());
+        //ITHACAstream::exportSolution(deltaT, std::to_string(sampleI),
+        //                             "./ITHACAoutput/CGtest/", deltaT.name());
         sensibilitySolAtThermocouplesLocations();
         computeSearchStep();
         updateHeatFlux();
-        // I save the fields at each iteration in the Offline folder
-        // the counter should not overload the solution
-        offlineSolutionI++;
-
-        // I the online phase I only save a solution each 5 iterations and the last one
-        if (offlinePhase && offlineSolutionI % 5 == 0 )
-        {
-            label saveIndex = offlineSolutionI / 5;
-            writeFields(saveIndex, "./ITHACAoutput/Offline/");
-        }
 
         if (saveSolInLists)
         {

@@ -10,7 +10,6 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAstream \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/Foam2Eigen \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/EigenFunctions \
-    -I$(LIB_ITHACA_SRC)/ITHACA_CORE/Containers \
     -I$(LIB_ITHACA_SRC)/thirdparty/Eigen \
     -I$(LIB_ITHACA_SRC)/thirdparty/Eigen/src \
     -I$(LIB_ITHACA_SRC)/thirdparty/spectra/include \
@@ -33,7 +32,6 @@ EXE_INC = \
     -msse4 
 
 EXE_LIBS = \
-    -lturbulenceModels \
     -lfiniteVolume \
     -lmeshTools \
     -lfvOptions \

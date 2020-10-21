@@ -31,32 +31,17 @@ SourceFiles
 #include "fvCFD.H"
 #include "fvOptions.H"
 #include "simpleControl.H"
-#include "pimpleControl.H"
 #include "IOmanip.H"
 #include "Time.H"
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem.H"
-#include "reducedInverseLaplacian.H"
-// #include "reducedLaplacian.H"
-#include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
-//#include "ITHACAbayesian.H"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "Foam2Eigen.H"
-#include "mixedFvPatchFields.H"
-#include "cellDistFuncs.H"
-#include "sampledTriSurfaceMesh.H"
 
 #include "MUQ/Modeling/Distributions/Gaussian.h"
-#include "MUQ/Modeling/Distributions/DensityProduct.h"
-#include "MUQ/Modeling/Distributions/InverseGamma.h"
-#include "MUQ/Modeling/Distributions/Density.h"
-
-#include "MUQ/Utilities/AnyHelpers.h"
-#include "MUQ/Utilities/RandomGenerator.h"
-#include "MUQ/Utilities/StringUtilities.h"
 
 #include "muq2ithaca.H"
 
@@ -108,8 +93,6 @@ int main(int argc, char* argv[])
     posteriorMean.col(0) = posteriorSamples.rowwise().mean();
 
     example.reconstruction();
-
-
     
     return 0;
 }

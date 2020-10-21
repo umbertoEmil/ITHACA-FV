@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     }
     M_Assert(Nsamples == sampleI, "Something went wrong in the sampling");
 
-    ITHACAstream::exportVector(time, "time", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(time, "time", "eigen", outputFolder);
     ITHACAstream::exportMatrix(X, "X", "eigen", outputFolder);
     ITHACAstream::exportMatrix(forcer, "forcer", "eigen", outputFolder);
 

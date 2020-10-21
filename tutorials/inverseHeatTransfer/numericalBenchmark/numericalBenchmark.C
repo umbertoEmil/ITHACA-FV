@@ -44,6 +44,8 @@ SourceFiles
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
 #include "numericalBenchmark.H"
+#include "MUQ/Modeling/Distributions/Gaussian.h"
+
 
 using namespace SPLINTER;
 
@@ -84,6 +86,7 @@ int main(int argc, char* argv[])
     example.JtolRel =
         para->ITHACAdict->lookupOrDefault<double>("JrelativeTolerance",
                 0.001);
+    int TSVDtrunc = para->ITHACAdict->lookupOrDefault<int>("TSVDregularization", 0);
     example.k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
     M_Assert(example.k > 0, "thermalConductivity, k, not specified");
     example.H = para->ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
@@ -103,13 +106,14 @@ int main(int argc, char* argv[])
     double x0 = 0.788;
     double z0 = 0.6;
     double radius = 0.2;
+    
     forAll(example.g, faceI)
     {
         scalar faceX =
             mesh.boundaryMesh()[example.hotSide_ind].faceCentres()[faceI].x();
         scalar faceZ =
             mesh.boundaryMesh()[example.hotSide_ind].faceCentres()[faceI].z();
-	example.g[faceI] = - example.k * (example.b * std::exp(- 5 * ((faceX - x0) * (faceX - x0) + (faceZ - z0) * (faceZ - z0))));
+	//example.g[faceI] = - example.k * (example.b * std::exp(- 5 * ((faceX - x0) * (faceX - x0) + (faceZ - z0) * (faceZ - z0))));
 	//if( (faceX - x0) * (faceX - x0) + (faceZ - z0) * (faceZ - z0) < radius * radius)
 	//{
 	//   example.g[faceI] = - example.k * (example.b);
@@ -118,7 +122,7 @@ int main(int argc, char* argv[])
 	//{
 	//   example.g[faceI] = 0;
 	//}
-        //example.g[faceI] = - example.k * (example.b * faceX + example.c) ;
+        example.g[faceI] = - example.k * (example.a * (faceX - 1) * (faceX - 1) - example.b * faceZ + example.c) ;
     }
     example.set_Tf();
     example.gTrue = example.g; //-example.heatFlux_hotSide / example.k;
@@ -132,7 +136,14 @@ int main(int argc, char* argv[])
     std::cout << "debug: Tmeas = " << example.Tmeas << std::endl;
 
     // Introducing error in the measurements
-    //Tmeas += ITHACAutilities::rand(Tmeas.size(), 1, -2, 2);
+    Eigen::VectorXd diagonal = example.Tmeas * 0.02; 
+    Eigen::MatrixXd noiseCov = diagonal.asDiagonal();
+    auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>(Eigen::VectorXd::Zero(diagonal.size()), noiseCov);
+
+    example.Tmeas += noiseDensity->Sample();
+
+
+
     //Eigen::VectorXd measurementsError(Tmeas.size());
     //for(int i = 0; i < Tmeas.size(); i++)
     //{
@@ -219,7 +230,9 @@ int main(int argc, char* argv[])
             Info << "Solver " << linSys_solvers[solverI] << endl;
             Info << endl;
             auto t1 = std::chrono::high_resolution_clock::now();
-            example.parameterizedBC(linSys_solvers[solverI], 3);
+            example.parameterizedBC(linSys_solvers[solverI], TSVDtrunc);
+            example.parameterizedBC(linSys_solvers[solverI], TSVDtrunc);
+            example.parameterizedBC(linSys_solvers[solverI], TSVDtrunc);
             auto t2 = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>
                             ( t2 - t1 ).count() / 1e6;
@@ -238,7 +251,7 @@ int main(int argc, char* argv[])
                                          example.residual.squaredNorm());
         }
         Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    outputFolder);
         example.postProcess(outputFolder, "gParametrized");
         Info << "*********************************************************" << endl;

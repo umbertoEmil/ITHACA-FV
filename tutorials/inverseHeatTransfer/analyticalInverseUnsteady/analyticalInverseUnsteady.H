@@ -401,11 +401,11 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
 		Error_L2norm(timeI) = ITHACAutilities::L2norm(error);
 		Error_LinfNorm(timeI) = ITHACAutilities::LinfNorm(error);
 	    }
-	    ITHACAstream::exportVector(timeEigen, "timeSteps", "eigen", directOutputFolder);
-	    ITHACAstream::exportVector(relError_L2norm, "relError_L2norm", "eigen", directOutputFolder);
-	    ITHACAstream::exportVector(relError_LinfNorm, "relError_LinfNorm", "eigen", directOutputFolder);
-	    ITHACAstream::exportVector(Error_L2norm, "Error_L2norm", "eigen", directOutputFolder);
-	    ITHACAstream::exportVector(Error_LinfNorm, "Error_LinfNorm", "eigen", directOutputFolder);
+	    ITHACAstream::exportMatrix(timeEigen, "timeSteps", "eigen", directOutputFolder);
+	    ITHACAstream::exportMatrix(relError_L2norm, "relError_L2norm", "eigen", directOutputFolder);
+	    ITHACAstream::exportMatrix(relError_LinfNorm, "relError_LinfNorm", "eigen", directOutputFolder);
+	    ITHACAstream::exportMatrix(Error_L2norm, "Error_L2norm", "eigen", directOutputFolder);
+	    ITHACAstream::exportMatrix(Error_LinfNorm, "Error_LinfNorm", "eigen", directOutputFolder);
 	}
 
 	void inverseProblemPostProcess(word outputFolder)

@@ -303,19 +303,19 @@ class sequentialAcquisitionTest_unsteady: public sequentialIHTP
                 heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
                                             "hotSide");
 	    }
-	    ITHACAstream::exportVector(heatFluxL2norm, "relErrL2norm", "eigen", outputFolder);
-	    ITHACAstream::exportVector(heatFluxLinfNorm, "relErrLinfNorm", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(heatFluxL2norm, "relErrL2norm", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(heatFluxLinfNorm, "relErrLinfNorm", "eigen", outputFolder);
 	    Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
 	    Eigen::VectorXd samplingTime_eigen = Foam2Eigen::List2EigenMatrix(samplingTime);
-	    ITHACAstream::exportVector(timeSteps_eigen, "timeSteps", "eigen", outputFolder);
-	    ITHACAstream::exportVector(samplingTime_eigen, "samplingTime", "eigen", outputFolder);
-	    ITHACAstream::exportVector(probe1_gTrue, "probe1_gTrue", "eigen", outputFolder);
-	    ITHACAstream::exportVector(probe1_gRec, "probe1_gRec", "eigen", outputFolder);
-	    ITHACAstream::exportVector(probe1_Ttrue, "probe1_Ttrue", "eigen", outputFolder);
-	    ITHACAstream::exportVector(probe1_Trec, "probe1_Trec", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(timeSteps_eigen, "timeSteps", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(samplingTime_eigen, "samplingTime", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(probe1_gTrue, "probe1_gTrue", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(probe1_gRec, "probe1_gRec", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(probe1_Ttrue, "probe1_Ttrue", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(probe1_Trec, "probe1_Trec", "eigen", outputFolder);
             
-	    ITHACAstream::exportVector(probe2_Ttrue, "probe2_Ttrue", "eigen", outputFolder);
-	    ITHACAstream::exportVector(probe2_Trec, "probe2_Trec", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(probe2_Ttrue, "probe2_Ttrue", "eigen", outputFolder);
+	    ITHACAstream::exportMatrix(probe2_Trec, "probe2_Trec", "eigen", outputFolder);
 	}
 };
 

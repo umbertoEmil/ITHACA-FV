@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
         }
         Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
     
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    outputFolder);
         if(userDefinedTemperatures)
         {
@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
         }
         Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
     
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    outputFolder);
         example.postProcess(outputFolder, "gParametrized", userDefinedTemperatures);
         Info << "*********************************************************" << endl;

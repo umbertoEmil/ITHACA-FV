@@ -15,9 +15,9 @@ FoamFile
 }
 
 interpolation       0;
-cgIterMax           200;
+cgIterMax           50;
 Jtolerance          1e-4;
-JrelativeTolerance  1e-6;
+JrelativeTolerance  1e-22;
 
 thermocouplesNumber 16;
 thermalConductivity 3.0;
@@ -32,12 +32,15 @@ NmodesLambdaProj 40;
 NmodesDeltaTout 100;
 NmodesDeltaTproj 40;
 
-NumberErrorTests  100;
+NumberErrorTests  50;
+noiseLevel        0.08;
 
 //Test to perform
 CGtest    0;
 CGnoiseTest   0;
+CGnoiseLevelTest   1;
 parameterizedBCtest  0;
+CGandParamErrorTest  0;
 parameterizedBCtest_RBFwidth 0;
 parameterizedBCerrorTest  0;
-parameterizedBCerrorTest_TSVD  1;
+parameterizedBCerrorTest_TSVD  0;

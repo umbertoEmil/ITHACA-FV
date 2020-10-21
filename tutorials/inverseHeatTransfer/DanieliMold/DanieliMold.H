@@ -338,7 +338,7 @@ class DanieliMold: public inverseLaplacianProblem
 		    Info << "HotSide area = " << totalArea << " m2" << endl;
 		    totalHeatFluxVec(solutionI) = totalHeatFlux; 
 		}
-                ITHACAstream::exportVector(totalHeatFluxVec, "totalHeatFlux", "eigen",
+                ITHACAstream::exportMatrix(totalHeatFluxVec, "totalHeatFlux", "eigen",
                                            folder);
 
 	    }

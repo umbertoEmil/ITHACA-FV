@@ -68,12 +68,15 @@ int main(int argc, char* argv[])
                              example._runTime());
     label CGtest = para->ITHACAdict->lookupOrDefault<int>("CGtest", 0);
     label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
+    label CGnoiseLevelTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseLevelTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
     label parameterizedBCtest_RBFwidth =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest_RBFwidth", 0);
     label parameterizedBCerrorTest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest", 0);
+    label CGandParamErrorTest =
+        para->ITHACAdict->lookupOrDefault<int>("CGandParamErrorTest", 0);
     label parameterizedBCerrorTest_TSVD =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest_TSVD", 0);
     // Reading parameters from ITHACAdict
@@ -94,6 +97,8 @@ int main(int argc, char* argv[])
     M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
     label Ntests = para->ITHACAdict->lookupOrDefault<double>("NumberErrorTests",
                    100);
+    double noiseLevel = para->ITHACAdict->lookupOrDefault<double>("noiseLevel",
+                   0);
 
     // setting analytical solution
     volScalarField T_true(example._T());
@@ -255,7 +260,7 @@ int main(int argc, char* argv[])
                                          example.residual.squaredNorm());
         }
         Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    outputFolder);
         example.postProcess(outputFolder, "gParametrized");
         Info << "*********************************************************" << endl;
@@ -341,15 +346,15 @@ int main(int argc, char* argv[])
                                         "hotSide");
         }
 
-        ITHACAstream::exportVector(condNumber, "condNumber", "eigen",
+        ITHACAstream::exportMatrix(condNumber, "condNumber", "eigen",
                                    outputFolder);
-        ITHACAstream::exportVector(heatFluxL2norm, "relError_L2norm", "eigen",
+        ITHACAstream::exportMatrix(heatFluxL2norm, "relError_L2norm", "eigen",
                                    outputFolder);
-        ITHACAstream::exportVector(heatFluxLinfNorm, "relError_LinfNorm", "eigen",
+        ITHACAstream::exportMatrix(heatFluxLinfNorm, "relError_LinfNorm", "eigen",
                                    outputFolder);
         ITHACAstream::exportMatrix(singVal, "singularValues", "eigen",
                                    outputFolder);
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    outputFolder);
         example.postProcess(outputFolder, "gParametrized");
         Info << "*********************************************************" << endl;
@@ -370,21 +375,13 @@ int main(int argc, char* argv[])
                                      "1", outputFolder,
                                      "gTrue");
         example.saveSolInLists = 1;
-        double variance = 0.02;
-        Eigen::VectorXd varianceVect = example.Tmeas * variance;
-        std::cout  << "variance = " << variance << std::endl;
-        std::cout  << "example.Tmeas = " << example.Tmeas << std::endl;
-        Info << "Noise variance mean = " << varianceVect.mean() << endl;
         Eigen::VectorXd TmeasOrig = example.Tmeas;
-        Info << "I use the discrepancy principle as stopping criterium for CG" << endl;
-        example.Jtol = example.Tmeas.size() * varianceVect.maxCoeff() *
-                       varianceVect.maxCoeff() / 2;
-        Info << "Stopping for J < " << example.Jtol << endl;
 
         for (label i = 0; i < Ntests; i++)
         {
             Info << "Test " << i << endl;
-            example.addNoise(variance);
+            example.addNoise(noiseLevel);
+            Info << "Stopping for J < " << example.Jtol << endl;
 
 
             if (example.conjugateGradient())
@@ -412,6 +409,128 @@ int main(int argc, char* argv[])
         Info << endl;
     }
 
+    if (CGnoiseLevelTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing CG inverse solver with NOISY data" << endl;
+        Info << "Performing " << Ntests << " tests." << endl;
+        Info << endl;
+        word outputFolder = "./ITHACAoutput/CGnoiseLevelTest/";
+        volScalarField gTrueField = example.list2Field(example.gTrue);
+        ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+        example.saveSolInLists = 1;
+        Eigen::VectorXd TmeasOrig = example.Tmeas;
+
+        Eigen::VectorXd noiseLevelVec(10);
+        noiseLevelVec << .005, .01, .02, .03, .04, .05, .06, .07, .08, .1;
+
+
+        //for (label NLi = 0; NLi < noiseLevelVec.size() ; NLi++)
+        //{
+        //    noiseLevel = noiseLevelVec(NLi);
+        //    for (label i = 0; i < Ntests; i++)
+        //    {
+        //        Info << "Test " << i << endl;
+        //        example.addNoise(noiseLevel);
+        //        Info << "Stopping for J < " << example.Jtol << endl;
+
+
+        //        if (example.conjugateGradient())
+        //        {
+        //            Info << "CG converged" << endl;
+        //            volScalarField heatFluxField = example.list2Field(
+        //                                               example.gList[example.gList.size() - 1]);
+        //            ITHACAstream::exportSolution(heatFluxField,
+        //                                         std::to_string(NLi * Ntests + i + 1), outputFolder,
+        //                                         "g_CG");
+        //            Info << "debug = " << NLi * noiseLevelVec.size() + i + 1 << endl;
+        //            Info << "************************************" << endl;
+        //            Info << endl << endl;
+        //        }
+        //        else
+        //        {
+        //            Info << "CG did not converged" << endl;
+        //            Info << "************************************" << endl;
+        //            i--;
+        //            Info << endl << endl;
+        //        }
+        //        example.Tmeas = TmeasOrig;
+        //    }
+        //}
+
+        example.postProcess(outputFolder, "g_CG");
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+    if (CGandParamErrorTest)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing parameterized BC inverse solver with NOISY data" <<
+             endl;
+        word outputFolder = "./ITHACAoutput/CGandParamErrorTest/";
+        volScalarField gTrueField = example.list2Field(example.gTrue);
+        ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+        List<List<scalar>> heatFluxWeights;
+        Eigen::VectorXd residualNorms;
+        scalar innerField = 1.0;
+        example.set_gParametrized("rbf", 0.1);
+        example.parameterizedBCoffline();
+
+        Info << "Introducing error in the measurements" << endl;
+        Info << "Performing " << Ntests << " tests." << endl;
+        Eigen::VectorXd TmeasOrig = example.Tmeas;
+
+        
+        Eigen::VectorXd varianceVect = example.Tmeas * noiseLevel;
+        varianceVect.cwiseProduct(varianceVect);
+        example.Jtol = example.Tmeas.size() * varianceVect.maxCoeff() *
+                       varianceVect.maxCoeff() / 2;
+        std::cout << "Jtol = " << example.Jtol << std::endl;
+        example.saveSolInLists = 1;
+
+        for (label i = 0; i < Ntests; i++)
+        {
+            Info << "Test " << i << endl;
+            example.addNoise(noiseLevel);
+
+            //TSVD solution
+            example.parameterizedBC("TSVD", 3);
+            volScalarField gParametrizedField = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(i * 3 + 1),
+                                         outputFolder,
+                                         "g");
+            //LU solution
+            example.parameterizedBC("fullPivLU");
+            gParametrizedField = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(i * 3 + 2),
+                                         outputFolder,
+                                         "g");
+
+            //CG solution
+            example.conjugateGradient();
+            volScalarField heatFluxField = example.list2Field(
+                                               example.gList[example.gList.size() - 1]);
+            ITHACAstream::exportSolution(heatFluxField,
+                                         std::to_string(i * 3 + 3), outputFolder,
+                                         "g");
+
+            example.Tmeas = TmeasOrig;
+        }
+
+        example.postProcess(outputFolder, "g", innerField);
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
     if (parameterizedBCerrorTest)
     {
         Info << endl;
@@ -429,22 +548,22 @@ int main(int argc, char* argv[])
         example.set_gParametrized("rbf", 0.1);
         example.parameterizedBCoffline();
         List<word> linSys_solvers;
-        linSys_solvers.resize(4);
-        linSys_solvers[0] = "fullPivLU";
-        linSys_solvers[1] = "jacobiSvd";
-        linSys_solvers[2] = "householderQr";
-        linSys_solvers[3] = "ldlt";
-        //linSys_solvers[4] = "TSVD";
+        linSys_solvers.resize(1);
+        //linSys_solvers[0] = "fullPivLU";
+        //linSys_solvers[1] = "jacobiSvd";
+        //linSys_solvers[2] = "householderQr";
+        //linSys_solvers[3] = "ldlt";
+        linSys_solvers[0] = "TSVD";
         Info << "Introducing error in the measurements" << endl;
         Info << "Performing " << Ntests << " tests." << endl;
         residualNorms.resize(Ntests * linSys_solvers.size());
         Eigen::VectorXd TmeasOrig = example.Tmeas;
+        auto density = std::make_shared<muq::Modeling::Gaussian>(Eigen::VectorXd::Zero(1),Eigen::VectorXd::Ones(1));
 
         for (label i = 0; i < Ntests; i++)
         {
             Info << "Test " << i << endl;
-            double variance = 0.02;
-            example.addNoise(variance);
+            example.addNoise(noiseLevel);
 
             List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
             List<scalar> solutionNorms;
@@ -493,19 +612,18 @@ int main(int argc, char* argv[])
         Info << "Performing " << Ntests << " tests." << endl;
         Eigen::VectorXd TmeasOrig = example.Tmeas;
 
-        Eigen::VectorXi TSVDtruc(1);
-        TSVDtruc << 3;
-        //TSVDtruc << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15;
-        std::cout << "debug : TSVDtruc = " << TSVDtruc << std::endl;
-        
+        Eigen::VectorXi TSVDtruc(15);
+        TSVDtruc << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15;
+        std::cout << "debug : TSVDtruc = \n" << TSVDtruc.transpose() << std::endl;
+        std::cout << "debug : Tmeas orig = \n" << example.Tmeas.transpose() << std::endl;
 
         int Ntrunc = TSVDtruc.size();
 
         for (label i = 0; i < Ntests; i++)
         {
             Info << "Test " << i << endl;
-            double variance = 0.02;
-            example.addNoise(variance);
+            example.addNoise(noiseLevel);
+            std::cout << "debug : Tmeas = \n" << example.Tmeas.transpose() << std::endl;
 
             List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
             List<scalar> solutionNorms;

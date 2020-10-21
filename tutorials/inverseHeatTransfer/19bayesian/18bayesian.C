@@ -514,7 +514,7 @@ int main(int argc, char* argv[])
         Eigen::MatrixXd singularValues = svd.singularValues();
         ITHACAstream::exportMatrix(singularValues, "singularValues", "eigen",
                                    folder);
-        ITHACAstream::exportVector(residualNorms, "residuals2norm", "eigen",
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    folder);
         std::cout << "Residual 2-norm = " << residualNorms << std::endl;
         example.parameterizedBC_postProcess(folder, innerField);

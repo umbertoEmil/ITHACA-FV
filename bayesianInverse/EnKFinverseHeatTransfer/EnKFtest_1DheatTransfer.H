@@ -55,6 +55,7 @@ class EnKFtest_1DheatTransfer: public laplacianProblem
         int NtimeStepsBetweenSamps = 3;
         int Nseeds;
         PtrList<volScalarField> Tensemble;
+        PtrList<volScalarField> Tmean;
         int stateSize;
         
         std::shared_ptr<muq::Modeling::Gaussian> priorDensity;
@@ -197,7 +198,7 @@ class EnKFtest_1DheatTransfer: public laplacianProblem
 
             if(!reconstruction)
             {
-                ITHACAstream::exportVector(timeVector, "timeVector", "eigen", outputFolder);
+                ITHACAstream::exportMatrix(timeVector, "timeVector", "eigen", outputFolder);
                 ITHACAstream::exportMatrix(probe_true, "probe_true", "eigen", outputFolder);
             }
             return obsMat;
@@ -229,6 +230,7 @@ class EnKFtest_1DheatTransfer: public laplacianProblem
             resetSamplingCounters();
             std::vector<Eigen::MatrixXd> observationTensor;
             word outputFolder = "ITHACAoutput/reconstuction";
+            Tmean.resize(Ntimes);
 
             Info << "\n****************************************\n" << endl;
             Info << "\nStarting reconstruction\n" << endl;
@@ -267,6 +269,14 @@ class EnKFtest_1DheatTransfer: public laplacianProblem
                     Info << "debug : NOT a sampling step" << endl;
                 }
 
+                //Fill the mean value field
+                Eigen::VectorXd internalField = Foam2Eigen::PtrList2Eigen(Tensemble).rowwise().mean();
+                volScalarField& Tmean = _T();
+                ITHACAstream::exportSolution(Tmean, std::to_string(initialTime + deltaTime),
+                        outputFolder, "Tmean");
+
+
+                //Save values at measurements points
                 Eigen::MatrixXd ensambleProbe(Nprobes, Nseeds);
                 for(int i = 0; i < Nseeds; i++)
                 {
@@ -280,6 +290,11 @@ class EnKFtest_1DheatTransfer: public laplacianProblem
             ITHACAstream::exportMatrix(probe_mean, "probe_mean", "eigen", outputFolder);
             ITHACAstream::exportMatrix(probe_MaxConfidence, "probe_MaxConfidence", "eigen", outputFolder);
             ITHACAstream::exportMatrix(probe_minConfidence, "probe_minConfidence", "eigen", outputFolder);
+
+            //Solve true problem again to have it in the same folder
+            restart();
+            volScalarField& T(_T());
+            //solve(T, outputFolder, "Ttrue");
             Info << "\n****************************************\n" << endl;
 
         }

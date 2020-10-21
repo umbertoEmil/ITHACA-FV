@@ -447,8 +447,8 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
-        ITHACAstream::exportVector(addSol, "addSol", "eigen", folderOffline);
-        ITHACAstream::exportVector(T0_vector, "T0_vector", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
+        ITHACAstream::exportMatrix(T0_vector, "T0_vector", "eigen", folderOffline);
     }
 
             Info << "debug 1" << endl;

@@ -334,15 +334,28 @@ class analyticalBenchmark: public inverseLaplacianProblem
             runTime.setTime(Times[1], 1);
         }
 
-        void addNoise(double variance_)
+        void addNoise(double noiseStdDev_)
         {
-            Eigen::VectorXd variance = Tmeas * variance_;
-            Eigen::VectorXd measurementsError(Tmeas.size());
+            std::cout << "debug : Tmeas1 = \n" << Tmeas.transpose() << std::endl;
 
-            auto density = std::make_shared<muq::Modeling::Gaussian>(measurementsError.size());
-            measurementsError = variance.cwiseProduct(density->Sample());
+            double variance = Tmeas.mean() * noiseStdDev_* noiseStdDev_;
+            std::cout << "debug : noiseStdDev_ = " << noiseStdDev_  << std::endl;
+            std::cout << "debug : Tmeas.mean() = " << Tmeas.mean()  << std::endl;
+            std::cout << "debug : variance = " << variance  << std::endl;
 
-            Tmeas += measurementsError;
+            auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>(Eigen::VectorXd::Zero(Tmeas.size()), Eigen::MatrixXd::Identity(Tmeas.size(), Tmeas.size()) * variance);
+
+
+            Tmeas += noiseDensity->Sample();
+
+            //Set CG tolerance using Discrepancy principle
+            Jtol = Tmeas.size() * variance *
+                       variance / 2;
+            if ( Jtol < 1e-1 )
+            {
+                Jtol = 1e-1;
+            }
+            std::cout << "debug : Tmeas2 = \n" << Tmeas.transpose() << std::endl;
         }
 
 

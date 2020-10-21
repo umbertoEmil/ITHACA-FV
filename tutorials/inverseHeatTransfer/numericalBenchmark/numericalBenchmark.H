@@ -74,7 +74,7 @@ class numericalBenchmark: public inverseLaplacianProblem
         {
             Info << "Computing errors" << endl;
             gFullField.resize(0);
-            ITHACAstream::read_fields(mesh, gFullField, heatFluxFieldName,
+            ITHACAstream::read_fields(gFullField, heatFluxFieldName,
                                       folder);
             volScalarField gTrueField = list2Field(gTrue, innerField);
             label Nsolutions = gFullField.size();

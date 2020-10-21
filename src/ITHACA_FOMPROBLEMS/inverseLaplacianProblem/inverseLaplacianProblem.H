@@ -48,6 +48,7 @@ SourceFiles
 // #include "reducedLaplacian.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
+#include "ITHACAregularization.H"
 #include <Eigen/Dense>
 #include <cmath>
 #include "Foam2Eigen.H"
@@ -279,7 +280,7 @@ class inverseLaplacianProblem: public laplacianProblem
         ///
         ///
 	Eigen::VectorXd parameterizedBC(word linSys_solver = "fullPivLU",
-                             label TSVD_filter = 0);
+                             double regPar = 0);
 
         //--------------------------------------------------------------------------
 

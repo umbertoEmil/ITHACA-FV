@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
     // Setting up the thermocouples
     example.readThermocouples();
     example.Tmeas = example.fieldValueAtThermocouples(T);
-    ITHACAstream::exportVector(example.Tmeas, "Tmeas", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(example.Tmeas, "Tmeas", "eigen", outputFolder);
     double measurementsStdDev = measurementsStdDevPerCent * example.Tmeas.mean();
 
     // Introducing error in the measurements

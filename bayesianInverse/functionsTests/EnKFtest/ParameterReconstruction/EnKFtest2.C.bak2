@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
         forcer.col(timeI + 1) = - b * time(timeI+1);
     }
 
-    ITHACAstream::exportVector(time, "time", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(time, "time", "eigen", outputFolder);
     ITHACAstream::exportMatrix(X, "X", "eigen", outputFolder);
     ITHACAstream::exportMatrix(forcer, "forcer", "eigen", outputFolder);
 

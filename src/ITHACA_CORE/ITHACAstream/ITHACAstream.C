@@ -225,7 +225,7 @@ void exportMatrix(List <Eigen::MatrixXd>& matrix, word Name,
     }
 }
 
-void exportVector(Eigen::VectorXd& vector,
+void exportMatrix(Eigen::VectorXd& vector,
                   word Name, word type,
                   word folder)
 {

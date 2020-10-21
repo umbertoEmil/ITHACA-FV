@@ -28,6 +28,7 @@ c	3.;
 d	3.5;
 
 NumberErrorTests  100;
+TSVDregularization  7;
 
 //Test to perform
 CGtest    0;
