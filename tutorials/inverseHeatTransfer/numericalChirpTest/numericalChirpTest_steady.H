@@ -2,28 +2,22 @@
 #define numericalChirpTest_steady_H
 
 
-class numericalChirpTest_steady: public inverseLaplacianProblem
+class numericalChirpTest_steady: public inverseLaplacianProblem_paramBC
 {
     public:
         explicit numericalChirpTest_steady(int argc, char* argv[])
             :
-            inverseLaplacianProblem(argc, argv),
+            inverseLaplacianProblem_paramBC(argc, argv),
             T(_T()),
-            lambda(_lambda()),
-            deltaT(_deltaT()),
             mesh(_mesh()),
             runTime(_runTime())
         {
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
             coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
-            interpolationPlaneDefined = 0;
-            cgIter = 0;
             thermocouplesRead = 0;
-	    folderOffline = "./ITHACAoutput/offlineParamBC_steady/";
+            folderOffline = "./ITHACAoutput/offlineParamBC_steady/";
         }
         volScalarField& T;
-        volScalarField& lambda;
-        volScalarField& deltaT;
         fvMesh& mesh;
         Time& runTime;
 
@@ -36,42 +30,11 @@ class numericalChirpTest_steady: public inverseLaplacianProblem
         List<scalar> heatFlux_hotSide;
 
         PtrList<volScalarField> gField;
-        PtrList<volScalarField> TredField;
-        PtrList<volScalarField> TfullField;
-        PtrList<volScalarField> lambdaFullField;
-        PtrList<volScalarField> deltaTfullField;
-        PtrList<volScalarField> TdiffField;
         PtrList<volScalarField> gFullField;
-        PtrList<volScalarField> gRelErrField;
 
 
-        volScalarField analyticalErrorField (volScalarField& field1,
-                                             volScalarField& field2)
-        {
-            volScalarField fieldDiff(field1 - field2);
-            return fieldDiff;
-        }
-
-        void computeTdiff()
-        {
-            TdiffField = TredField;
-            forAll(TdiffField, testI)
-            {
-                TdiffField[testI] = TredField[testI] - TfullField[0];
-            }
-        }
-
-        int isInPlane(double cx, double cz)
-        {
-            return (cx >= interpolationPlane.minX -
-                    interpolationPlane.thermocoupleCellDim[0] / 4 &&
-                    cz >= interpolationPlane.minZ - interpolationPlane.thermocoupleCellDim[2] / 4 &&
-                    cx <= interpolationPlane.maxX + interpolationPlane.thermocoupleCellDim[0] / 4 &&
-                    cz <= interpolationPlane.maxZ + interpolationPlane.thermocoupleCellDim[2] / 4
-                   );
-        }
-
-        void postProcess(word folder, List<scalar> samplingTime, word heatFluxFieldName, scalar innerField = 0.0)
+        void postProcess(word folder, List<scalar> samplingTime, word heatFluxFieldName,
+                         scalar innerField = 0.0)
         {
             Info << "Computing errors" << endl;
             gFullField.resize(0);
@@ -90,28 +53,31 @@ class numericalChirpTest_steady: public inverseLaplacianProblem
                 ITHACAstream::exportSolution(gDiffField,
                                              std::to_string(samplingTime[solutionI]), folder,
                                              "gDiffField");
+                scalar EPS = 1e-6;
+                volScalarField relativeErrorField(gDiffField);
 
-	        scalar EPS = 1e-6;
-	        volScalarField relativeErrorField(gDiffField);
-	        for (label i = 0; i < relativeErrorField.internalField().size(); i++)
+                for (label i = 0; i < relativeErrorField.internalField().size(); i++)
                 {
-		    if (std::abs(gTrueField[solutionI].ref()[i]) < EPS)
-		    {
-		        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
-		    }
-	            else
-	            {
-                        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / gTrueField[solutionI].ref()[i];
-	            }
+                    if (std::abs(gTrueField[solutionI].ref()[i]) < EPS)
+                    {
+                        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
+                    }
+                    else
+                    {
+                        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) /
+                                                      gTrueField[solutionI].ref()[i];
+                    }
                 }
+
                 ITHACAstream::exportSolution(relativeErrorField,
                                              std::to_string(samplingTime[solutionI]), folder,
                                              "relativeErrorField");
-                heatFluxL2norm(solutionI) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
+                heatFluxL2norm(solutionI) = ITHACAutilities::L2normOnPatch(mesh,
+                                            relativeErrorField,
                                             "hotSide");
-                heatFluxLinfNorm(solutionI) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
-                                            "hotSide");
-
+                heatFluxLinfNorm(solutionI) = ITHACAutilities::LinfNormOnPatch(mesh,
+                                              relativeErrorField,
+                                              "hotSide");
             }
             ITHACAstream::exportMatrix(heatFluxL2norm, "relError_L2norm", "eigen",
                                        folder);
@@ -119,17 +85,17 @@ class numericalChirpTest_steady: public inverseLaplacianProblem
                                        folder);
         }
 
-	void set_Tf(List<scalar> _Tf)
+        void set_Tf(List<scalar> _Tf)
         {
             fvMesh& mesh = _mesh();
-	    volScalarField& T(_T());
+            volScalarField& T(_T());
             // Setting BC at the cold side
             coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
             label coldSideSize = T.boundaryField()[coldSide_ind].size();
             Tf = _Tf;
             refGrad.resize(coldSideSize);
             valueFraction.resize(coldSideSize);
-	}
+        }
 
         void solveTrue()
         {
@@ -139,7 +105,7 @@ class numericalChirpTest_steady: public inverseLaplacianProblem
             //ITHACAutilities::assignIF(T, homogeneousBC);
             simpleControl simple(mesh);
             Info << "DT = " << DT << endl;
-	    assignDirectBC();
+            assignDirectBC();
 
             while (simple.loop())
             {
@@ -152,10 +118,11 @@ class numericalChirpTest_steady: public inverseLaplacianProblem
                     TEqn.solve();
                 }
             }
+
             ITHACAstream::exportSolution(T,
                                          "1", "./ITHACAoutput/debug",
                                          "T0");
-	}
+        }
 
 };
 

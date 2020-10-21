@@ -35,7 +35,7 @@ SourceFiles
 #include "IOmanip.H"
 #include "Time.H"
 #include "laplacianProblem.H"
-#include "inverseLaplacianProblem.H"
+#include "inverseLaplacianProblem_paramBC.H"
 #include "inverseHeatTransferProblem.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
@@ -45,7 +45,6 @@ SourceFiles
 #include "Foam2Eigen.H"
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
-#include "sampledTriSurfaceMesh.H"
 #include "numericalChirpTest_unsteady.H"
 #include "numericalChirpTest_steady.H"
 
@@ -55,18 +54,15 @@ using namespace SPLINTER;
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
-    
     numericalChirpTest_unsteady example(argc, argv);
     numericalChirpTest_steady exampleSteady(argc, argv);
-
     ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
-                         example._runTime());
-
+                             example._runTime());
     scalar k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
     scalar density = para->ITHACAdict->lookupOrDefault<double>("density", 0);
-    scalar specificHeat = para->ITHACAdict->lookupOrDefault<double>("specificHeat", 0);
+    scalar specificHeat = para->ITHACAdict->lookupOrDefault<double>("specificHeat",
+                          0);
     scalar diffusivity = k / (density * specificHeat);
-    
     M_Assert( diffusivity > 0, "diffusivity not specified");
     example.setDiffusivity(diffusivity);
     example.k = k;
@@ -84,81 +80,72 @@ int main(int argc, char* argv[])
     example.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
     example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
     example.T0 = para->ITHACAdict->lookupOrDefault<scalar>("T0", 0);
-    word linSysSolver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver", "None");
-    label TSVDtruncation = para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 0);
-    scalar shapeParameter = para->ITHACAdict->lookupOrDefault<scalar>("shapeParameter", 1);
-
-
-    example.maxFrequency = para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
-
-    unsigned parameterizedBC_steadyTest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_steadyTest", 0);
-    unsigned parameterizedBC_unsteadyTest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_unsteadyTest", 0);
-    
-    
+    word linSysSolver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver",
+                        "None");
+    label TSVDtruncation =
+        para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 0);
+    scalar shapeParameter =
+        para->ITHACAdict->lookupOrDefault<scalar>("shapeParameter", 1);
+    example.maxFrequency = para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency",
+                           0);
+    unsigned parameterizedBC_steadyTest =
+        para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_steadyTest", 0);
+    unsigned parameterizedBC_unsteadyTest =
+        para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_unsteadyTest", 0);
     //example.heatFlux = cnpy::load(example.heatFlux, "DanieliHeatFluxAndCastingSpeed.npy");
     //std::cout << "heatFlux.rows = " << example.heatFlux.rows() << std::endl;
-
     Info << "\n ************************************************************ \n";
     Info << "Conducting chirp test to compare performance of steady and unsteady inverse solvers\n";
     Info << "We assume the heat flux to estimate has the shape:\n";
-    Info << "\n g = A + B sin [2 pi (a t) t] \n"; 
+    Info << "\n g = A + B sin [2 pi (a t) t] \n";
     Info << "Maximum frequency is " << example.maxFrequency << "Hz\n \n";
-
-
     example.readThermocouples();
     example.set_gTrue();
-    
     ///// Making a steady run for t=0 to have the unsteady initial field
     example.set_Tf(0);
     exampleSteady.restart();
     exampleSteady.set_Tf(example.Tf);
     exampleSteady.g = example.gTrue[0];
     exampleSteady.solveTrue();
-
     volScalarField& T(exampleSteady._T());
+
     for (label i = 0; i < T.internalField().size(); i++)
     {
-        example.initialField.ref()[i] = T.internalField()[i];  
+        example.initialField.ref()[i] = T.internalField()[i];
     }
 
     example.solveTrue();
 
-    if(parameterizedBC_steadyTest)
+    if (parameterizedBC_steadyTest)
     {
         exampleSteady.restart();
         exampleSteady.readThermocouples();
-	exampleSteady.set_Tf(example.Tf);
-	exampleSteady.Tmeas.resize(example.thermocouplesNum);
+        exampleSteady.set_Tf(example.Tf);
+        exampleSteady.Tmeas.resize(example.thermocouplesNum);
         word outputFolder = "./ITHACAoutput/steadyTest/";
-
         Info << "*********************************************************" << endl;
         Info << "Performing offline part of STEADY test\n\n";
         exampleSteady.set_gParametrized("rbf", 0.7);
         exampleSteady.parameterizedBCoffline();
-
         forAll(example.samplingTime, sampleI)
-	{
+        {
             Info << "*********************************************************" << endl;
-            Info << "Performing STEADY test for sampling time " << example.samplingTime[sampleI] << " s\n\n";
-
-	    exampleSteady.Tmeas = example.Tmeas.segment(sampleI * example.thermocouplesNum, example.thermocouplesNum);
-
-	    scalar realTime = example.samplingTime[sampleI];
-
-	    exampleSteady.gTrue = example.gTrue[example.samplingSteps[sampleI]];
+            Info << "Performing STEADY test for sampling time " <<
+                 example.samplingTime[sampleI] << " s\n\n";
+            exampleSteady.Tmeas = example.Tmeas.segment(sampleI * example.thermocouplesNum,
+                                  example.thermocouplesNum);
+            scalar realTime = example.samplingTime[sampleI];
+            exampleSteady.gTrue = example.gTrue[example.samplingSteps[sampleI]];
             volScalarField gTrueField = exampleSteady.list2Field(exampleSteady.gTrue);
             ITHACAstream::exportSolution(gTrueField,
                                          std::to_string(realTime), outputFolder,
                                          "gTrue");
-
             Eigen::VectorXd residualNorms;
-
             Info << "Solver: fullPivLU " << endl;
             Info << endl;
             exampleSteady.parameterizedBC("fullPivLU", 3);
             Info << "Computation ENDED, saving solution" << endl;
             Info << endl;
-
             volScalarField gParametrizedField = exampleSteady.list2Field(exampleSteady.g);
             ITHACAstream::exportSolution(gParametrizedField,
                                          std::to_string(realTime),
@@ -169,21 +156,20 @@ int main(int argc, char* argv[])
                                          std::to_string(realTime),
                                          outputFolder,
                                          "T");
-	}
-	exampleSteady.postProcess(outputFolder, example.samplingTime, "gParametrized");
+        }
+        exampleSteady.postProcess(outputFolder, example.samplingTime, "gParametrized");
     }
 
-    if(parameterizedBC_unsteadyTest)
+    if (parameterizedBC_unsteadyTest)
     {
         word outputFolder = "./ITHACAoutput/testInverse/";
         example.assignTrueIF();
         example.set_gParametrized("rbf", shapeParameter);
         example.parameterizedBCoffline();
-
         example.parameterizedBC(outputFolder, linSysSolver, TSVDtruncation);
-	example.inverseProblemPostProcess(outputFolder);
+        example.inverseProblemPostProcess(outputFolder);
     }
-    
+
     return 0;
 }
 

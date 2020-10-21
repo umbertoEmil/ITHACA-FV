@@ -21,7 +21,7 @@ License
     GNU Lesser General Public License for more details.
     You should have received a copy of the GNU Lesser General Public License
     along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
-Class
+Namespace
     muq2ithaca
 Description
     Set of function to convert ITHACA objects into MUQ2 objects and vice versa
@@ -142,6 +142,7 @@ double quantile(Eigen::VectorXd samps, double p, int method = 1);
 /// @return     Quantile
 ///
 Eigen::VectorXd quantile(Eigen::MatrixXd samps, double p, int method = 1);
+
 }
 }
 

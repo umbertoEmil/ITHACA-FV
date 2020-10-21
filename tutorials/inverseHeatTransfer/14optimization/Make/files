@@ -1,3 +1,0 @@
-14optimization.C
-
-EXE = $(FOAM_USER_APPBIN)/14optimization

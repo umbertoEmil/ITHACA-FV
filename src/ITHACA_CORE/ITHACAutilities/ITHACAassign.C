@@ -231,10 +231,10 @@ void assignBC(GeometricField<scalar, fvPatchField, volMesh>& s, label BC_ind,
             if (typeBC != "fixedGradient" && typeBC != "freestream" && typeBC != "empty"
                     && typeBC != "zeroGradient" && typeBC != "fixedValue" && typeBC != "calculated"
                     && typeBC != "fixedFluxPressure" && typeBC != "processor"
-                    && typeBC != "nutkWallFunction" && typeBC != "mixedEnergy")
+                    && typeBC != "nutkWallFunction" && typeBC != "mixedEnergy" && typeBC != "mixed")
             {
                 word message = "Pay attention, your typeBC " + typeBC + " for " + s.name() +
-                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.";
+                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.\n";
                 throw (message);
             }
         }
@@ -357,10 +357,10 @@ void assignBC(GeometricField<vector, fvPatchField, volMesh>& s, label BC_ind,
         {
             if (typeBC != "fixedGradient" && typeBC != "freestream" && typeBC != "empty"
                     && typeBC != "zeroGradient" && typeBC != "fixedValue" && typeBC != "calculated"
-                    &&  typeBC != "processor")
+                    &&  typeBC != "processor" && typeBC != "mixed")
             {
                 word message = "Pay attention, your typeBC " + typeBC + " for " + s.name() +
-                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.";
+                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.\n";
                 throw (message);
             }
         }
@@ -419,10 +419,10 @@ void assignBC(GeometricField<Type, fvsPatchField, surfaceMesh>& s, label BC_ind,
         {
             if (typeBC != "fixedGradient" && typeBC != "freestream" && typeBC != "empty"
                     || typeBC != "zeroGradient" && typeBC != "fixedValue" && typeBC != "calculated"
-                    && typeBC != "fixedFluxPressure" &&  typeBC != "processor")
+                    && typeBC != "fixedFluxPressure" &&  typeBC != "processor" && typeBC != "mixed")
             {
                 word message = "Pay attention, your typeBC " + typeBC + " for " + s.name() +
-                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.";
+                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.\n";
                 throw (message);
             }
         }

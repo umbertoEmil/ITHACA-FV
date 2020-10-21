@@ -225,7 +225,7 @@ void exportMatrix(List <Eigen::MatrixXd>& matrix, word Name,
     }
 }
 
-void exportVector(Eigen::VectorXd& vector,
+void exportMatrix(Eigen::VectorXd& vector,
                   word Name, word type,
                   word folder)
 {
@@ -456,19 +456,6 @@ void read_fields(
 
         for (int i = 1 + first_snap; i < last_s + first_snap; i++)
         {
-<<<<<<< HEAD
-            GeometricField<Type, PatchField, GeoMesh> tmp_field(
-                IOobject
-                (
-                    Name,
-                    casename + runTime2.times()[i].name(),
-                    mesh,
-                    IOobject::MUST_READ
-                ),
-                mesh
-            );
-            Lfield.append(tmp_field.clone());
-=======
             if (runTime2.times()[i].name() != "0")
             {
                 GeometricField<Type, PatchField, GeoMesh> tmp_field(
@@ -481,9 +468,8 @@ void read_fields(
                     ),
                     mesh
                 );
-                Lfield.append(tmp_field);
+                Lfield.append(tmp_field.clone());
             }
->>>>>>> 3f825189... Updated EnKF test2
             printProgress(double(i + 1) / (last_s + first_snap));
         }
 

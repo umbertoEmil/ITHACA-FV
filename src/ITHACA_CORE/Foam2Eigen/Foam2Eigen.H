@@ -418,21 +418,6 @@ class Foam2Eigen
         template <class type_matrix>
         static List<type_matrix> EigenMatrix2List (
             Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic> matrix );
-
-
-
-        //--------------------------------------------------------------------------
-        /// @brief      Convert an Eigen matrix with one column into a Foam List
-        ///
-        /// @param[in]  matrix       The Eigen matrix
-        ///
-        /// @tparam     type_matrix The type of data in the List (int or double)
-        ///
-        /// @return     The Foam List
-        ///
-        template <class type_matrix>
-        static List<type_matrix> EigenMatrix2List (
-            Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic> matrix );
 };
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

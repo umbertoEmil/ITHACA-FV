@@ -14,7 +14,6 @@ relError_L2norm = np.loadtxt("../caseDir/ITHACAoutput/thermocouplesLocationTest_
 relError_LinfNorm = np.loadtxt("../caseDir/ITHACAoutput/thermocouplesLocationTest_CG/relError_LinfNorm_mat.txt")
 TCplane_Y = np.loadtxt("../caseDir/ITHACAoutput/thermocouplesLocationTest_CG/TCplane_Y_mat.txt")
 
-
 f = plt.figure(5,figsize=(12,8))
 plt.semilogy(TCplane_Y, relError_L2norm, "bo", markersize=15,label = r'$||\epsilon||_{L^2(\Gamma_{s_{in}})}$')
 plt.semilogy(TCplane_Y, relError_LinfNorm, "kv", markersize=15,label = r'$||\epsilon||_{L^\infty(\Gamma_{s_{in}})}$')

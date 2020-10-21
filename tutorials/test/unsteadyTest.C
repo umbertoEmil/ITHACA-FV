@@ -71,14 +71,12 @@ int main(int argc, char* argv[])
     example.alpha = para->ITHACAdict->lookupOrDefault<double>("diffusivity", 0);
     M_Assert(example.alpha > 0, "Diffusivity, alpha, not specified");
     double refGrad = para->ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
-    double valueFraction = para->ITHACAdict->lookupOrDefault<double>("valueFraction",
-                           0.0);
+    double valueFraction =
+        para->ITHACAdict->lookupOrDefault<double>("valueFraction",
+                0.0);
     fvMesh& mesh = example._mesh();
     volScalarField& T = example._T();
-    
-
     //example.readThermocouples();
-    
     // Setting BC at the cold side
     example.coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
     label coldSideSize = T.boundaryField()[example.coldSide_ind].size();
@@ -93,8 +91,7 @@ int main(int argc, char* argv[])
             mesh.boundaryMesh()[example.coldSide_ind].faceCentres()[faceI].y();
         scalar faceZ =
             mesh.boundaryMesh()[example.coldSide_ind].faceCentres()[faceI].z();
-
-        example.Tf[faceI] = 20; 
+        example.Tf[faceI] = 20;
         example.refGrad[faceI] = refGrad;
         example.valueFraction[faceI] = valueFraction;
     }
@@ -112,14 +109,14 @@ int main(int argc, char* argv[])
             mesh.boundaryMesh()[example.coldSide_ind].faceCentres()[faceI].z();
         example.heatFlux_hotSide[faceI] = 100;
     }
-
     // Performing unsteady  solution
     auto t1 = std::chrono::high_resolution_clock::now();
     example.solveUnsteady();
     auto t2 = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count() / 1e6;
-    std::cout << "Unsteady solution took  = " << duration << " seconds" << std::endl;
-    
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>
+                    ( t2 - t1 ).count() / 1e6;
+    std::cout << "Unsteady solution took  = " << duration << " seconds" <<
+              std::endl;
     return 0;
 }
 
