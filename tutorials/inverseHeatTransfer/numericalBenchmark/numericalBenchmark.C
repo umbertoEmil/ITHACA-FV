@@ -59,10 +59,11 @@ int main(int argc, char* argv[])
     ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
                              example._runTime());
     // Reading parameters from ITHACAdict
-    example.a = para->ITHACAdict->lookupOrDefault<double>("a", 0.0); 
-    example.b = para->ITHACAdict->lookupOrDefault<double>("b", 0.0); 
-    example.c = para->ITHACAdict->lookupOrDefault<double>("c", 0.0); 
-    example.d = para->ITHACAdict->lookupOrDefault<double>("d", 0.0); 
+    example.g_0 = para->ITHACAdict->lookupOrDefault<double>("g_0", 0.0); 
+    example.g_X = para->ITHACAdict->lookupOrDefault<double>("g_X", 0.0); 
+    example.g_Z = para->ITHACAdict->lookupOrDefault<double>("g_Z", 0.0); 
+    example.Tf_0 = para->ITHACAdict->lookupOrDefault<double>("Tf_0", 0.0); 
+    example.Tf_delta = para->ITHACAdict->lookupOrDefault<double>("Tf_delta", 0.0); 
 
     word solver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver", "fullPivLU");
     label TSVDtruncation = para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 3);
@@ -122,7 +123,7 @@ int main(int argc, char* argv[])
 	//{
 	//   example.g[faceI] = 0;
 	//}
-        example.g[faceI] = - example.k * (example.a * (faceX - 1) * (faceX - 1) - example.b * faceZ + example.c) ;
+        example.g[faceI] = (example.g_X * (faceX - 1) * (faceX - 1) + example.g_Z * faceZ + example.g_0) ;
     }
     example.set_Tf();
     example.gTrue = example.g; //-example.heatFlux_hotSide / example.k;

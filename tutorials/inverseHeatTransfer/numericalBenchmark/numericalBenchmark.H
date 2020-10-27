@@ -26,9 +26,11 @@ class numericalBenchmark: public inverseLaplacianProblem
         fvMesh& mesh;
         Time& runTime;
 
-        double a;
-        double b;
-        double c;
+        double g_0;
+        double g_Z;
+        double g_X;
+        double Tf_0;
+        double Tf_delta;
         double d;
 
         //Boudary Conditions
@@ -138,7 +140,7 @@ class numericalBenchmark: public inverseLaplacianProblem
                 scalar faceX =
                     mesh.boundaryMesh()[coldSide_ind].faceCentres()[faceI].x();
 
-                Tf[faceI] = k / H * (a * faceZ + c);
+                Tf[faceI] = (Tf_delta * (1.2 - faceZ) + Tf_0);
             }
 	}
 
@@ -151,6 +153,7 @@ class numericalBenchmark: public inverseLaplacianProblem
             simpleControl simple(mesh);
             Info << "DT = " << DT << endl;
 	    assignDirectBC();
+            word outputFolder = "./ITHACAoutput/true/";
 
             while (simple.loop())
             {
@@ -165,7 +168,12 @@ class numericalBenchmark: public inverseLaplacianProblem
             }
 
             Info << "Exporting" << endl;
-            ITHACAstream::exportSolution(T, "1", "./ITHACAoutput/true/", T.name());
+            ITHACAstream::exportSolution(T, "1", outputFolder, T.name());
+            volScalarField gTrueField = list2Field(g);
+            ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+
 
             //Reinitializing runTime
             instantList Times = runTime.times();

@@ -16,22 +16,23 @@ FoamFile
 
 interpolation       0;
 cgIterMax           200;
-Jtolerance          1e-3;
-JrelativeTolerance  1e-6;
+Jtolerance          1e-4;
+JrelativeTolerance  1e-1;
 
-thermocouplesNumber 16;
-thermalConductivity 3.0;
-heatTranferCoeff    5.0;
-a	2.0;
-b	2.5;
-c	3.;
-d	3.5;
+thermocouplesNumber 90;
+thermalConductivity 300.0;
+heatTranferCoeff    5.66e4;
+Tf_delta    8.0;
+Tf_0	    303.;
+g_0         -5e5;
+g_X         2e5;
+g_Z         -2e5;
 
 NumberErrorTests  100;
 TSVDregularization  7;
 
 //Test to perform
-CGtest    0;
+CGtest    1;
 CGnoiseTest   0;
-parameterizedBCtest  1;
+parameterizedBCtest  0;
 parameterizedBCerrorTest  0;

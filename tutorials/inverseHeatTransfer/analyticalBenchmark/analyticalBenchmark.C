@@ -36,7 +36,6 @@ SourceFiles
 #include "Time.H"
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem.H"
-#include "reducedInverseLaplacian.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
 #include <Eigen/Dense>
@@ -69,6 +68,7 @@ int main(int argc, char* argv[])
     label CGtest = para->ITHACAdict->lookupOrDefault<int>("CGtest", 0);
     label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
     label CGnoiseLevelTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseLevelTest", 0);
+    label ParamBCnoiseLevelTest = para->ITHACAdict->lookupOrDefault<int>("ParamBCnoiseLevelTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
     label parameterizedBCtest_RBFwidth =
@@ -409,14 +409,24 @@ int main(int argc, char* argv[])
         Info << endl;
     }
 
-    if (CGnoiseLevelTest)
+    if (CGnoiseLevelTest || ParamBCnoiseLevelTest)
     {
         Info << endl;
         Info << "*********************************************************" << endl;
         Info << "Testing CG inverse solver with NOISY data" << endl;
         Info << "Performing " << Ntests << " tests." << endl;
         Info << endl;
-        word outputFolder = "./ITHACAoutput/CGnoiseLevelTest/";
+        word outputFolder;
+        if(CGnoiseLevelTest)
+        {
+            outputFolder = "./ITHACAoutput/CGnoiseLevelTest/";
+        }
+        else if(ParamBCnoiseLevelTest)
+        {
+            outputFolder = "./ITHACAoutput/ParamBCnoiseLevelTest/";
+            example.set_gParametrized("rbf", 0.1);
+            example.parameterizedBCoffline();
+        }
         volScalarField gTrueField = example.list2Field(example.gTrue);
         ITHACAstream::exportSolution(gTrueField,
                                      "1", outputFolder,
@@ -428,40 +438,52 @@ int main(int argc, char* argv[])
         noiseLevelVec << .005, .01, .02, .03, .04, .05, .06, .07, .08, .1;
 
 
-        //for (label NLi = 0; NLi < noiseLevelVec.size() ; NLi++)
-        //{
-        //    noiseLevel = noiseLevelVec(NLi);
-        //    for (label i = 0; i < Ntests; i++)
-        //    {
-        //        Info << "Test " << i << endl;
-        //        example.addNoise(noiseLevel);
-        //        Info << "Stopping for J < " << example.Jtol << endl;
+        for (label NLi = 0; NLi < noiseLevelVec.size() ; NLi++)
+        {
+            noiseLevel = noiseLevelVec(NLi);
+            for (label i = 0; i < Ntests; i++)
+            {
+                Info << "Test " << i << endl;
+                example.addNoise(noiseLevel);
+                Info << "Stopping for J < " << example.Jtol << endl;
 
 
-        //        if (example.conjugateGradient())
-        //        {
-        //            Info << "CG converged" << endl;
-        //            volScalarField heatFluxField = example.list2Field(
-        //                                               example.gList[example.gList.size() - 1]);
-        //            ITHACAstream::exportSolution(heatFluxField,
-        //                                         std::to_string(NLi * Ntests + i + 1), outputFolder,
-        //                                         "g_CG");
-        //            Info << "debug = " << NLi * noiseLevelVec.size() + i + 1 << endl;
-        //            Info << "************************************" << endl;
-        //            Info << endl << endl;
-        //        }
-        //        else
-        //        {
-        //            Info << "CG did not converged" << endl;
-        //            Info << "************************************" << endl;
-        //            i--;
-        //            Info << endl << endl;
-        //        }
-        //        example.Tmeas = TmeasOrig;
-        //    }
-        //}
+                if(CGnoiseLevelTest)
+                {
+                    if (example.conjugateGradient())
+                    {
+                        Info << "CG converged" << endl;
+                        volScalarField heatFluxField = example.list2Field(
+                                                           example.gList[example.gList.size() - 1]);
+                        ITHACAstream::exportSolution(heatFluxField,
+                                                     std::to_string(NLi * Ntests + i + 1), outputFolder,
+                                                     "g");
+                        Info << "debug = " << NLi * noiseLevelVec.size() + i + 1 << endl;
+                        Info << "************************************" << endl;
+                        Info << endl << endl;
+                    }
+                    else
+                    {
+                        Info << "CG did not converged" << endl;
+                        Info << "************************************" << endl;
+                        i--;
+                        Info << endl << endl;
+                    }
+                }
+                else if(ParamBCnoiseLevelTest)
+                {
+                    example.parameterizedBC("fullPivLU", 3);
+                    volScalarField gParametrizedField = example.list2Field(example.g);
+                    ITHACAstream::exportSolution(gParametrizedField,
+                                                 std::to_string(NLi * Ntests + i + 1),
+                                                 outputFolder,
+                                                 "g");
+                }
+                example.Tmeas = TmeasOrig;
+            }
+        }
 
-        example.postProcess(outputFolder, "g_CG");
+        example.postProcess(outputFolder, "g");
         Info << "*********************************************************" << endl;
         Info << endl;
     }

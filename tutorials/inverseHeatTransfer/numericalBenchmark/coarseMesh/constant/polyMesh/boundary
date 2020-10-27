@@ -20,20 +20,20 @@ FoamFile
     hotSide
     {
         type            patch;
-        nFaces          900;
-        startFace       78300;
+        nFaces          6000;
+        startFace       886000;
     }
     coldSide
     {
         type            patch;
-        nFaces          900;
-        startFace       79200;
+        nFaces          6000;
+        startFace       892000;
     }
     adiabaticPlanes
     {
         type            patch;
-        nFaces          3600;
-        startFace       80100;
+        nFaces          16000;
+        startFace       898000;
     }
 )
 
