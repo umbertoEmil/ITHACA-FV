@@ -35,7 +35,6 @@ SourceFiles
 #include "Time.H"
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem.H"
-#include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
@@ -72,6 +71,8 @@ int main(int argc, char* argv[])
     label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
+    label parameterizedBCtest_RBFwidth =
+        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest_RBFwidth", 0);
     label parameterizedBCerrorTest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest", 0);
 
@@ -258,6 +259,104 @@ int main(int argc, char* argv[])
         Info << "*********************************************************" << endl;
         Info << endl;
     }
+
+
+
+    if (parameterizedBCtest_RBFwidth)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Performing test for the parameterized BC inverse solver" << endl;
+        Info << endl;
+        word outputFolder = "./ITHACAoutput/parameterizedBCtest_RBFparameter/";
+        volScalarField gTrueField = example.list2Field(example.gTrue);
+        ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+        
+        int rbfWidth_size = 9;
+        Eigen::VectorXd rbfWidth(rbfWidth_size);
+        rbfWidth << 100, 10, 1, 0.33, 0.1, .033, 0.01, 0.001, 0.0001;
+
+        Eigen::VectorXd residualNorms;
+        residualNorms.resize(rbfWidth_size);
+        Eigen::VectorXd heatFluxL2norm(rbfWidth_size);
+        Eigen::VectorXd heatFluxLinfNorm = heatFluxL2norm;
+        Eigen::VectorXd condNumber = heatFluxL2norm;
+        Eigen::MatrixXd singVal;
+
+        for(int i = 0; i < rbfWidth_size; i++)
+        {
+            Info << "*********************************************************" << endl;
+            Info << "RBF parameter " << rbfWidth(i) << endl;
+            Info << endl;
+
+            example.set_gParametrized("rbf", rbfWidth(i));
+            example.parameterizedBCoffline(1);
+            example.parameterizedBC("fullPivLU");
+
+            volScalarField gParametrizedField = example.list2Field(example.g);
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(i + 1),
+                                         outputFolder,
+                                         "gParametrized");
+	    volScalarField& T(example._T());
+            ITHACAstream::exportSolution(T,
+                                         std::to_string(i + 1),
+                                         outputFolder,
+                                         "T");
+            residualNorms(i) = Foam::sqrt(
+                                         example.residual.squaredNorm());
+            Eigen::MatrixXd A = example.Theta.transpose() * example.Theta;
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
+                                          Eigen::ComputeThinU | Eigen::ComputeThinV);
+            Eigen::MatrixXd singularValues = svd.singularValues();
+            singVal.conservativeResize(singularValues.rows(), singVal.cols() + 1);
+            singVal.col(i) = singularValues;
+            double conditionNumber = singularValues.maxCoeff() / singularValues.minCoeff();
+            Info << "Condition number = " << conditionNumber << endl;
+            condNumber(i) = conditionNumber;
+
+
+            volScalarField gDiffField = gParametrizedField - gTrueField;
+            scalar EPS = 1e-6;
+            volScalarField relativeErrorField(gTrueField);
+            for (label i = 0; i < relativeErrorField.internalField().size(); i++)
+            {
+                if (std::abs(gTrueField.ref()[i]) < EPS)
+                {
+                    relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
+                }
+                else
+                {
+                    relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / gTrueField.ref()[i];
+                }
+            }
+            ITHACAstream::exportSolution(relativeErrorField,
+                                         std::to_string(i + 1), outputFolder,
+                                         "relativeErrorField");
+            heatFluxL2norm(i) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
+                                        "hotSide");
+            heatFluxLinfNorm(i) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
+                                        "hotSide");
+        }
+
+        ITHACAstream::exportMatrix(condNumber, "condNumber", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportMatrix(heatFluxL2norm, "relError_L2norm", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportMatrix(heatFluxLinfNorm, "relError_LinfNorm", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportMatrix(singVal, "singularValues", "eigen",
+                                   outputFolder);
+        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
+                                   outputFolder);
+        example.postProcess(outputFolder, "gParametrized");
+        Info << "*********************************************************" << endl;
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
     return 0;
 }
 

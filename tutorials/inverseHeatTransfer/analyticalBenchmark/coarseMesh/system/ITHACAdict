@@ -36,11 +36,11 @@ NumberErrorTests  50;
 noiseLevel        0.08;
 
 //Test to perform
-CGtest    1;
+CGtest    0;
 CGnoiseTest   0;
 CGnoiseLevelTest   0;
 ParamBCnoiseLevelTest   0;
-parameterizedBCtest  0;
+parameterizedBCtest  1;
 CGandParamErrorTest  0;
 parameterizedBCtest_RBFwidth 0;
 parameterizedBCerrorTest  0;

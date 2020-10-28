@@ -32,7 +32,8 @@ NumberErrorTests  100;
 TSVDregularization  7;
 
 //Test to perform
-CGtest    1;
+CGtest    0;
 CGnoiseTest   0;
 parameterizedBCtest  0;
+parameterizedBCtest_RBFwidth  1;
 parameterizedBCerrorTest  0;
