@@ -20,8 +20,8 @@ singVal = singVal / singVal[0,:][None,:]
 
 xAxis = np.linspace(1, singVal.shape[0], num = singVal.shape[0]) 
 
-shapePar = np.array([100, 10, 1, 0.3, 0.1, 0.03, 0.01, 0.001, 0.0001])
-labels=[r'$\eta = 100$', r'$\eta = 10$', r'$\eta = 1$', r'$\eta = 0.3$', r'$\eta = 0.1$', r'$\eta = 0.03$', r'$\eta = 0.01$', r'$\eta = 0.001$', r'$\eta = 0.0001$']
+shapePar = np.array([100, 10, 1, 0.3, 0.1, 0.03, 0.01, 0.0033, 0.001])
+labels=[r'$\eta = 100$', r'$\eta = 10$', r'$\eta = 1$', r'$\eta = 0.3$', r'$\eta = 0.1$', r'$\eta = 0.03$', r'$\eta = 0.01$', r'$\eta = 0.0033$', r'$\eta = 0.001$']
 
 
 

@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
         
         int rbfWidth_size = 9;
         Eigen::VectorXd rbfWidth(rbfWidth_size);
-        rbfWidth << 100, 10, 1, 0.33, 0.1, .033, 0.01, 0.001, 0.0001;
+        rbfWidth << 100, 10, 1, 0.33, 0.1, .033, 0.01, 0.0033, 0.001;
 
         Eigen::VectorXd residualNorms;
         residualNorms.resize(rbfWidth_size);
