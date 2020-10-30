@@ -2,9 +2,9 @@ name: OF1912
 
 on:
   push:
-    branches: [ master optimization ]
+    branches: [ optimization ]
   pull_request:
-    branches: [ master ]
+    branches: [ optimization ]
 
 jobs:
   build:
