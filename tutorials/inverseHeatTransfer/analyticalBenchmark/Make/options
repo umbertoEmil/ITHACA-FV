@@ -17,6 +17,8 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/reductionProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/laplacianProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem_CG \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem_paramBC \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_MUQ \
     -I$(MUQ_LIBRARIES)/include \

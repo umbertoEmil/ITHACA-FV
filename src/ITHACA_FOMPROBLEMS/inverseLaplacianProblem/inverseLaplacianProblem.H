@@ -59,29 +59,7 @@ SourceFiles
 #include "Modes.H"
 #define _USE_MATH_DEFINES
 
-using namespace SPLINTER;
-
-/// Class defining a plane for thermocouples measurements interpolation
-class thermocouplesPlane
-{
-    public:
-        double minX;
-        double minZ;
-        double Y;
-        double maxX;
-        double maxZ;
-        List<scalar> Tmeas;
-        List<scalar> Tdirect;
-        List<scalar> Tsens;
-        List<scalar> Tdiff;
-        List<scalar> cellVol;
-        List<int> cellID;
-        List<scalar> thermocoupleX;
-        List<scalar> thermocoupleZ;
-        Foam::vector thermocoupleCellDim;
-};
-
-/// Class to implement a full order inverse parameterized laplacian problem
+/// Class to implement a full order inverse laplacian problem
 class inverseLaplacianProblem: public laplacianProblem
 {
 
@@ -98,12 +76,6 @@ class inverseLaplacianProblem: public laplacianProblem
         /// Temperature field
         autoPtr<volScalarField> _T;
 
-        /// Adjoint field
-        autoPtr<volScalarField> _lambda;
-
-        /// Sensibility temperature field
-        autoPtr<volScalarField> _deltaT;
-
         /// Mesh
         mutable autoPtr<fvMesh> _mesh;
 
@@ -119,62 +91,21 @@ class inverseLaplacianProblem: public laplacianProblem
         /// Dummy thermal conductivity with unitary value
         dimensionedScalar DT;
 
-        /// Members for parameterized heat flux
-	word folderOffline = "./ITHACAoutput/offlineParamBC/";
-        PtrList<volScalarField> Tbasis;
-        PtrList<volScalarField> Tad_base;
-        
-	Eigen::VectorXd residual;
-        Eigen::MatrixXd Theta;
-        Eigen::MatrixXd gPODmodes;
-        Eigen::VectorXd addSol;
-
-
-        /// List of snapshots for the solutions
-        PtrList<volScalarField> Tfield;
-        PtrList<volScalarField> lambdaField;
-        PtrList<volScalarField> deltaTfield;
-
-        /// List of POD modes
-        volScalarModes lambdaModes;
-        volScalarModes deltaTmodes;
-
-        /// Number of POD modes
-        int NmodesT;
-        int NmodesLambda;
-        int NmodesDeltaT;
-
-
-        int interpolation;
-        int interpolationPlaneDefined;
-        int cgIter;
-        int cgIterMax;
-        int offlineSolutionI;
-        int offlinePhase;
-        int thermocouplesRead;
-        int thermocouplesNum;
-        label saveSolInLists = 0;
-        double J; //cost funtion  [K^2]
-        Eigen::MatrixXd Jlist; //cost funtion  [K^2]
-        double gradJ_L2norm;
-        double Jtol;
-        double JtolRel;
         double k;  //thermal diffusivity [W/(m K)]
         double H;  //heat transfer coefficient [W/(m2 K)]
+
+        int thermocouplesRead;
+        int thermocouplesNum;
+        double J; //cost funtion  [K^2]
         double L2norm;
         double LinfNorm;
-        double gamma;
-        double gamma_den;
-        double beta;
-        double castWidth = 0;
 
-        scalar v = 0.0;
+        /// Lists for the Robin BC
         scalar homogeneousBC = 0.0;
         List<scalar> homogeneousBCcoldSide;
         List<scalar> Tf; //temperature at coldSide [K]
         List<scalar> refGrad;
         List<scalar> valueFraction;
-        List<scalar> valueFractionAdj;
 
         label nProcs;
         label hotSide_ind;
@@ -182,23 +113,11 @@ class inverseLaplacianProblem: public laplacianProblem
 
         List<scalar>
         g;           //Heat flux at hotSide for the direct problem [W/m2]
-        List<List<scalar>> gBaseFunctions;
-        List<scalar> gWeights;
         List<List<scalar>> gList;
         List<scalar> gTrue;       //True heat flux at hotSide [w/m2]
         List<scalar> faceCellArea; //[m2]
-        List<scalar> P;           //Search direction SHOULD BE [W/m2]
         List<scalar> err;         //relative error []
-        List<scalar> gradJ;
 
-
-        // Marquardt method
-        Eigen::MatrixXd Jacobian;
-        Eigen::MatrixXd diagJacobian;
-        label MarquardtHeatFluxSampling = 0;
-        label MarquardtHeatFluxPOD = 0;
-
-        thermocouplesPlane interpolationPlane;
         List<vector> thermocouplesPos;
         List<int> thermocouplesCellID;
         List<int> thermocouplesCellProc;
@@ -206,40 +125,15 @@ class inverseLaplacianProblem: public laplacianProblem
         Eigen::VectorXd Tmeas;   //Temperature at the thermocouples locations [K]
         Eigen::VectorXd Tdirect;
         Eigen::VectorXd Tdiff;
-        Eigen::VectorXd Tsens;
-        Eigen::MatrixXd muSamples;
 
-        Eigen::VectorXd cellsInPlane;
-
-
-        // Reduced Matrices
-        /// A matrices
-        List<Eigen::MatrixXd> ArbT;
-        List<Eigen::MatrixXd> ArbLambda;
-        List<Eigen::MatrixXd> ArbDeltaT;
 
 
         // Functions
 
         //--------------------------------------------------------------------------
-
+        
         /// Set initial heat flux for the conjugate gradient method
         void set_g();
-
-        //--------------------------------------------------------------------------
-
-        /// Define the base functions used for the parametrization of g
-        virtual void set_gBaseFunctions(word type, scalar shapeParameter = 1);
-
-        //--------------------------------------------------------------------------
-
-        /// Performs POD on the RBF
-        void set_gBaseFunctionsPOD(label Nmodes);
-
-        //--------------------------------------------------------------------------
-
-        /// Set initial heat flux for the Levenberg-Marquardt method
-        void set_gParametrized(word baseFuncType, scalar shapeParameter = 1);
 
         //--------------------------------------------------------------------------
 
@@ -250,65 +144,6 @@ class inverseLaplacianProblem: public laplacianProblem
 
         /// Convert Eigen matrix of boundary heat flux into field
         volScalarField eigen2Field(Eigen::MatrixXd matrix);
-
-        //--------------------------------------------------------------------------
-
-        /// Update the boundary condition g whe g is parameterized
-        ///
-        /// @param[in]  weigths  New values of the weights of the basis functions
-        ///
-        void update_gParametrized(List<scalar> weigths);
-
-        //--------------------------------------------------------------------------
-
-        ///
-        ///
-        Eigen::VectorXd TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b, label filter);
-
-        //--------------------------------------------------------------------------
-
-        /// Performs offline computation for the parameterized BC method, if
-        /// the offline directory ""./ITHACAoutputs/offlineParamBC" exists,
-        /// it reads the solution from there
-        ///
-        /// @param[in]  force   If 1, force the offline phase to be computed
-        ///
-        void parameterizedBCoffline(bool force = 0);
-
-        //--------------------------------------------------------------------------
-
-        ///
-        ///
-	Eigen::VectorXd parameterizedBC(word linSys_solver = "fullPivLU",
-                             double regPar = 0);
-
-        //--------------------------------------------------------------------------
-
-        ///
-        ///
-        void parameterizedBCpostProcess(Eigen::VectorXd weigths);
-
-        //--------------------------------------------------------------------------
-
-        /// Makes all the preliminary computations for the Marquardt method
-        ///
-        void MarquardtMethodSetUp();
-
-        //--------------------------------------------------------------------------
-
-        /// Update Jacobian matrix
-        ///
-        /// @param[in]  gWeightsOld    Weigths of parameterized BC at previous iteration
-        /// @param[in]  weigthsUpdate  Update of the weigths in the present iteration
-        /// @param[in]  Tcomp          Computed temperature at current iteration
-        /// @param[in]  TcompOld       Computed temperature at previous iteration
-        ///
-        /// @param[out] Jacobian       Jacobian matrix
-        ///
-        Eigen::MatrixXd MarquardtUpdateJacobian(List<scalar> gWeightsOld,
-                                                Eigen::VectorXd weigthsUpdate, Eigen::VectorXd Tcomp,
-                                                Eigen::VectorXd TcompOld);
-
 
         //--------------------------------------------------------------------------
 
@@ -328,46 +163,9 @@ class inverseLaplacianProblem: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
-        /// Set BC of the adjoint problem
-        void assignAdjointBC();
-
-        //--------------------------------------------------------------------------
-
-        /// Assign the BC for the adjoint problem and returs the source field
-        ///
-        /// @param[out]  f  Source field of the adjoint problem
-        ///
-        volScalarField assignAdjointBCandSource();
-
-        //--------------------------------------------------------------------------
-
-        /// Set BC and IF of the sensitivity problem
-        ///
-        void assignSensitivityBC();
-
-        //--------------------------------------------------------------------------
-
-        /// Set BC and IF of the additional problem for the parameterized heat flux
-        ///
-        virtual void solveAdditional();
-
-        //--------------------------------------------------------------------------
-
         /// Solve direct problem
         ///
         void solveDirect();
-
-        //--------------------------------------------------------------------------
-
-        /// Solve adjoint problem
-        ///
-        void solveAdjoint();
-
-        //--------------------------------------------------------------------------
-
-        /// Solve sensibility problem
-        ///
-        void solveSensitivity();
 
         //--------------------------------------------------------------------------
 
@@ -392,97 +190,12 @@ class inverseLaplacianProblem: public laplacianProblem
         ///
         Eigen::VectorXd fieldValueAtThermocouples(volScalarField& field);
 
-
-        //--------------------------------------------------------------------------
-
-        /// Identifies the plane defined by the thermocouples
-        ///
-        void defineThermocouplesPlane();
-
         //--------------------------------------------------------------------------
 
         /// Computes the difference between direct problem solution and measures
+        /// Saves the difference vector in Tdiff
         ///
         void differenceBetweenDirectAndMeasure();
-
-        //--------------------------------------------------------------------------
-
-        /// Fill the Foam::vector containing the values of the sensitivity solution at
-        /// the thermocouples locations
-        ///
-        void sensibilitySolAtThermocouplesLocations();
-
-        //--------------------------------------------------------------------------
-
-        /// Conjugate gradient method
-        ///
-        /// @param[out]  1 if converged within cgIterMax iterations, 0 if not
-        ///
-        int conjugateGradient();
-
-        //--------------------------------------------------------------------------
-
-        /// Levenberg-Marquardt method
-        ///
-        /// @param[in]  exportSolutions 1 for saving the solutions at each iteration
-        /// @param[in]  folder          Folder where the solutions are saved
-        ///
-        void MarquardtMethod(label exportSolutions, word folder,
-                             label updateJacobian = 0);
-
-        //--------------------------------------------------------------------------
-
-        /// Computes the gradient of cost function J and its L2 norm
-        ///
-        void computeGradJ();
-
-        //--------------------------------------------------------------------------
-
-        /// Computes the search direction P
-        ///
-        void searchDirection();
-
-        //--------------------------------------------------------------------------
-
-        /// Compute the search step beta
-        ///
-        void computeSearchStep();
-
-        //--------------------------------------------------------------------------
-
-        /// Updates the heat flux in the conjugate gradient iterations
-        ///
-        void updateHeatFlux();
-
-        //--------------------------------------------------------------------------
-
-        /// Convergence cher for the conjugate gradient method
-        ///
-        /// @param[out]  1 if convergence criteria met, 0 if not
-        ///
-        int conjugateGradientConvergenceCheck();
-
-        //--------------------------------------------------------------------------
-
-        /// Conjugate gradient method
-        ///
-        /// @param[in]  cx  X coordinate of the cell center
-        /// @param[in]  cy  Y coordinate of the cell center
-        /// @param[in]  cz  Z coordinate of the cell center
-        /// @param[in]  thermocoupleCellDim  Dimension of the cell
-        ///
-        /// @param[out]  1 if converged within cgIterMax iterations, 0 if not
-        ///
-        int isInPlane(double cx, double cy, double cz,
-                      Foam::vector thermocoupleCellDim);
-
-        //--------------------------------------------------------------------------
-
-        /// Writes fields to file
-        ///
-        /// @param[in]  folde  Folder in which the fields are written
-        ///
-        void writeFields(label folderNumber, const char* folder);
 
         //--------------------------------------------------------------------------
 
@@ -498,63 +211,12 @@ class inverseLaplacianProblem: public laplacianProblem
         ///
         Foam::vector cellDim(const faceList& ff, const pointField& pp,
                              const cell& cc, labelList pLabels, pointField pLocal);
-
-        //--------------------------------------------------------------------------
-
-        /// Interpolates the thermocouples measurements in the plane defined
-        /// in readThermocouples() using radial basis functions
-        ///
-        void thermocouplesInterpolation(DenseMatrix& RBFweights, DenseMatrix& RBFbasis);
-
-        //--------------------------------------------------------------------------
-
-        /// Interpolates the thermocouples measurements in the plane defined
-        /// in readThermocouples() using radial basis functions
-        ///
-        void thermocouplesInterpolation();
-
-        //--------------------------------------------------------------------------
-
-        /// Performs offline solution
-        ///
-        void offlineSolve();
-
-        //--------------------------------------------------------------------------
-
-        /// Samples the Tmeas and saves the heat fluxes
-        ///
-        void samplingHeatFluxMarquardt(word folder);
-
-        //--------------------------------------------------------------------------
-
-        /// Performs POD on the heat fluxes
-        ///
-        void heatFluxPodMarquardt(word folder);
-
-        //--------------------------------------------------------------------------
-
-        /// Offline sampling of direct problem with respect to heat flux parameters
-        ///
-        void MarquardtOffline(word folder);
-
+        
         //--------------------------------------------------------------------------
 
         /// Restart fields
         ///
         void restart(word fieldName = "all");
-
-        //--------------------------------------------------------------------------
-
-        /// Reconsttuct online the field T 
-        ///
-        void reconstructT();
-
-        //--------------------------------------------------------------------------
-
-        ///// Offline sampling of direct problem with respect to heat flux parameters
-        /////
-        //void MarquardtOffline2(word folder);
-
 };
 
 #endif

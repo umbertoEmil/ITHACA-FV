@@ -36,7 +36,7 @@ NumberErrorTests  50;
 noiseLevel        0.08;
 
 //Test to perform
-CGtest    0;
+CGtest    1;
 CGnoiseTest   0;
 CGnoiseLevelTest   0;
 ParamBCnoiseLevelTest   0;

@@ -13,6 +13,8 @@ laplacianProblem/laplacianProblem.C
 msrProblem/msrProblem.C
 unsteadymsrProblem/usmsrProblem.C
 inverseLaplacianProblem/inverseLaplacianProblem.C
+inverseLaplacianProblem_CG/inverseLaplacianProblem_CG.C
+inverseLaplacianProblem_paramBC/inverseLaplacianProblem_paramBC.C
 inverseHeatTransferProblem/inverseHeatTransferProblem.C
 sequentialIHTP/sequentialIHTP.C
 sequentialIHTPwithTimeInterpolation/sequentialIHTPwithTimeInterpolation.C
