@@ -75,6 +75,12 @@ int main(int argc, char* argv[])
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest_RBFwidth", 0);
     label parameterizedBCerrorTest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest", 0);
+    label parameterizedBCerrorTest_TSVD = 
+        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest_TSVD", 0);
+
+
+    double noiseLevel = para->ITHACAdict->lookupOrDefault<double>("noiseLevel",
+                   0);
 
     // Reading parameters from ITHACAdict
     example.cgIterMax = para->ITHACAdict->lookupOrDefault<int>("cgIterMax", 100);
@@ -353,6 +359,65 @@ int main(int argc, char* argv[])
                                    outputFolder);
         example.postProcess(outputFolder, "gParametrized");
         Info << "*********************************************************" << endl;
+        Info << "*********************************************************" << endl;
+        Info << endl;
+    }
+
+
+
+
+    if (parameterizedBCerrorTest_TSVD)
+    {
+        Info << endl;
+        Info << "*********************************************************" << endl;
+        Info << "Testing parameterized BC TSVD with NOISY data" <<
+             endl;
+        word outputFolder = "./ITHACAoutput/parameterizedBCnoiseTest_TSVD/";
+        volScalarField gTrueField = example.list2Field(example.gTrue);
+        ITHACAstream::exportSolution(gTrueField,
+                                     "1", outputFolder,
+                                     "gTrue");
+        List<List<scalar>> heatFluxWeights;
+        scalar innerField = 1.0;
+        example.set_gParametrized("rbf", 0.1);
+        example.parameterizedBCoffline();
+
+        Info << "Introducing error in the measurements" << endl;
+        Info << "Performing " << Ntests << " tests." << endl;
+        Eigen::VectorXd TmeasOrig = example.Tmeas;
+
+        Eigen::VectorXi TSVDtruc(15);
+        TSVDtruc << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15;
+        std::cout << "debug : TSVDtruc = \n" << TSVDtruc.transpose() << std::endl;
+        std::cout << "debug : Tmeas orig = \n" << example.Tmeas.transpose() << std::endl;
+
+        int Ntrunc = TSVDtruc.size();
+
+        for (label i = 0; i < Ntests; i++)
+        {
+            Info << "Test " << i << endl;
+            example.addNoise(noiseLevel);
+            std::cout << "debug : Tmeas = \n" << example.Tmeas.transpose() << std::endl;
+
+            List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
+            List<scalar> solutionNorms;
+            for(int truncI = 0; truncI < Ntrunc; truncI++)
+            {
+                example.parameterizedBC("TSVD", TSVDtruc(truncI));
+                volScalarField gParametrizedField = example.list2Field(example.g);
+                ITHACAstream::exportSolution(gParametrizedField,
+                                             std::to_string(i * Ntrunc + truncI + 1),
+                                             outputFolder,
+                                             "gParametrized");
+                ITHACAstream::exportSolution(example.T,
+                                             std::to_string(i * Ntrunc + truncI + 1),
+                                             outputFolder,
+                                             "T");
+            }
+            example.Tmeas = TmeasOrig;
+        }
+
+        example.postProcess(outputFolder, "gParametrized", innerField);
         Info << "*********************************************************" << endl;
         Info << endl;
     }

@@ -28,12 +28,14 @@ g_0         -5e5;
 g_X         2e5;
 g_Z         -2e5;
 
+
 NumberErrorTests  100;
-TSVDregularization  7;
+noiseLevel        0.08;
 
 //Test to perform
 CGtest    0;
 CGnoiseTest   0;
 parameterizedBCtest  0;
-parameterizedBCtest_RBFwidth  1;
+parameterizedBCtest_RBFwidth  0;
 parameterizedBCerrorTest  0;
+parameterizedBCerrorTest_TSVD  1;
