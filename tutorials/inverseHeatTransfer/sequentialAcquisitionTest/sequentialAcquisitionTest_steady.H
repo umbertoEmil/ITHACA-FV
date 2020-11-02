@@ -1,29 +1,25 @@
 #ifndef sequentialAcquisitionTest_steady_H
 #define sequentialAcquisitionTest_steady_H
 
+#include "inverseLaplacianProblem_paramBC.H"
 
-class sequentialAcquisitionTest_steady: public inverseLaplacianProblem
+
+class sequentialAcquisitionTest_steady: public inverseLaplacianProblem_paramBC
 {
     public:
         explicit sequentialAcquisitionTest_steady(int argc, char* argv[])
             :
-            inverseLaplacianProblem(argc, argv),
+            inverseLaplacianProblem_paramBC(argc, argv),
             T(_T()),
-            lambda(_lambda()),
-            deltaT(_deltaT()),
             mesh(_mesh()),
             runTime(_runTime())
         {
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
             coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
-            interpolationPlaneDefined = 0;
-            cgIter = 0;
             thermocouplesRead = 0;
 	    folderOffline = "./ITHACAoutput/offlineParamBC_steady/";
         }
         volScalarField& T;
-        volScalarField& lambda;
-        volScalarField& deltaT;
         fvMesh& mesh;
         Time& runTime;
 
@@ -36,40 +32,8 @@ class sequentialAcquisitionTest_steady: public inverseLaplacianProblem
         List<scalar> heatFlux_hotSide;
 
         PtrList<volScalarField> gField;
-        PtrList<volScalarField> TredField;
-        PtrList<volScalarField> TfullField;
-        PtrList<volScalarField> lambdaFullField;
-        PtrList<volScalarField> deltaTfullField;
         PtrList<volScalarField> TdiffField;
         PtrList<volScalarField> gFullField;
-        PtrList<volScalarField> gRelErrField;
-
-
-        volScalarField analyticalErrorField (volScalarField& field1,
-                                             volScalarField& field2)
-        {
-            volScalarField fieldDiff(field1 - field2);
-            return fieldDiff;
-        }
-
-        void computeTdiff()
-        {
-            TdiffField = TredField;
-            forAll(TdiffField, testI)
-            {
-                TdiffField[testI] = TredField[testI] - TfullField[0];
-            }
-        }
-
-        int isInPlane(double cx, double cz)
-        {
-            return (cx >= interpolationPlane.minX -
-                    interpolationPlane.thermocoupleCellDim[0] / 4 &&
-                    cz >= interpolationPlane.minZ - interpolationPlane.thermocoupleCellDim[2] / 4 &&
-                    cx <= interpolationPlane.maxX + interpolationPlane.thermocoupleCellDim[0] / 4 &&
-                    cz <= interpolationPlane.maxZ + interpolationPlane.thermocoupleCellDim[2] / 4
-                   );
-        }
 
         void postProcess(word folder, List<scalar> samplingTime, word heatFluxFieldName, scalar innerField = 0.0)
         {

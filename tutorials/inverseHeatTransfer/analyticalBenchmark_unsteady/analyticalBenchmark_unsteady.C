@@ -36,7 +36,6 @@ SourceFiles
 #include "Time.H"
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem.H"
-#include "reducedInverseLaplacian.H"
 // #include "reducedLaplacian.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
@@ -58,17 +57,18 @@ int main(int argc, char* argv[])
     solverPerformance::debug = 1; //No verbose output
     analyticalBenchmark_unsteady example(argc, argv);
     // Reading tests to perform
-    ITHACAparameters para;
-    example.k = para.ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
+    ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
+                             example._runTime());
+    example.k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
     M_Assert(example.k > 0, "thermalConductivity, k, not specified");
-    example.rho = para.ITHACAdict->lookupOrDefault<double>("density", 0);
+    example.rho = para->ITHACAdict->lookupOrDefault<double>("density", 0);
     M_Assert(example.rho > 0, "Density, rho, not specified");
-    example.Cp = para.ITHACAdict->lookupOrDefault<double>("heatCapacity", 0);
+    example.Cp = para->ITHACAdict->lookupOrDefault<double>("heatCapacity", 0);
     M_Assert(example.Cp > 0, "heatCapacity, Cp, not specified");
-    example.H = para.ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    example.H = para->ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
     M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
-    double refGrad = para.ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
-    double valueFraction = para.ITHACAdict->lookupOrDefault<double>("valueFraction",
+    double refGrad = para->ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
+    double valueFraction = para->ITHACAdict->lookupOrDefault<double>("valueFraction",
                            0.0);
     fvMesh& mesh = example._mesh();
     volScalarField& T = example._T();

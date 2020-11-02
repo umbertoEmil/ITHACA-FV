@@ -35,7 +35,7 @@ SourceFiles
 #include "IOmanip.H"
 #include "Time.H"
 #include "laplacianProblem.H"
-#include "inverseLaplacianProblem.H"
+#include "inverseLaplacianProblem_paramBC.H"
 #include "inverseHeatTransferProblem.H"
 #include "sequentialIHTPwithTimeInterpolation.H"
 #include "ITHACAPOD.H"
@@ -46,7 +46,6 @@ SourceFiles
 #include "Foam2Eigen.H"
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
-#include "sampledTriSurfaceMesh.H"
 #include "sequentialAcquisitionTestWithInterpolation_unsteady.H"
 #include "sequentialAcquisitionTestWithInterpolation_steady.H"
 

@@ -22,19 +22,36 @@
   You should have received a copy of the GNU Lesser General Public License
   along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
  \*---------------------------------------------------------------------------*/
-Info << "Create field T" << endl;
-_T = autoPtr<volScalarField>
-     (
-         new volScalarField
-         (
-             IOobject
-             (
-                 "T",
-                 runTime.timeName(),
-                 mesh,
-                 IOobject::MUST_READ,
-                 IOobject::NO_WRITE
-             ),
-             mesh
-         )
-     );
+Info << "Create field lambda" << endl;
+_lambda = autoPtr<volScalarField>
+          (
+              new volScalarField
+              (
+                  IOobject
+                  (
+                      "lambda",
+                      runTime.timeName(),
+                      mesh,
+                      IOobject::MUST_READ,
+                      IOobject::NO_WRITE
+                  ),
+                  mesh
+              )
+          );
+
+Info << "Create field deltaT" << endl;
+_deltaT = autoPtr<volScalarField>
+          (
+              new volScalarField
+              (
+                  IOobject
+                  (
+                      "deltaT",
+                      runTime.timeName(),
+                      mesh,
+                      IOobject::MUST_READ,
+                      IOobject::NO_WRITE
+                  ),
+                  mesh
+              )
+          );

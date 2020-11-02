@@ -1,9 +1,9 @@
 class numericalInverseUnsteady: public inverseHeatTransferProblem
 {
     public:
-        explicit numericalInverseUnsteady(int argc, char* argv[], scalar _diffusivity)
+        explicit numericalInverseUnsteady(int argc, char* argv[])
             :
-            inverseHeatTransferProblem(argc, argv, _diffusivity)
+            inverseHeatTransferProblem(argc, argv)
         {
 	    fvMesh& mesh = _mesh();
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
@@ -172,7 +172,7 @@ class numericalInverseUnsteady: public inverseHeatTransferProblem
                 {
                     fvScalarMatrix TEqn
                     (
-                        fvm::ddt(T) - fvm::laplacian(diffusivity, T)
+                        fvm::ddt(T) - fvm::laplacian(DT * diffusivity, T)
                     );
 
                     fvOptions.constrain(TEqn);

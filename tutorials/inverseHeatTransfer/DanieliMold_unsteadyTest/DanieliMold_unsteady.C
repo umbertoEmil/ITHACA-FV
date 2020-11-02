@@ -55,17 +55,17 @@ using namespace SPLINTER;
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
-    scalar diffusivity = 1;
-    DanieliMold_unsteady example(argc, argv, diffusivity);
-    // Reading tests to perform
-    ITHACAparameters para;
-    example.k = para.ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
+    DanieliMold_unsteady example(argc, argv);
+
+    ITHACAparameters* para= ITHACAparameters::getInstance(example._mesh(),
+                             example._runTime());
+    example.k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
     M_Assert(example.k > 0, "thermalConductivity, k, not specified");
-    example.H = para.ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    example.H = para->ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
     M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
-    double Tf = para.ITHACAdict->lookupOrDefault<double>("Tf", 300.0);
-    double refGrad = para.ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
-    double valueFraction = para.ITHACAdict->lookupOrDefault<double>("valueFraction",
+    double Tf = para->ITHACAdict->lookupOrDefault<double>("Tf", 300.0);
+    double refGrad = para->ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
+    double valueFraction = para->ITHACAdict->lookupOrDefault<double>("valueFraction",
                            0.0);
     
     //example.heatFlux = cnpy::load(example.heatFlux, "DanieliHeatFluxAndCastingSpeed.npy");

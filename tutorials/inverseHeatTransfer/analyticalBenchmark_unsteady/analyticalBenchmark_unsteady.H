@@ -8,8 +8,6 @@ class analyticalBenchmark_unsteady: public inverseLaplacianProblem
 	    fvMesh& mesh = _mesh();
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
             coldSide_ind = mesh.boundaryMesh().findPatchID("coldSide");
-            interpolationPlaneDefined = 0;
-            cgIter = 0;
             thermocouplesRead = 0;
         }
         
@@ -225,16 +223,30 @@ class analyticalBenchmark_unsteady: public inverseLaplacianProblem
                 }
 
 	        Info << "Exporting analytical solution" << endl;
+                scalar EPS = 1e-6;
+                volScalarField TdiffField = T - T_true;
+                volScalarField relativeErrorField(T_true);
+                for (label i = 0; i < relativeErrorField.internalField().size(); i++)
+                {
+                    if (std::abs(T_true.ref()[i]) < EPS)
+                    {
+                        relativeErrorField.ref()[i] = (std::abs(TdiffField.ref()[i])) / EPS;
+                    }
+                    else
+                    {
+                        relativeErrorField.ref()[i] = (std::abs(TdiffField.ref()[i])) / T_true.ref()[i];
+                    }
+                }
+
                 ITHACAstream::exportSolution(T_true, runTime.timeName(),
                                  folderOffline,
                                  "Ttrue");
                 volScalarField error = analyticalErrorField(T, T_true);
                 ITHACAstream::exportSolution(error, runTime.timeName(), folderOffline, "error");
-                Info << "L2 norm of the relative error = " << ITHACAutilities::error_fields(
-                         T, T_true) << endl;
+                Info << "L2 norm of the relative error = " << ITHACAutilities::L2Norm(relativeErrorField) << endl;
                 Info << "Linf norm of the relative error = " <<
-                     ITHACAutilities::relError_fields_LinfNorm(T, T_true) << endl;
-                Info << "L2 norm of the error = " << ITHACAutilities::L2norm(error) << endl;
+                     ITHACAutilities::LinfNorm(relativeErrorField) << endl;
+                Info << "L2 norm of the error = " << ITHACAutilities::L2Norm(error) << endl;
                 Info << "Linf norm of the error = " << ITHACAutilities::LinfNorm(error) << endl;
 
                 runTime.printExecutionTime(Info);

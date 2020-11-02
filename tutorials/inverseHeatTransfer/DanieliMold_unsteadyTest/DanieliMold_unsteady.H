@@ -1,9 +1,9 @@
 class DanieliMold_unsteady: public inverseHeatTransferProblem
 {
     public:
-        explicit DanieliMold_unsteady(int argc, char* argv[], scalar _diffusivity)
+        explicit DanieliMold_unsteady(int argc, char* argv[])
             :
-            inverseHeatTransferProblem(argc, argv, _diffusivity)
+            inverseHeatTransferProblem(argc, argv)
         {
 	    fvMesh& mesh = _mesh();
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");

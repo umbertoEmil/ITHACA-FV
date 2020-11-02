@@ -35,7 +35,7 @@ SourceFiles
 #include "IOmanip.H"
 #include "Time.H"
 #include "laplacianProblem.H"
-#include "inverseLaplacianProblem.H"
+#include "inverseLaplacianProblem_paramBC.H"
 #include "inverseHeatTransferProblem.H"
 #include "ITHACAPOD.H"
 #include "ITHACAutilities.H"

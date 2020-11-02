@@ -1,9 +1,9 @@
 class analyticalInverseUnsteady: public inverseHeatTransferProblem
 {
     public:
-        explicit analyticalInverseUnsteady(int argc, char* argv[], scalar _diffusivity)
+        explicit analyticalInverseUnsteady(int argc, char* argv[])
             :
-            inverseHeatTransferProblem(argc, argv, _diffusivity)
+            inverseHeatTransferProblem(argc, argv)
         {
 	    fvMesh& mesh = _mesh();
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
@@ -82,7 +82,7 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
 		}
 		else if(exponentialSolution)
 		{
-                    T.ref()[i] =  a * cx * cx + b * cx * cz * std::exp(cy / std::sqrt(diffusivity.value())) + c * cz *cz + d;
+                    T.ref()[i] =  a * cx * cx + b * cx * cz * std::exp(cy / std::sqrt(diffusivity)) + c * cz *cz + d;
 		}
             }
         }
@@ -112,13 +112,13 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
 		    if(quadraticSolution)
 		    {
                         T.ref()[i] =  a * cx * cx + b * cy * cy + c * cz *cz 
-			    + diffusivity.value() * 2 * (a + b + c) * timeSteps[timeI];
+			    + diffusivity * 2 * (a + b + c) * timeSteps[timeI];
 		    }
 		    else if(exponentialSolution)
 		    {
                         T.ref()[i] =  a * cx * cx + b * cx * cz * std::exp(timeSteps[timeI] + 
-		            cy / std::sqrt(diffusivity.value())) + c * cz * cz + d +
-	                    diffusivity.value() * 2 * (a + c) * timeSteps[timeI];
+		            cy / std::sqrt(diffusivity)) + c * cz * cz + d +
+	                    diffusivity * 2 * (a + c) * timeSteps[timeI];
 		    }
                 }
 		Tanalytical.append(T);
@@ -142,8 +142,8 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
 		    }
 		    else if(exponentialSolution)
 		    {
-		        gTrue[timeI][faceI] = k * b / std::sqrt(diffusivity.value()) * faceX * faceZ *
-	                    std::exp(timeSteps[timeI] + faceY / std::sqrt(diffusivity.value()));
+		        gTrue[timeI][faceI] = k * b / std::sqrt(diffusivity) * faceX * faceZ *
+	                    std::exp(timeSteps[timeI] + faceY / std::sqrt(diffusivity));
 		    }
                 }
 	    }
@@ -173,19 +173,19 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
 		    //Tf[faceI] = - k * 2 * b * faceY;
                     Tf[faceI] = (k / H) * 2 * b * faceY + (a * faceX * faceX +
 		        b * faceY + c * faceZ * faceZ
-			+ 2 * diffusivity.value() * ( a + b + c ) * mesh.time().value());
+			+ 2 * diffusivity * ( a + b + c ) * mesh.time().value());
 		}
 		else if(exponentialSolution)
 		{
-		    //Tf[faceI] = - k * b / std::sqrt(diffusivity.value()) *
+		    //Tf[faceI] = - k * b / std::sqrt(diffusivity) *
                     //    (faceX * faceZ * std::exp(mesh.time().value() +
-                    //    faceY / std::sqrt(diffusivity.value())));
-		    Tf[faceI] = (k * b) / (H * std::sqrt(diffusivity.value())) *  
+                    //    faceY / std::sqrt(diffusivity)));
+		    Tf[faceI] = (k * b) / (H * std::sqrt(diffusivity)) *  
 		        (faceX * faceZ * std::exp(mesh.time().value() + 
-		        faceY / std::sqrt(diffusivity.value()))) + (a * faceX * faceX +
-		        b * faceX * faceZ * std::exp(faceY / std::sqrt(diffusivity.value()) 
+		        faceY / std::sqrt(diffusivity))) + (a * faceX * faceX +
+		        b * faceX * faceZ * std::exp(faceY / std::sqrt(diffusivity) 
 		        + mesh.time().value()) + c * faceZ * faceZ + d +
-		        2 * diffusivity.value() * (a + c) * mesh.time().value());
+		        2 * diffusivity * (a + c) * mesh.time().value());
 		}
             }
 
@@ -210,7 +210,7 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
 		else if(exponentialSolution)
 		{
                     heatFlux_gammaEx1[faceI] = - k * (b * faceX * 
-		        std::exp(faceY / std::sqrt(diffusivity.value()) + 
+		        std::exp(faceY / std::sqrt(diffusivity) + 
 		        mesh.time().value()) + 2 * c * faceZ);
 		}
             }
@@ -236,7 +236,7 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
                 else if(exponentialSolution)
                 {
                     heatFlux_gammaEx2[faceI] = - k * (2 * a * faceX + b * faceZ * 
-		        std::exp(mesh.time().value() + faceY / std::sqrt(diffusivity.value())));
+		        std::exp(mesh.time().value() + faceY / std::sqrt(diffusivity)));
                 }
             }
             
@@ -260,7 +260,7 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
                 else if(exponentialSolution)
                 {
                     heatFlux_gammaEx3[faceI] = k * (b * faceX * 
-		        std::exp(faceY / std::sqrt(diffusivity.value()) + 
+		        std::exp(faceY / std::sqrt(diffusivity) + 
 		        mesh.time().value()) + 2 * c * faceZ);
                 }
             }
@@ -285,7 +285,7 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
                 else if(exponentialSolution)
                 {
                     heatFlux_gammaEx4[faceI] = k * (2 * a * faceX +
-		        b * faceZ * std::exp(faceY / std::sqrt(diffusivity.value()) +
+		        b * faceZ * std::exp(faceY / std::sqrt(diffusivity) +
 		        mesh.time().value()));
                 }
 
@@ -354,7 +354,7 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
                 {
                     fvScalarMatrix TEqn
                     (
-                        fvm::ddt(T) - fvm::laplacian(diffusivity, T)
+                        fvm::ddt(T) - fvm::laplacian(DT * diffusivity, T)
                     );
 
                     fvOptions.constrain(TEqn);
@@ -395,10 +395,10 @@ class analyticalInverseUnsteady: public inverseHeatTransferProblem
                 timeEigen(timeI) = timeSteps[timeI];
                 ITHACAstream::exportSolution(error, std::to_string(timeSteps[timeI]),
 		    directOutputFolder, "directError");
-		relError_L2norm(timeI) = ITHACAutilities::error_fields(
+		relError_L2norm(timeI) = ITHACAutilities::errorL2Rel(
                          Tanalytical[timeI], Ttrue[timeI]);
-	        relError_LinfNorm(timeI) = ITHACAutilities::relError_fields_LinfNorm(Tanalytical[timeI], Ttrue[timeI]);
-		Error_L2norm(timeI) = ITHACAutilities::L2norm(error);
+	        relError_LinfNorm(timeI) = ITHACAutilities::errorLinfRel(Tanalytical[timeI], Ttrue[timeI]);
+		Error_L2norm(timeI) = ITHACAutilities::L2Norm(error);
 		Error_LinfNorm(timeI) = ITHACAutilities::LinfNorm(error);
 	    }
 	    ITHACAstream::exportMatrix(timeEigen, "timeSteps", "eigen", directOutputFolder);
