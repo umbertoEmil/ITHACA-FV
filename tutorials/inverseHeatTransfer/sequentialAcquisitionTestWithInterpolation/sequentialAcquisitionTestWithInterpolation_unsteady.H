@@ -190,7 +190,7 @@ class sequentialAcquisitionTestWithInterpolation_unsteady: public sequentialIHTP
 	        fvMesh& mesh(_mesh());
 	        Ttrue.resize(0);
 	        set_Tf(0);
-	        ITHACAstream::read_fields(mesh, Ttrue, "Ttrue",
+	        ITHACAstream::read_fields(Ttrue, "Ttrue",
                                   directOutputFolder);
 	    }
 	    else

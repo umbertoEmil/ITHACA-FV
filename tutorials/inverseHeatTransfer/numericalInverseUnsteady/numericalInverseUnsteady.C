@@ -55,14 +55,16 @@ using namespace SPLINTER;
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
+    numericalInverseUnsteady example(argc, argv);
     // Reading tests to perform
-    ITHACAparameters para;
-    scalar k = para.ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
-    scalar density = para.ITHACAdict->lookupOrDefault<double>("density", 0);
-    scalar specificHeat = para.ITHACAdict->lookupOrDefault<double>("specificHeat", 0);
+    ITHACAparameters* para = ITHACAparameters::getInstance(example._mesh(),
+                         example._runTime());
+
+    scalar k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
+    scalar density = para->ITHACAdict->lookupOrDefault<double>("density", 0);
+    scalar specificHeat = para->ITHACAdict->lookupOrDefault<double>("specificHeat", 0);
     scalar diffusivity = k / (density * specificHeat);
     
-    numericalInverseUnsteady example(argc, argv, diffusivity);
     
     M_Assert( diffusivity > 0, "diffusivity not specified");
     example.k = k;
@@ -71,16 +73,17 @@ int main(int argc, char* argv[])
     M_Assert(example.density > 0, "Density not specified");
     example.specificHeat = specificHeat;
     M_Assert(example.specificHeat > 0, "specificHeat not specified");
-    example.H = para.ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    example.H = para->ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
     M_Assert(example.H > 0, "Heat transfer coeff, H, not specified");
-    example.a = para.ITHACAdict->lookupOrDefault<scalar>("a", 0);
-    example.b = para.ITHACAdict->lookupOrDefault<scalar>("b", 0);
-    example.c = para.ITHACAdict->lookupOrDefault<scalar>("c", 0);
-    example.d = para.ITHACAdict->lookupOrDefault<scalar>("d", 0);
-    example.T0 = para.ITHACAdict->lookupOrDefault<scalar>("T0", 0);
+    example.diffusivity = diffusivity;
+    example.a = para->ITHACAdict->lookupOrDefault<scalar>("a", 0);
+    example.b = para->ITHACAdict->lookupOrDefault<scalar>("b", 0);
+    example.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
+    example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
+    example.T0 = para->ITHACAdict->lookupOrDefault<scalar>("T0", 0);
 
-    unsigned directProblemTest = para.ITHACAdict->lookupOrDefault<unsigned>("directProblemTest", 0);
-    unsigned parameterizedBCtest = para.ITHACAdict->lookupOrDefault<unsigned>("parameterizedBCtest", 0);
+    unsigned directProblemTest = para->ITHACAdict->lookupOrDefault<unsigned>("directProblemTest", 0);
+    unsigned parameterizedBCtest = para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBCtest", 0);
     
     
     //example.heatFlux = cnpy::load(example.heatFlux, "DanieliHeatFluxAndCastingSpeed.npy");

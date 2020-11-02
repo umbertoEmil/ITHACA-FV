@@ -24,19 +24,11 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/reductionProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/laplacianProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem_paramBC \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseHeatTransferProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/sequentialIHTP \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/steadyNS \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/unsteadyNS \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/glassFurnace \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedProblem \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/reducedInverseLaplacian \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyNS \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedSteadyNS \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedLaplacian \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/NonLinearSolvers \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAutilities \
-    -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAbayesian \
+    -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAregularization \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAPOD \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAparallel \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAstream \
@@ -46,7 +38,6 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/thirdparty/Eigen \
     -I$(LIB_ITHACA_SRC)/thirdparty/Eigen/src \
     -I$(LIB_ITHACA_SRC)/thirdparty/spectra/include \
-    -I$(LIB_ITHACA_SRC)/thirdparty/MiniInverseProblems/include \
     -I$(LIB_ITHACA_SRC)/ITHACA_THIRD_PARTY/splinter/include \
     -DOFVER=$${WM_PROJECT_VERSION%.*} \
     -Wno-comment \
@@ -54,25 +45,13 @@ EXE_INC = \
     -g \
 
 EXE_LIBS = \
-    -lturbulenceModels \
     -lfiniteVolume \
     -lmeshTools \
     -lfvOptions \
-    -lsampling \
-    -lfluidThermophysicalModels \
-    -lradiationModels \
-    -lspecie \
-    -lforces \
     -lfileFormats \
     -lITHACA_ROMPROBLEMS \
     -lITHACA_FOMPROBLEMS \
     -lITHACA_THIRD_PARTY \
     -lITHACA_CORE \
     -L$(FOAM_USER_LIBBIN) \
-    -ldecompositionMethods \
-    -L$(FOAM_LIBBIN)/dummy \
-    -lkahipDecomp -lmetisDecomp -lptscotchDecomp -lscotchDecomp \
-    -ldynamicMesh \
-    -ldecompose \
-    -lreconstruct \
-    -lsnappyHexMesh
+    -ldynamicMesh 

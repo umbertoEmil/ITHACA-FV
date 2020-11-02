@@ -40,24 +40,11 @@ SourceFiles
 #include  <boost/property_tree/ptree.hpp>
 
 #include <iostream>
-#include "interpolation.H"
-#include "fvCFD.H"
-#include "fvOptions.H"
-#include "simpleControl.H"
-#include "IOmanip.H"
-#include "Time.H"
-#include "laplacianProblem.H"
-#include "inverseLaplacianProblem.H"
-#include "reducedInverseLaplacian.H"
-#include "ITHACAPOD.H"
-#include "ITHACAutilities.H"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "Foam2Eigen.H"
 #include "muq2ithaca.H"
-#include "mixedFvPatchFields.H"
-#include "cellDistFuncs.H"
 
 
 int main(int argc, char* argv[])

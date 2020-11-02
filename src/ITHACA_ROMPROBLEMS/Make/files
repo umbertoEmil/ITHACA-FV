@@ -12,6 +12,5 @@ ReducedLaplacian/ReducedLaplacian.C
 ReducedSimpleSteadyNS/ReducedSimpleSteadyNS.C
 ReducedMSR/ReducedMSR.C
 ReducedUnsteadyMSR/ReducedUnsteadyMSR.C
-reducedInverseLaplacian/reducedInverseLaplacian.C
 
 LIB = $(FOAM_USER_LIBBIN)/libITHACA_ROMPROBLEMS
