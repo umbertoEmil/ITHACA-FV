@@ -259,6 +259,28 @@ double L2normOnPatch(fvMesh& mesh, volScalarField& field, word patch);
 ///
 double LinfNormOnPatch(fvMesh& mesh, volScalarField& field, word patch);
 
+//--------------------------------------------------------------------------
+/// Evaluate the integral on a patch
+///
+/// @param[in]  mesh   The mesh.
+/// @param[in]  field  The field.
+/// @param[in]  patch  Name of the patch.
+///
+/// @return     Integral of the field on the patch.
+///
+double integralOnPatch(fvMesh& mesh, volScalarField& field, word patch);
+
+//--------------------------------------------------------------------------
+/// Evaluate the integral on a patch
+///
+/// @param[in]  mesh   The mesh.
+/// @param[in]  field  A list of values of the field on the patch.
+/// @param[in]  patch  Name of the patch.
+///
+/// @return     Integral of the field on the patch.
+///
+double integralOnPatch(fvMesh& mesh, List<scalar> field, word patch);
+
 }
 
 

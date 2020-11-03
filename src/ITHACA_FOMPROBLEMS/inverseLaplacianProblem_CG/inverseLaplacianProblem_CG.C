@@ -330,16 +330,14 @@ int inverseLaplacianProblem_CG::conjugateGradient()
         //                             "./ITHACAoutput/CGtest/", T.name());
         differenceBetweenDirectAndMeasure();
 
+        Jlist.conservativeResize(cgIter + 1, 1);
+        Jlist(cgIter) = J;
         if (conjugateGradientConvergenceCheck())
         {
-            Jlist.conservativeResize(cgIter + 1, 1);
-            Jlist(cgIter) = J;
             ITHACAstream::exportMatrix(Jlist, "costFunctionFull", "eigen", "./");
             return (1);
         }
 
-        Jlist.conservativeResize(cgIter + 1, 1);
-        Jlist(cgIter) = J;
         solveAdjoint();
         volScalarField& lambda = _lambda();
         //ITHACAstream::exportSolution(lambda, std::to_string(sampleI),
@@ -392,11 +390,7 @@ void inverseLaplacianProblem_CG::searchDirection()
     fvMesh& mesh = _mesh();
     gamma = 0.0;
     scalar gammaNum = 0;
-    forAll (mesh.magSf().boundaryField()[hotSide_ind], faceI)
-    {
-        gammaNum += gradJ [faceI] * gradJ [faceI] *
-                    mesh.magSf().boundaryField()[hotSide_ind][faceI];
-    }
+    gammaNum = gradJ_L2norm;
 
     if (cgIter > 0)
     {
@@ -478,12 +472,6 @@ int inverseLaplacianProblem_CG::conjugateGradientConvergenceCheck()
         Info << "Convergence reached in " << cgIter << " iterations" << endl;
         return (1);
     }
-    //else if (cgIter > 0 && gradJ_L2norm <= Jtol)
-    //{
-    //    Info << "Stopping criteria on the gradient of the cost functional" <<
-    //         endl << "met in " << cgIter << " iterations" << endl;
-    //    return (1);
-    //}
     else if (Foam::mag((Jold - J) / J) <= JtolRel)
     {
         Info << "Relative tolerance criteria meet in " << cgIter << " iterations" <<

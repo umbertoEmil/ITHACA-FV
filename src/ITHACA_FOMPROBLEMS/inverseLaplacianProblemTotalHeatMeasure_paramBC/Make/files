@@ -1,0 +1,3 @@
+inverseLaplacianProblemTotalHeatMeasure_paramBC.C
+
+LIB = $(FOAM_USER_LIBBIN)/libInverseLaplacianProblemTotalHeatMeasure_paramBC

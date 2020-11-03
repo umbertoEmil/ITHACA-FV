@@ -384,6 +384,52 @@ double LinfNormOnPatch(fvMesh& mesh, volScalarField& field,
     return Linf;
 }
 
+double integralOnPatch(fvMesh& mesh, volScalarField& field,
+                                        word patch)
+{
+    double integral = 0;
+    //Access the mesh information for the boundary
+    label patchID = mesh.boundaryMesh().findPatchID(patch);
+    const polyPatch& cPatch = mesh.boundaryMesh()[patchID];
+
+    //List of cells close to a boundary
+    const labelUList& faceCells = cPatch.faceCells();
+    forAll(cPatch, faceI)
+    {
+        //id of the owner cell having the face
+        label faceOwner = faceCells[faceI] ;
+        scalar faceArea = mesh.magSf().boundaryField()[patchID][faceI];
+        integral += faceArea * field[faceOwner];
+    }
+    return integral;
+}
+
+double integralOnPatch(fvMesh& mesh, List<scalar> field,
+                                        word patch)
+{
+    double integral = 0;
+    //Access the mesh information for the boundary
+    label patchID = mesh.boundaryMesh().findPatchID(patch);
+    const polyPatch& cPatch = mesh.boundaryMesh()[patchID];
+
+    //List of cells close to a boundary
+    const labelUList& faceCells = cPatch.faceCells();
+    int patchSize = mesh.magSf().boundaryField()[patchID].size();
+    
+    std::string message = "The input list (size = " + std::to_string(field.size()) 
+        + ") must have the same size of the patch mesh (size = " 
+        + std::to_string(patchSize) + ")"; 
+    M_Assert( patchSize == field.size(), message.c_str());
+    forAll(cPatch, faceI)
+    {
+        //id of the owner cell having the face
+        label faceOwner = faceCells[faceI] ;
+        scalar faceArea = mesh.magSf().boundaryField()[patchID][faceI];
+        integral += faceArea * field[faceI];
+    }
+    return integral;
+}
+
 
 }
 

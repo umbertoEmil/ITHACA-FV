@@ -24,7 +24,7 @@ License
 Description
     Example of a heat transfer Reduction Problem
 SourceFiles
-    numericalBenchmark.C
+    totalHeatFluxTest.C
 \*---------------------------------------------------------------------------*/
 
 #include <iostream>
@@ -36,6 +36,8 @@ SourceFiles
 #include "laplacianProblem.H"
 #include "inverseLaplacianProblem_CG.H"
 #include "inverseLaplacianProblem_paramBC.H"
+#include "inverseLaplacianProblemTotalHeatMeasure_CG.H"
+#include "inverseLaplacianProblemTotalHeatMeasure_paramBC.H"
 #include "ITHACAutilities.H"
 #include <Eigen/Dense>
 #define _USE_MATH_DEFINES
@@ -43,17 +45,16 @@ SourceFiles
 #include "Foam2Eigen.H"
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
-#include "numericalBenchmark.H"
+#include "totalHeatFluxTest.H"
 #include "MUQ/Modeling/Distributions/Gaussian.h"
-
 
 
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
     double time;
-    numericalBenchmark_CG example_CG(argc, argv);
-    numericalBenchmark_paramBC example_paramBC(argc, argv);
+    totalHeatFluxTest_CG example_CG(argc, argv);
+    totalHeatFluxTest_paramBC example_paramBC(argc, argv);
     // Reading parameters from ITHACAdict
     ITHACAparameters* para = ITHACAparameters::getInstance(example_CG._mesh(),
                              example_CG._runTime());
@@ -71,27 +72,14 @@ int main(int argc, char* argv[])
     example_paramBC.Tf_delta = example_CG.Tf_delta;
 
     word solver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver", "fullPivLU");
-    label TSVDtruncation = para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 3);
+    int TSVDtrunc = para->ITHACAdict->lookupOrDefault<int>("TSVDregularization", 0);
 
     label CGtest = para->ITHACAdict->lookupOrDefault<int>("CGtest", 0);
-    label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
-    label parameterizedBCtest_RBFwidth =
-        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest_RBFwidth", 0);
-    label parameterizedBCerrorTest =
-        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest", 0);
-    label parameterizedBCerrorTest_TSVD = 
-        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCerrorTest_TSVD", 0);
-
-
 
     // Reading parameters from ITHACAdict
     example_CG.cgIterMax = para->ITHACAdict->lookupOrDefault<int>("cgIterMax", 100);
-    example_CG.thermocouplesNum =
-        para->ITHACAdict->lookupOrDefault<int>("thermocouplesNumber", 0);
-    example_paramBC.thermocouplesNum = example_CG.thermocouplesNum;
-    M_Assert(example_CG.thermocouplesNum > 0, "Number of thermocouples not specified");
 
     example_CG.interpolation = para->ITHACAdict->lookupOrDefault<int>("interpolation",
                             1);
@@ -100,22 +88,15 @@ int main(int argc, char* argv[])
     example_CG.JtolRel =
         para->ITHACAdict->lookupOrDefault<double>("JrelativeTolerance",
                 0.001);
-
-    int TSVDtrunc = para->ITHACAdict->lookupOrDefault<int>("TSVDregularization", 0);
-
-    double noiseLevel = para->ITHACAdict->lookupOrDefault<double>("noiseLevel",
-                   0);
+    
     example_CG.k = para->ITHACAdict->lookupOrDefault<double>("thermalConductivity", 0);
     M_Assert(example_CG.k > 0, "thermalConductivity, k, not specified");
     example_CG.H = para->ITHACAdict->lookupOrDefault<double>("heatTranferCoeff", 0);
+    M_Assert(example_CG.H > 0, "Heat transfer coeff, H, not specified");
+    example_CG.gIntegralWeight = para->ITHACAdict->lookupOrDefault<double>("gIntegralWeight", 0);
+    example_paramBC.gIntegralWeight = example_CG.gIntegralWeight;
     example_paramBC.k = example_CG.k;
     example_paramBC.H = example_CG.H;
-    M_Assert(example_CG.H > 0, "Heat transfer coeff, H, not specified");
-    label Ntests = para->ITHACAdict->lookupOrDefault<double>("NumberErrorTests",
-                   100);
-    double refGrad = para->ITHACAdict->lookupOrDefault<double>("refGrad", 0.0);
-    double valueFraction = para->ITHACAdict->lookupOrDefault<double>("valueFraction",
-                           0.0);
 
     //*******************************************//
     fvMesh& mesh = example_CG._mesh();
@@ -123,9 +104,6 @@ int main(int argc, char* argv[])
     label hotSideSize = mesh.boundaryMesh()[example_CG.hotSide_ind].size(); 
     example_CG.g.resize(hotSideSize);
     example_CG.gTrue.resize(hotSideSize);
-    double x0 = 0.788;
-    double z0 = 0.6;
-    double radius = 0.2;
     
     forAll(example_CG.g, faceI)
     {
@@ -133,50 +111,27 @@ int main(int argc, char* argv[])
             mesh.boundaryMesh()[example_CG.hotSide_ind].faceCentres()[faceI].x();
         scalar faceZ =
             mesh.boundaryMesh()[example_CG.hotSide_ind].faceCentres()[faceI].z();
-	//example_CG.g[faceI] = - example_CG.k * (example_CG.b * std::exp(- 5 * ((faceX - x0) * (faceX - x0) + (faceZ - z0) * (faceZ - z0))));
-	//if( (faceX - x0) * (faceX - x0) + (faceZ - z0) * (faceZ - z0) < radius * radius)
-	//{
-	//   example_CG.g[faceI] = - example_CG.k * (example_CG.b);
-	//}
-	//else 
-	//{
-	//   example_CG.g[faceI] = 0;
-	//}
         example_CG.g[faceI] = (example_CG.g_X * (faceX - 1) * (faceX - 1) + example_CG.g_Z * faceZ + example_CG.g_0) ;
     }
 
     example_CG.set_Tf();
     example_CG.gTrue = example_CG.g;
+    example_paramBC.gTrue = example_CG.g;
     example_CG.solveTrue();
-
-    Info << "debug 1" << endl;
-    Info << "debug 2" << endl;
-    example_paramBC.g = example_CG.g;
-    example_paramBC.gTrue = example_CG.gTrue;
-    example_paramBC.set_Tf();
-    example_paramBC.solveTrue();
-    Info << "debug 3" << endl;
-    
     volScalarField& T(example_CG._T());
+    example_paramBC.set_Tf();
+    example_paramBC.g = example_CG.g;
+    example_paramBC.solveTrue();
+
 
     // Setting up the thermocouples
+    example_CG.gIntegral_meas = ITHACAutilities::integralOnPatch(mesh, example_CG.gTrue, "hotSide");
     example_CG.readThermocouples();
     example_CG.Tmeas = example_CG.fieldValueAtThermocouples(T);
     std::cout << "debug: Tmeas = " << example_CG.Tmeas << std::endl;
+    example_paramBC.gIntegral_meas = example_CG.gIntegral_meas;
     example_paramBC.readThermocouples();
-    example_paramBC.Tmeas = example_paramBC.fieldValueAtThermocouples(T);
-
-
-    if (example_CG.interpolation)
-    {
-        Info << "Interpolating thermocouples measurements in the " <<
-             "plane defined by the thermocouples" << endl;
-        example_CG.thermocouplesInterpolation();
-    }
-    else
-    {
-        Info << "NOT interpolating thermocouples measurements" << endl;
-    }
+    example_paramBC.Tmeas = example_CG.Tmeas;
 
     // Solving the inverse problem
     if (CGtest)
@@ -264,170 +219,13 @@ int main(int argc, char* argv[])
             residualNorms(solverI) = Foam::sqrt(
                                          example_paramBC.residual.squaredNorm());
         }
-        Eigen::MatrixXd A = example_paramBC.Theta.transpose() * example_paramBC.Theta;
+        Eigen::MatrixXd A = example_paramBC.Theta.transpose() * example_paramBC.Theta + example_paramBC.gIntegralWeight * example_paramBC.Phi;
         ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
                                    outputFolder);
         example_paramBC.postProcess(outputFolder, "gParametrized");
         Info << "*********************************************************" << endl;
         Info << endl;
     }
-
-
-
-    if (parameterizedBCtest_RBFwidth)
-    {
-        Info << endl;
-        Info << "*********************************************************" << endl;
-        Info << "Performing test for the parameterized BC inverse solver" << endl;
-        Info << endl;
-        word outputFolder = "./ITHACAoutput/parameterizedBCtest_RBFparameter/";
-        volScalarField gTrueField = example_paramBC.list2Field(example_paramBC.gTrue);
-        ITHACAstream::exportSolution(gTrueField,
-                                     "1", outputFolder,
-                                     "gTrue");
-        
-        int rbfWidth_size = 9;
-        Eigen::VectorXd rbfWidth(rbfWidth_size);
-        rbfWidth << 100, 10, 1, 0.33, 0.1, .033, 0.01, 0.0033, 0.001;
-
-        Eigen::VectorXd residualNorms;
-        residualNorms.resize(rbfWidth_size);
-        Eigen::VectorXd heatFluxL2norm(rbfWidth_size);
-        Eigen::VectorXd heatFluxLinfNorm = heatFluxL2norm;
-        Eigen::VectorXd condNumber = heatFluxL2norm;
-        Eigen::MatrixXd singVal;
-
-        for(int i = 0; i < rbfWidth_size; i++)
-        {
-            Info << "*********************************************************" << endl;
-            Info << "RBF parameter " << rbfWidth(i) << endl;
-            Info << endl;
-
-            example_paramBC.set_gParametrized("rbf", rbfWidth(i));
-            example_paramBC.parameterizedBCoffline(1);
-            example_paramBC.parameterizedBC("fullPivLU");
-
-            volScalarField gParametrizedField = example_paramBC.list2Field(example_paramBC.g);
-            ITHACAstream::exportSolution(gParametrizedField,
-                                         std::to_string(i + 1),
-                                         outputFolder,
-                                         "gParametrized");
-	    volScalarField& T(example_paramBC._T());
-            ITHACAstream::exportSolution(T,
-                                         std::to_string(i + 1),
-                                         outputFolder,
-                                         "T");
-            residualNorms(i) = Foam::sqrt(
-                                         example_paramBC.residual.squaredNorm());
-            Eigen::MatrixXd A = example_paramBC.Theta.transpose() * example_paramBC.Theta;
-            Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
-                                          Eigen::ComputeThinU | Eigen::ComputeThinV);
-            Eigen::MatrixXd singularValues = svd.singularValues();
-            singVal.conservativeResize(singularValues.rows(), singVal.cols() + 1);
-            singVal.col(i) = singularValues;
-            double conditionNumber = singularValues.maxCoeff() / singularValues.minCoeff();
-            Info << "Condition number = " << conditionNumber << endl;
-            condNumber(i) = conditionNumber;
-
-
-            volScalarField gDiffField = gParametrizedField - gTrueField;
-            scalar EPS = 1e-6;
-            volScalarField relativeErrorField(gTrueField);
-            for (label i = 0; i < relativeErrorField.internalField().size(); i++)
-            {
-                if (std::abs(gTrueField.ref()[i]) < EPS)
-                {
-                    relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
-                }
-                else
-                {
-                    relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / gTrueField.ref()[i];
-                }
-            }
-            ITHACAstream::exportSolution(relativeErrorField,
-                                         std::to_string(i + 1), outputFolder,
-                                         "relativeErrorField");
-            heatFluxL2norm(i) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
-                                        "hotSide");
-            heatFluxLinfNorm(i) = ITHACAutilities::LinfNormOnPatch(mesh, relativeErrorField,
-                                        "hotSide");
-        }
-
-        ITHACAstream::exportMatrix(condNumber, "condNumber", "eigen",
-                                   outputFolder);
-        ITHACAstream::exportMatrix(heatFluxL2norm, "relError_L2norm", "eigen",
-                                   outputFolder);
-        ITHACAstream::exportMatrix(heatFluxLinfNorm, "relError_LinfNorm", "eigen",
-                                   outputFolder);
-        ITHACAstream::exportMatrix(singVal, "singularValues", "eigen",
-                                   outputFolder);
-        ITHACAstream::exportMatrix(residualNorms, "residuals2norm", "eigen",
-                                   outputFolder);
-        example_paramBC.postProcess(outputFolder, "gParametrized");
-        Info << "*********************************************************" << endl;
-        Info << "*********************************************************" << endl;
-        Info << endl;
-    }
-
-
-
-
-    if (parameterizedBCerrorTest_TSVD)
-    {
-        Info << endl;
-        Info << "*********************************************************" << endl;
-        Info << "Testing parameterized BC TSVD with NOISY data" <<
-             endl;
-        word outputFolder = "./ITHACAoutput/parameterizedBCnoiseTest_TSVD/";
-        volScalarField gTrueField = example_paramBC.list2Field(example_paramBC.gTrue);
-        ITHACAstream::exportSolution(gTrueField,
-                                     "1", outputFolder,
-                                     "gTrue");
-        List<List<scalar>> heatFluxWeights;
-        scalar innerField = 1.0;
-        example_paramBC.set_gParametrized("rbf", 0.1);
-        example_paramBC.parameterizedBCoffline();
-
-        Info << "Introducing error in the measurements" << endl;
-        Info << "Performing " << Ntests << " tests." << endl;
-        Eigen::VectorXd TmeasOrig = example_paramBC.Tmeas;
-
-        Eigen::VectorXi TSVDtruc(15);
-        TSVDtruc << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15;
-        std::cout << "debug : TSVDtruc = \n" << TSVDtruc.transpose() << std::endl;
-        std::cout << "debug : Tmeas orig = \n" << example_paramBC.Tmeas.transpose() << std::endl;
-
-        int Ntrunc = TSVDtruc.size();
-
-        for (label i = 0; i < Ntests; i++)
-        {
-            Info << "Test " << i << endl;
-            example_paramBC.addNoise(noiseLevel);
-            std::cout << "debug : Tmeas = \n" << example_paramBC.Tmeas.transpose() << std::endl;
-
-            List<List<scalar>> heatFluxWeights_err = heatFluxWeights;
-            List<scalar> solutionNorms;
-            for(int truncI = 0; truncI < Ntrunc; truncI++)
-            {
-                example_paramBC.parameterizedBC("TSVD", TSVDtruc(truncI));
-                volScalarField gParametrizedField = example_paramBC.list2Field(example_paramBC.g);
-                ITHACAstream::exportSolution(gParametrizedField,
-                                             std::to_string(i * Ntrunc + truncI + 1),
-                                             outputFolder,
-                                             "gParametrized");
-                ITHACAstream::exportSolution(example_paramBC.T,
-                                             std::to_string(i * Ntrunc + truncI + 1),
-                                             outputFolder,
-                                             "T");
-            }
-            example_paramBC.Tmeas = TmeasOrig;
-        }
-
-        example_paramBC.postProcess(outputFolder, "gParametrized", innerField);
-        Info << "*********************************************************" << endl;
-        Info << endl;
-    }
-
     return 0;
 }
 
