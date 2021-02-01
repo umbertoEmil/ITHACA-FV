@@ -208,7 +208,6 @@ double RBFSpline::eval(std::vector<double> x) const
 
     return normalized ? sumw / sum : sumw;
 }
-
 /*
  * TODO: test for errors
  */

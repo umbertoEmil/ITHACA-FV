@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      ITHACAdict;
+}
+
+interpolation       0;
+cgIterMax           200;
+Jtolerance          1e-3;
+JrelativeTolerance  1e-6;
+
+thermocouplesNumber 16;
+thermalConductivity 2.0;
+heatTranferCoeff    3.0;
+a		    1.0;
+b		    1.5;
+c		    2.0;
+d		    3.0;
+
+//Thermocouples cols and row	
+TCrows	4;
+TCcols	4;
+
+//Deterministic approach
+linSysSolver      fullPivLU;
+TSVDtruncation    3;
+
+//Bayesian approach
+NumberErrorTests  100;
+MCMCsamples       60000;
+MCMCBurnIn        30000;
+printLevel        3;
+measurementsStdDev	1e-6;
+regularizationParameter	0.008;
+regularizationParameterMin 1e-16;
+regularizationParameterMax 1e16;
+regularizationParameterSamples 50;
+ProposalVariance	1.1e-4;
+
+//Test to perform
+GibbsSingleRun  0;
+MHMCMCRun 	1;
+MHMCMCRunOld 	0;
+regularizationParameterTest 0;
