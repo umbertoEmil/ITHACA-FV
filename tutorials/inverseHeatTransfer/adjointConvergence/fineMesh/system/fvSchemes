@@ -1,8 +1,8 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  1.5                                   |
-|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |
+|  \\    /   O peration     | Version:  v1806                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 FoamFile
@@ -10,36 +10,41 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    object      controlDict;
+    location    "system";
+    object      fvSchemes;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application poissonFoam;
+ddtSchemes
+{
+    default         steadyState;
+}
 
-startFrom       startTime;
+gradSchemes
+{
+    default         Gauss linear;
+    grad(T)         Gauss linear;
+}
 
-startTime       0;
+divSchemes
+{
+    default         none;
+}
 
-stopAt          endTime;
+laplacianSchemes
+{
+    default         Gauss linear orthogonal;
+}
 
-endTime         1000;
+interpolationSchemes
+{
+    default         linear;
+}
 
-deltaT          1;
+snGradSchemes
+{
+    default         orthogonal;
+}
 
-writeControl    timeStep;
-
-writeInterval   10000000;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  6;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
 
 // ************************************************************************* //

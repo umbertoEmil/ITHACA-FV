@@ -67,7 +67,7 @@ void reducedSequentialIHTP::parameterizedBC(word outputFolder, volScalarField in
         if(timeSampleI > 0)
         {
             /// Assign the new initialField
-            reconstrucT("./ITHACAoutput/debugReconstrucT/");
+            reconstrucT(initialField, "./ITHACAoutput/debugReconstrucT/");
             ITHACAutilities::assignIF(initialField, Ttime[NtimeStepsBetweenSamples -1]);
         }
 
@@ -164,7 +164,7 @@ void reducedSequentialIHTP::parameterizedBC(word outputFolder, volScalarField in
         Info << "Weights = \n" << gWeights << endl;
         update_gParametrized(gWeights);
         label verbose = 0;
-        parameterizedBC_postProcess(linSys, weigths, outputFolder, verbose);
+        parameterizedBC_postProcess(linSys, weigths, initialField, outputFolder, verbose);
         timeSampleI++;
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::cout << "CPU time = " 
