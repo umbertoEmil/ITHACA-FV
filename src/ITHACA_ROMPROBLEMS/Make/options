@@ -40,8 +40,7 @@ EXE_INC = \
     -Wno-comment \
     -w \
     -DOFVER=$${WM_PROJECT_VERSION%.*} \
-    -std=c++11
-
+    -std=c++11 
 
 EXE_LIBS = \
     -lturbulenceModels \
@@ -53,9 +52,11 @@ EXE_LIBS = \
     -lsampling \
     -lfluidThermophysicalModels \
     -lradiationModels \
+    -lITHACA_CORE \
     -lspecie \
     -lcompressibleTurbulenceModel \
     -lcompressibleRASModels \
     -lforces \
     -lfileFormats \
+    -lITHACA_THIRD_PARTY \
     -lcompressibleLESModels

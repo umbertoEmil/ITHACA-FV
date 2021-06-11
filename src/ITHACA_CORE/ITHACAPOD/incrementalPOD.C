@@ -49,6 +49,18 @@ incrementalPOD<Type, PatchField, GeoMesh>::incrementalPOD(
 }
 
 template<class Type, template<class> class PatchField, class GeoMesh>
+incrementalPOD<Type, PatchField, GeoMesh>::incrementalPOD(
+    double _tol, word _PODnorm)
+{
+    Info << "WARNING: the projection of the BC has not been implemented yet!" <<
+         endl;
+    tolleranceSVD = _tol;
+    PODnorm = _PODnorm;
+    M_Assert(PODnorm == "L2" ||
+             PODnorm == "Frobenius", "The PODnorm can be only L2 or Frobenius");
+}
+
+template<class Type, template<class> class PatchField, class GeoMesh>
 void incrementalPOD<Type, PatchField, GeoMesh>::initialize(
     GeometricField<Type, PatchField, GeoMesh>& snapshot)
 {
@@ -171,8 +183,8 @@ void incrementalPOD<Type, PatchField, GeoMesh>::addSnapshot(
     if (PODnorm == "L2")
     {
         orthogonalPar = std::abs(
-                            this->EigenModes[0].col(this->EigenModes[0].cols() - 1).transpose() *
-                            massVector.asDiagonal() * this->EigenModes[0].col(0));
+            this->EigenModes[0].col(this->EigenModes[0].cols() - 1).transpose() *
+            massVector.asDiagonal() * this->EigenModes[0].col(0));
     }
     else if (PODnorm == "Frobenius")
     {
@@ -206,6 +218,16 @@ void incrementalPOD<Type, PatchField, GeoMesh>::addSnapshot(
 }
 
 template<class Type, template<class> class PatchField, class GeoMesh>
+void incrementalPOD<Type, PatchField, GeoMesh>::addSnapshot(
+    PtrList<GeometricField<Type, PatchField, GeoMesh>>& snapshots)
+{
+    forAll(snapshots, sI)
+    {
+        addSnapshot(snapshots[sI]);
+    }
+}
+
+template<class Type, template<class> class PatchField, class GeoMesh>
 void incrementalPOD<Type, PatchField, GeoMesh>::fillPtrList()
 {
     this->resize(rank);
@@ -219,6 +241,7 @@ void incrementalPOD<Type, PatchField, GeoMesh>::fillPtrList()
         this->set(i, tmp.clone());
     }
 }
+
 template<class Type, template<class> class PatchField, class GeoMesh>
 Eigen::VectorXd incrementalPOD<Type, PatchField, GeoMesh>::project(
     GeometricField<Type, PatchField, GeoMesh>& inputField,
@@ -252,6 +275,28 @@ Eigen::VectorXd incrementalPOD<Type, PatchField, GeoMesh>::project(
         {
             projField = (this->EigenModes[0].leftCols(numberOfModes)).transpose() *
                         fieldEig;
+        }
+    }
+
+    return projField;
+}
+
+template<class Type, template<class> class PatchField, class GeoMesh>
+Eigen::MatrixXd incrementalPOD<Type, PatchField, GeoMesh>::project(
+    PtrList<GeometricField<Type, PatchField, GeoMesh>>& inputField,
+    label numberOfModes)
+{
+    Eigen::MatrixXd projField;
+    forAll(inputField, fI)
+    {
+        if(fI == 0)
+        {
+            projField = project(inputField[fI]);
+        }
+        else
+        {
+            projField.conservativeResize(projField.rows(), projField.cols() + 1);
+            projField.col(projField.cols() - 1) = project(inputField[fI]);
         }
     }
 

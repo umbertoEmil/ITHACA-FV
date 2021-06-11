@@ -1,6 +1,11 @@
 **/ITHACAoutput
+**/polyMesh
+**/debug
 **/ITHACAoutput*
 Working_examples
+*.bak
+*.swp
+*.txt
 *.o
 *.so
 *.exe
@@ -14,6 +19,7 @@ Working_examples
 *.png
 *.dep
 *.orig
+*.bak
 examples
 tutorials_dev
 **/StreamTest

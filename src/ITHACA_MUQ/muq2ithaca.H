@@ -21,7 +21,7 @@ License
     GNU Lesser General Public License for more details.
     You should have received a copy of the GNU Lesser General Public License
     along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
-Class
+Namespace
     muq2ithaca
 Description
     Set of function to convert ITHACA objects into MUQ2 objects and vice versa
@@ -57,6 +57,26 @@ namespace ITHACAmuq
 namespace muq2ithaca
 {
 //--------------------------------------------------------------------------
+/// @brief      Returns confidence levers for a vector of samples 
+///
+/// @param[in]  samps               Samples
+/// @param[in]  confidenceInterval  Confidence interval can be 90%, 95% or 99%
+///
+/// @return     Tuple containing min and max of the confidence interval 
+///
+std::tuple<double, double> confidenceLevel(Eigen::VectorXd samps, double confidenceInterval);
+
+//--------------------------------------------------------------------------
+/// @brief      Returns confidence levers for a matrix with the samples on the columns 
+///
+/// @param[in]  samps               Samples
+/// @param[in]  confidenceInterval  Confidence interval can be 90%, 95% or 99%
+///
+/// @return     Tuple containing min and max of the confidence interval 
+///
+std::tuple<Eigen::VectorXd, Eigen::VectorXd> confidenceLevel(Eigen::MatrixXd samps, double confidenceInterval);
+
+//--------------------------------------------------------------------------
 /// @brief      Ensemble Kalman Filter
 ///
 /// @param[in]  prior           Samples of the prior
@@ -87,6 +107,21 @@ Eigen::MatrixXd EnsembleKalmanFilter(PtrList<volScalarField>& prior,
                                      Eigen::MatrixXd observedState);
 
 //--------------------------------------------------------------------------
+/// @brief      Ensemble Kalman Filter
+///
+/// @param[in]  prior           Samples of the prior
+/// @param[in]  measurements    Measured data
+/// @param[in]  measurementsCov Covariance matrix for the measurements, gaussian noise with zero mean is assumed
+/// @param[in]  observedState   Ensemble of the observed state 
+///
+/// @return     Ensamble of the posterior
+///
+Eigen::MatrixXd EnsembleKalmanFilter(PtrList<volScalarField>& prior,
+                Eigen::VectorXd measurements,
+                Eigen::MatrixXd measurementsCov,
+                Eigen::MatrixXd observedState);
+
+//--------------------------------------------------------------------------
 /// @brief      Returns quantile for a vector of samples
 ///
 /// @param[in]  samps   Samples
@@ -107,6 +142,7 @@ double quantile(Eigen::VectorXd samps, double p, int method = 1);
 /// @return     Quantile
 ///
 Eigen::VectorXd quantile(Eigen::MatrixXd samps, double p, int method = 1);
+
 }
 }
 

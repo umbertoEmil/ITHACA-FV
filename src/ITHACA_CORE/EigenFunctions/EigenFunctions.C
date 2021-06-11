@@ -30,7 +30,9 @@ License
 
 #include "EigenFunctions.H"
 
-// * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
+/// \file
+/// Source file of the EigenFunctions namespace.
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 

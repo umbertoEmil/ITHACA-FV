@@ -1,6 +1,8 @@
 #ifndef IHTP01inverseLaplacian_H
 #define IHTP01inverseLaplacian_H
 
+#include "MUQ/Modeling/Distributions/Gaussian.h"
+
 /// \brief Class where the first inverse heat transfer problem
 /// tutorial is solved using the Parameterization of the heat flux.
 /// \details It is a child of the inverseLaplacianProblem_paramBC
@@ -169,6 +171,21 @@ class IHTP01inverseLaplacian_paramBC: public inverseLaplacianProblem_paramBC
         }
 
         //--------------------------------------------------------------------------
+        /// Add white Gaussian noise with 0 mean to the measured temperatures vector
+        ///
+        /// @param[in]  noiseStdDev_    Noise standard deviation
+        ///
+        void addNoise(double noiseStdDev_)
+        {
+            double variance = Tmeas.mean() * noiseStdDev_ * noiseStdDev_;
+            auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>
+                                (Eigen::VectorXd::Zero(Tmeas.size()), Eigen::MatrixXd::Identity(Tmeas.size(),
+                                        Tmeas.size()) * variance);
+            Tmeas += noiseDensity->Sample();
+        }
+
+
+        //--------------------------------------------------------------------------
         /// Compute the best approximation of the true heat flux gTrue in the parameterized space
         ///
         /// @return     Best approximation of the true heat flux
@@ -334,6 +351,23 @@ class IHTP01inverseLaplacian_CG: public inverseLaplacianProblem_CG
         {
             word outputFolder = "./ITHACAoutput/true/";
 #include"solveTrue.H"
+        }
+
+        //--------------------------------------------------------------------------
+        /// Add white Gaussian noise with 0 mean to the measured temperatures vector
+        ///
+        /// @param[in]  noiseStdDev_    Noise standard deviation
+        ///
+        void addNoise(double noiseStdDev_)
+        {
+            double variance = Tmeas.mean() * noiseStdDev_ * noiseStdDev_;
+            auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>
+                                (Eigen::VectorXd::Zero(Tmeas.size()), Eigen::MatrixXd::Identity(Tmeas.size(),
+                                        Tmeas.size()) * variance);
+            Tmeas += noiseDensity->Sample();
+            //Set CG tolerance using Discrepancy principle
+            Jtol = Tmeas.size() * variance *
+                   variance / 2;
         }
 };
 #endif

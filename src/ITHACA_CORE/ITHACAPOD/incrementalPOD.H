@@ -99,6 +99,14 @@ class incrementalPOD : public Modes<Type, PatchField, GeoMesh>
         incrementalPOD(GeometricField<Type, PatchField, GeoMesh>& snapshot,
                        double _tol, word _PODnorm);
 
+        //--------------------------------------------------------------------------
+        /// @brief      Constructor without a first snapshot
+        ///
+        /// @param[in]  _tol        Incremental SVD tollerance
+        /// @param[in]  _maxRank   i Maximum POD rank
+        ///
+        incrementalPOD(double _tol, word _PODnorm);
+
         /// Destructor
         ~incrementalPOD() {};
 
@@ -117,6 +125,13 @@ class incrementalPOD : public Modes<Type, PatchField, GeoMesh>
         void addSnapshot(GeometricField<Type, PatchField, GeoMesh>& snapshot);
 
         //--------------------------------------------------------------------------
+        /// @brief      Add a snapshot to the POD space
+        ///
+        /// @param[in]  snapshots    List of snapshots to add
+        ///
+        void addSnapshot(PtrList<GeometricField<Type, PatchField, GeoMesh>>& snapshots);
+
+        //--------------------------------------------------------------------------
         /// @brief      Fill the POD modes prtList from the Eigen matrix
         ///
         void fillPtrList();
@@ -130,6 +145,17 @@ class incrementalPOD : public Modes<Type, PatchField, GeoMesh>
         ///
         Eigen::VectorXd project(
             GeometricField<Type, PatchField, GeoMesh>& inputField,
+            label numberOfModes = 0);
+
+        //--------------------------------------------------------------------------
+        /// @brief      Project a field into the reduced space
+        ///
+        /// @param[in]  inputField  Field to project
+        ///
+        /// @return     The coefficient of the projected field into the reduced space
+        ///
+        Eigen::MatrixXd project(
+            PtrList<GeometricField<Type, PatchField, GeoMesh>>& inputField,
             label numberOfModes = 0);
 
         //--------------------------------------------------------------------------

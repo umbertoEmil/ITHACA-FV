@@ -133,6 +133,7 @@ public:
     DenseMatrix weights;
 
     unsigned int getNumVariables() const { return dim; }
+    
 
 private:
 
@@ -141,7 +142,6 @@ private:
     unsigned int dim, numSamples;
 
     std::shared_ptr<RadialBasisFunction> fn;
-
 
     DenseMatrix computePreconditionMatrix() const;
 

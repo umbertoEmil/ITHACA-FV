@@ -137,6 +137,33 @@ template double errorFrobRel(GeometricField<scalar, fvsPatchField, surfaceMesh>&
                              GeometricField<scalar, fvsPatchField, surfaceMesh>& field2,
                              List<label>* labels);
 
+template<typename T>
+double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
+                  GeometricField<T, fvPatchField, volMesh>& field2)
+{
+    double err;
+    GeometricField<T, fvPatchField, volMesh> errField = field1 - field2;
+
+    if (L2Norm(field1) <= 1e-6)
+    {
+        err = 0;
+    }
+    else
+    {
+        err = L2Norm(errField) / L2Norm(
+                  field1);
+    }
+
+    return err;
+}
+
+
+template double errorL2Rel(GeometricField<scalar, fvPatchField, volMesh>&
+                           field1,
+                           GeometricField<scalar, fvPatchField, volMesh>& field2);
+template double errorL2Rel(GeometricField<vector, fvPatchField, volMesh>&
+                           field1,
+                           GeometricField<vector, fvPatchField, volMesh>& field2);
 
 template<typename T>
 double errorLinfRel(GeometricField<T, fvPatchField, volMesh>& field1,
@@ -590,5 +617,4 @@ double integralOnPatch(fvMesh& mesh, List<scalar> field,
     }
     return integral;
 }
-
 }

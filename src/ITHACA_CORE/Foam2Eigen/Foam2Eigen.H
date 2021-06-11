@@ -432,4 +432,6 @@ class Foam2Eigen
         template <class type_list>
         static Eigen::MatrixXd field2Eigen(const List<type_list>& list);
 };
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 #endif
