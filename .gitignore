@@ -14,6 +14,7 @@ Working_examples
 *.png
 *.dep
 *.orig
+*.swp
 examples
 tutorials_dev
 **/StreamTest
