@@ -83,6 +83,7 @@ double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
     return err;
 }
 
+
 template double errorL2Rel(GeometricField<scalar, fvPatchField, volMesh>&
                            field1,
                            GeometricField<scalar, fvPatchField, volMesh>& field2);
@@ -447,5 +448,4 @@ double integralOnPatch(fvMesh& mesh, List<scalar> field,
     }
     return integral;
 }
-
 }

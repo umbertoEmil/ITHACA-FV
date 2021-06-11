@@ -1,6 +1,10 @@
 **/ITHACAoutput
+**/polyMesh
 **/ITHACAoutput*
 Working_examples
+*.bak
+*.swp
+*.txt
 *.o
 *.so
 *.exe

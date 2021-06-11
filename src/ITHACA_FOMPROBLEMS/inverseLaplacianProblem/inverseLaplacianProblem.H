@@ -71,6 +71,8 @@ SourceFiles
 In this problem, the objective is to estimate the boundary heat flux at the
 hotSide patch given pointwise temeprature measurements in the interior of the domain.
 The different solution methodologies are implemented as child of this class */
+using namespace SPLINTER;
+
 class inverseLaplacianProblem: public laplacianProblem
 {
 
@@ -127,7 +129,7 @@ class inverseLaplacianProblem: public laplacianProblem
         List<scalar> homogeneousBCcoldSide;
 
         /// Temperature at coldSide [K]
-        List<scalar> Tf;
+        List<scalar> Tf; 
 
         /// Reference gradient for the Robin BC
         List<scalar> refGrad;
@@ -178,12 +180,11 @@ class inverseLaplacianProblem: public laplacianProblem
         // Functions
 
         //--------------------------------------------------------------------------
-        /// Set the right g size and fills it with zeros
-        ///
+        /// Set initial heat flux for the conjugate gradient method
         void set_g();
 
         //--------------------------------------------------------------------------
-        /// Create a field with the hotSide boundary heat flux at the hotSide
+        /// Create a field with the hotSide boundary heat flux at the hotSide 
         /// bounday cells for visualization
         ///
         /// @param[in]  list        List of boundary heat flux
@@ -202,7 +203,7 @@ class inverseLaplacianProblem: public laplacianProblem
         /// Solve the direct problem with the true heat flux as boundary condition
         /// and fills the measured temeprature vector
         ///
-        virtual void solveTrue() {};
+        virtual void solveTrue(){};
 
         //--------------------------------------------------------------------------
         /// Set boundary condition of the direct problem
@@ -214,7 +215,19 @@ class inverseLaplacianProblem: public laplacianProblem
         void solveDirect();
 
         //--------------------------------------------------------------------------
-        /// Solve Laplacian problem without source term
+        /// Solve adjoint problem
+        ///
+        void solveAdjoint();
+
+        //--------------------------------------------------------------------------
+
+        /// Solve sensibility problem
+        ///
+        void solveSensitivity();
+
+        //--------------------------------------------------------------------------
+
+        /// Solve laplacian problem without source term
         ///
         void solve(const char* problem);
 
@@ -240,6 +253,85 @@ class inverseLaplacianProblem: public laplacianProblem
         void differenceBetweenDirectAndMeasure();
 
         //--------------------------------------------------------------------------
+        /// Fill the Foam::vector containing the values of the sensitivity solution at
+        /// the thermocouples locations
+        ///
+        void sensibilitySolAtThermocouplesLocations();
+
+        //--------------------------------------------------------------------------
+
+        /// Conjugate gradient method
+        ///
+        /// @param[out]  1 if converged within cgIterMax iterations, 0 if not
+        ///
+        int conjugateGradient();
+
+        //--------------------------------------------------------------------------
+
+        /// Levenberg-Marquardt method
+        ///
+        /// @param[in]  exportSolutions 1 for saving the solutions at each iteration
+        /// @param[in]  folder          Folder where the solutions are saved
+        ///
+        void MarquardtMethod(label exportSolutions, word folder,
+                             label updateJacobian = 0);
+
+        //--------------------------------------------------------------------------
+
+        /// Computes the gradient of cost function J and its L2 norm
+        ///
+        void computeGradJ();
+
+        //--------------------------------------------------------------------------
+
+        /// Computes the search direction P
+        ///
+        void searchDirection();
+
+        //--------------------------------------------------------------------------
+
+        /// Compute the search step beta
+        ///
+        void computeSearchStep();
+
+        //--------------------------------------------------------------------------
+
+        /// Updates the heat flux in the conjugate gradient iterations
+        ///
+        void updateHeatFlux();
+
+        //--------------------------------------------------------------------------
+
+        /// Convergence cher for the conjugate gradient method
+        ///
+        /// @param[out]  1 if convergence criteria met, 0 if not
+        ///
+        int conjugateGradientConvergenceCheck();
+
+        //--------------------------------------------------------------------------
+
+        /// Conjugate gradient method
+        ///
+        /// @param[in]  cx  X coordinate of the cell center
+        /// @param[in]  cy  Y coordinate of the cell center
+        /// @param[in]  cz  Z coordinate of the cell center
+        /// @param[in]  thermocoupleCellDim  Dimension of the cell
+        ///
+        /// @param[out]  1 if converged within cgIterMax iterations, 0 if not
+        ///
+        int isInPlane(double cx, double cy, double cz,
+                      Foam::vector thermocoupleCellDim);
+
+        //--------------------------------------------------------------------------
+
+        /// Writes fields to file
+        ///
+        /// @param[in]  folde  Folder in which the fields are written
+        ///
+        void writeFields(label folderNumber, const char* folder);
+
+        //--------------------------------------------------------------------------
+
         /// Compute maximum cell dimension in x, y and z
         ///
         /// @param[in]  ff
@@ -252,7 +344,7 @@ class inverseLaplacianProblem: public laplacianProblem
         ///
         Foam::vector cellDim(const faceList& ff, const pointField& pp,
                              const cell& cc, labelList pLabels, pointField pLocal);
-
+        
         //--------------------------------------------------------------------------
         /// Restart fields
         ///

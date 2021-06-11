@@ -1,0 +1,124 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1806                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     laplacianFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          noWriteNow;
+
+endTime         1000;
+
+deltaT          1;
+
+writeControl    none;
+
+writeInterval   100;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+//libs ("libfieldFunctionObjects.so");
+//
+//functions
+//{
+//probes
+//  {
+//
+//        type            probes;
+//
+//        // Name of the directory for probe data
+//        name            probes;
+//
+//        writeControl   onEnd;
+//        writeInterval  1;
+//
+//        // Fields to be probed
+//        fields
+//        (
+//            cellVolume
+//	    T
+//        );
+//
+//        probeLocations
+//        (
+//            ( 0.3 0.05 0.3 )
+//            ( 0.6 0.05 0.3 )
+//            ( 0.9 0.05 0.3 )
+//            ( 1.2 0.05 0.3 )
+//            ( 1.5 0.05 0.3 )
+//
+//
+//            ( 0.3 0.05 0.6 )
+//            ( 0.6 0.05 0.6 )
+//            ( 0.9 0.05 0.6 )
+//            ( 1.2 0.05 0.6 )
+//            ( 1.5 0.05 0.6 )
+//
+//            ( 0.3 0.05 0.9 )
+//            ( 0.6 0.05 0.9 )
+//            ( 0.9 0.05 0.9 )
+//            ( 1.2 0.05 0.9 )
+//            ( 1.5 0.05 0.9 )
+//        );
+//  }
+//sample
+//  {
+//    type             surfaces;
+//    enabled          true;
+//    verbose          true;
+//    interpolationScheme cell;
+//    writeControl     onEnd;
+//    writeInterval    1;
+//    surfaceFormat    raw;
+//    fields           ( T cellVolume cellC ); //insert the fields you would like to sample
+//
+//    surfaces
+//    (
+//      measSurf //give the line a name. You can add more sample lines below this one
+//      {
+//        type            plane;
+//        planeType       embeddedPoints;
+//	embeddedPointsDict
+//        {
+//	    point1    ( 0.3 0.05 0.6 );
+//	    point2    ( 0.3 0.05 0.9 );
+//	    point3    ( 1.5 0.05 0.6 );
+//	}
+//        interpolate 	false;
+//        triangulate 	false;
+//      }
+//    );
+//  }
+//
+//
+//}
+
+// ************************************************************************* //

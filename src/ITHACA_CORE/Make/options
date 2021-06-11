@@ -21,6 +21,7 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/thirdparty/redsvd \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAutilities \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAstream \
+    -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAregularization \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAPOD \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACADMD \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/EigenFunctions \
@@ -31,7 +32,6 @@ EXE_INC = \
     -Wno-comment \
     -DOFVER=$${WM_PROJECT_VERSION%.*} \
     -std=c++11 
-
 
 EXE_LIBS = \
     -lfiniteVolume \

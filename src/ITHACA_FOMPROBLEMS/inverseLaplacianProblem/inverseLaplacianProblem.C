@@ -182,7 +182,6 @@ void inverseLaplacianProblem::solve(const char* problemID)
     }
 
 #if OFVER == 6
-
     while (simple.loop(runTime))
 #else
     while (simple.loop())
@@ -240,7 +239,7 @@ void inverseLaplacianProblem::readThermocouples()
         }
 
         thermocouplesRead = 1;
-        thermocouplesNum = thermocouplesPos.size();
+	thermocouplesNum = thermocouplesPos.size();
     }
     else
     {
@@ -275,6 +274,7 @@ Eigen::VectorXd inverseLaplacianProblem::fieldValueAtThermocouples(
 void inverseLaplacianProblem::differenceBetweenDirectAndMeasure()
 {
     volScalarField& T = _T();
+
     Tdirect = fieldValueAtThermocouples(T);
     Tdiff = Tdirect - Tmeas;
 }
@@ -301,11 +301,14 @@ void inverseLaplacianProblem::restart()
 {
     _simple.clear();
     _T.clear();
+
     argList& args = _args();
     Time& runTime = _runTime();
+
     //Reinitializing runTime
     instantList Times = runTime.times();
     runTime.setTime(Times[1], 1);
+
     Foam::fvMesh& mesh = _mesh();
     _simple = autoPtr<simpleControl>
               (
@@ -314,6 +317,7 @@ void inverseLaplacianProblem::restart()
                       mesh
                   )
               );
+
     _T = autoPtr<volScalarField>
          (
              new volScalarField
@@ -329,6 +333,6 @@ void inverseLaplacianProblem::restart()
                  mesh
              )
          );
+
     Info << "Ready for new computation" << endl;
 }
-

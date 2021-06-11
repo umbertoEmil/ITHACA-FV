@@ -132,6 +132,21 @@ template void assignIF(GeometricField<scalar, fvPatchField, volMesh>& field,
 template void assignIF(GeometricField<vector, fvPatchField, volMesh>& field,
                        vector& value, label index);
 
+template<typename T>
+void assignIF(GeometricField<T, fvPatchField, volMesh>& s,
+              GeometricField<T, fvPatchField, volMesh>& value)
+{
+    for (label i = 0; i < s.internalField().size(); i++)
+    {
+        s.ref()[i] = value.internalField()[i];
+    }
+}
+
+template void assignIF(
+    GeometricField<scalar, fvPatchField, volMesh>& field, GeometricField<scalar, fvPatchField, volMesh>& value);
+template void assignIF(
+    GeometricField<vector, fvPatchField, volMesh>& field, GeometricField<vector, fvPatchField, volMesh>& value);
+
 void assignONE(volScalarField& s, List<label>& L)
 {
     for (label i = 0; i < L.size(); i++)
@@ -216,10 +231,10 @@ void assignBC(GeometricField<scalar, fvPatchField, volMesh>& s, label BC_ind,
             if (typeBC != "fixedGradient" && typeBC != "freestream" && typeBC != "empty"
                     && typeBC != "zeroGradient" && typeBC != "fixedValue" && typeBC != "calculated"
                     && typeBC != "fixedFluxPressure" && typeBC != "processor"
-                    && typeBC != "nutkWallFunction" && typeBC != "mixedEnergy")
+                    && typeBC != "nutkWallFunction" && typeBC != "mixedEnergy" && typeBC != "mixed")
             {
                 word message = "Pay attention, your typeBC " + typeBC + " for " + s.name() +
-                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.";
+                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.\n";
                 throw (message);
             }
         }
@@ -342,10 +357,10 @@ void assignBC(GeometricField<vector, fvPatchField, volMesh>& s, label BC_ind,
         {
             if (typeBC != "fixedGradient" && typeBC != "freestream" && typeBC != "empty"
                     && typeBC != "zeroGradient" && typeBC != "fixedValue" && typeBC != "calculated"
-                    &&  typeBC != "processor")
+                    &&  typeBC != "processor" && typeBC != "mixed")
             {
                 word message = "Pay attention, your typeBC " + typeBC + " for " + s.name() +
-                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.";
+                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.\n";
                 throw (message);
             }
         }
@@ -404,10 +419,10 @@ void assignBC(GeometricField<Type, fvsPatchField, surfaceMesh>& s, label BC_ind,
         {
             if (typeBC != "fixedGradient" && typeBC != "freestream" && typeBC != "empty"
                     || typeBC != "zeroGradient" && typeBC != "fixedValue" && typeBC != "calculated"
-                    && typeBC != "fixedFluxPressure" &&  typeBC != "processor")
+                    && typeBC != "fixedFluxPressure" &&  typeBC != "processor" && typeBC != "mixed")
             {
                 word message = "Pay attention, your typeBC " + typeBC + " for " + s.name() +
-                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.";
+                               " is not included into the developed ones. Your BC will be treated as a classical fixedValue.\n";
                 throw (message);
             }
         }
@@ -588,10 +603,10 @@ template void changeBCtype<vector>
 (GeometricField<vector, fvPatchField, volMesh>& field, word BCtype,
  label BC_ind);
 
-template<typename Type>
+template<typename type_f>
 void assignMixedBC(
-    GeometricField<Type, fvPatchField, volMesh>& field, label BC_ind,
-    List<Type>& value, List<Type>& grad, List<scalar>& valueFrac)
+    GeometricField<type_f, fvPatchField, volMesh>& field, label BC_ind,
+    List<type_f>& value, List<type_f>& grad, List<scalar>& valueFrac)
 {
     std::string message = "Patch is NOT mixed. It is of type: " +
                           field.boundaryField()[BC_ind].type();
@@ -599,10 +614,10 @@ void assignMixedBC(
 
     if (field.boundaryField()[BC_ind].type() == "mixed")
     {
-        mixedFvPatchField<Type>& Tpatch =
-            refCast<mixedFvPatchField<Type>>(field.boundaryFieldRef()[BC_ind]);
-        Field<Type>& valueTpatch = Tpatch.refValue();
-        Field<Type>& gradTpatch = Tpatch.refGrad();
+        mixedFvPatchField<type_f>& Tpatch =
+            refCast<mixedFvPatchField<type_f>>(field.boundaryFieldRef()[BC_ind]);
+        Field<type_f>& valueTpatch = Tpatch.refValue();
+        Field<type_f>& gradTpatch = Tpatch.refGrad();
         Field<scalar>& valueFracTpatch = Tpatch.valueFraction();
         valueTpatch = value;
         gradTpatch = grad;

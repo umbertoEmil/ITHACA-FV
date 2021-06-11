@@ -164,6 +164,23 @@ cd ..
 
 cd unitTests
 if [[ $unit_tests_flag == 'true' ]]; then
+if [[ $muq_flag == 'true' ]]; then
+cd UQ  
+for d in ./*/ ; do   
+    echo $d    
+    cd $d
+    if [ -f "Make/files" ]; then
+    wmake $parallel_flag 
+     if [ $? -ne 0 ]
+     then
+      echo $d "did not compile"
+      exit 1
+     fi
+    fi
+    cd ../
+done
+cd ../
+fi
 for d in ./*/ ; do   
     echo $d    
     cd $d
@@ -182,7 +199,7 @@ for d in ./*/ ; do
         fi
     if [ $? -ne 0 ]
     then
-     echo $d "did not compile"
+     echo $s "did not compile"
      exit 1
     fi
     fi

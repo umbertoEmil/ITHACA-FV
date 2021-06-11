@@ -1,0 +1,235 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1812                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : v1812 OPENFOAM=1812
+Arch   : "LSB;label=32;scalar=64"
+Exec   : muqAnalyticalBenchmark
+Date   : Jun 02 2020
+Time   : 10:52:05
+Host   : umberto-Inspiron-7370
+PID    : 12572
+I/O    : uncollated
+Case   : /home/umberto/PhD/ITHACA-FV/bayesianInverse/analyticalBenchmark/coarseMesh
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+    field lambda	 tolerance 1e-12
+    field deltaT	 tolerance 1e-12
+
+Create field T
+Create field lambda
+Create field deltaT
+Offline data already exist, reading existing data
+POD data already exist, reading existing modes
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+    field lambda	 tolerance 1e-12
+    field deltaT	 tolerance 1e-12
+
+DT = DT [1 1 -3 -1 0 0 0] 1
+DICPCG:  Solving for T, Initial residual = 1, Final residual = 5.5039e-13, No Iterations 39
+Exporting
+Exporting analytical solution
+Reading thermocouples cells from file
+debug: Tmeas = 18.4
+19.4
+20.8
+22.6
+17.8
+18.8
+20.2
+  22
+16.8
+17.8
+19.2
+  21
+15.4
+16.4
+17.8
+19.6
+
+*********************************************************
+Computing offline matrices and vectors
+
+Radial Basis Functions are used.
+gWeights = 16{0}
+Offline already computed.
+Check that the basis for the parameterized BC are correct
+Condition number = 7.96709e+16
+*********************************************************
+
+*********************************************************
+Deterministic approach
+Solver fullPivLU
+
+
+Using quasilinearity of direct problem
+Theta size = 16, 16
+
+Resetting time, mesh and fields: all
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+    field lambda	 tolerance 1e-12
+    field deltaT	 tolerance 1e-12
+
+Ready for new computation
+DICPCG:  Solving for T, Initial residual = 1, Final residual = 5.57476e-13, No Iterations 39
+debug: Tmeas = 18.4
+19.4
+20.8
+22.6
+17.8
+18.8
+20.2
+  22
+16.8
+17.8
+19.2
+  21
+15.4
+16.4
+17.8
+19.6
+debug: Tdirect = 18.3833
+19.4023
+20.8371
+22.6828
+17.7633
+18.7932
+20.2295
+22.0669
+16.7477
+17.7758
+  19.21
+21.0454
+15.3215
+16.3411
+17.7768
+19.6232
+J = 0.0157246
+End
+
+residualNorm = 0
+Computing errors
+ ######### Reading the Data for gParametrized #########
+ 66% [||||||||||||||||||||||||||||||||||||||||                    ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+debug: gWeights = 
+16
+(
+-14412.3
+10330.6
+0
+2544.87
+20928.7
+0
+0
+-17257.9
+0
+-30174.6
+0
+27316.2
+-7154.42
+20753.4
+0
+-12873.4
+)
+
+*********************************************************
+
+*********************************************************
+Gibbs sampling
+debug Nsamples = 100
+Post processing 
+
+Sample Mean = 
+  1.46053  0.643261 -0.316921  -1.03907   2.06311     1.119 0.0203511 -0.784779   3.21278   2.02989  0.658856 -0.317869   4.56751   3.11915   1.43155  0.247464
+
+Sample Variance = 
+ 0.0456947 0.00796838   0.010035   0.131579  0.0724769  0.0189961 0.00389452  0.0841812   0.130018  0.0475222 0.00559364  0.0221277   0.240041   0.101413  0.0209239 0.00202625
+
+Resetting time, mesh and fields: all
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+    field lambda	 tolerance 1e-12
+    field deltaT	 tolerance 1e-12
+
+Ready for new computation
+DICPCG:  Solving for T, Initial residual = 1, Final residual = 6.42279e-13, No Iterations 39
+debug: Tmeas = 18.4
+19.4
+20.8
+22.6
+17.8
+18.8
+20.2
+  22
+16.8
+17.8
+19.2
+  21
+15.4
+16.4
+17.8
+19.6
+debug: Tdirect = 25.0784
+26.5207
+28.4922
+30.8063
+24.3544
+ 25.797
+27.7708
+30.0885
+23.2524
+24.6947
+26.6695
+28.9889
+ 21.807
+23.2484
+25.2223
+27.5412
+J = 425.683
+End
+
+Computing errors
+ ######### Reading the Data for g_Gibbs #########
+ 66% [||||||||||||||||||||||||||||||||||||||||                    ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+debug: gWeights = 
+16
+(
+1.46053
+0.643261
+-0.316921
+-1.03907
+2.06311
+1.119
+0.0203511
+-0.784779
+3.21278
+2.02989
+0.658856
+-0.317869
+4.56751
+3.11915
+1.43155
+0.247464
+)
+
