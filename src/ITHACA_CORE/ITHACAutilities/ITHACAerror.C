@@ -98,6 +98,33 @@ template double errorFrobRel(GeometricField<vector, fvPatchField, volMesh>&
                              field1,
                              GeometricField<vector, fvPatchField, volMesh>& field2);
 
+template<typename T>
+double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
+                  GeometricField<T, fvPatchField, volMesh>& field2)
+{
+    double err;
+    GeometricField<T, fvPatchField, volMesh> errField = field1 - field2;
+
+    if (L2Norm(field1) <= 1e-6)
+    {
+        err = 0;
+    }
+    else
+    {
+        err = L2Norm(errField) / L2Norm(
+                  field1);
+    }
+
+    return err;
+}
+
+
+template double errorL2Rel(GeometricField<scalar, fvPatchField, volMesh>&
+                           field1,
+                           GeometricField<scalar, fvPatchField, volMesh>& field2);
+template double errorL2Rel(GeometricField<vector, fvPatchField, volMesh>&
+                           field1,
+                           GeometricField<vector, fvPatchField, volMesh>& field2);
 
 template<typename T>
 double errorLinfRel(GeometricField<T, fvPatchField, volMesh>& field1,
@@ -257,33 +284,6 @@ template Eigen::MatrixXd errorL2Abs(
 template Eigen::MatrixXd errorL2Abs(
     PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields1,
     PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields2);
-
-template<typename T>
-double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
-                  GeometricField<T, fvPatchField, volMesh>& field2)
-{
-    double err;
-    GeometricField<T, fvPatchField, volMesh> errField = (field1 - field2).ref();
-
-    if (L2Norm(field1) <= 1e-6)
-    {
-        err = 0;
-    }
-    else
-    {
-        err = L2Norm(errField) / L2Norm(
-                  field1);
-    }
-
-    return err;
-}
-
-template double errorL2Rel(GeometricField<scalar, fvPatchField, volMesh>&
-                           field1,
-                           GeometricField<scalar, fvPatchField, volMesh>& field2);
-template double errorL2Rel(GeometricField<vector, fvPatchField, volMesh>&
-                           field1,
-                           GeometricField<vector, fvPatchField, volMesh>& field2);
 
 template<typename T>
 Eigen::MatrixXd errorL2Rel(PtrList<GeometricField<T, fvPatchField, volMesh>>&
@@ -450,5 +450,4 @@ double integralOnPatch(fvMesh& mesh, List<scalar> field,
     }
     return integral;
 }
-
 }

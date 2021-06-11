@@ -1,2 +1,7 @@
 ITHACAoutput
 *.dep
+*/polyMesh/boundary
+*/polyMesh/faces
+*/polyMesh/neighbour
+*/polyMesh/owner
+*/polyMesh/points

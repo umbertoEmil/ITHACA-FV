@@ -1,0 +1,8 @@
+**/polymesh
+*.npy
+*.txt
+**/triSurface
+*.stl
+*.vtk
+*.txt
+**/directHeatTransfer

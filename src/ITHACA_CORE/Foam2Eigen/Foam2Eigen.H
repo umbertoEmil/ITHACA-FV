@@ -420,4 +420,6 @@ class Foam2Eigen
         static List<type_matrix> EigenMatrix2List (
             Eigen::Matrix<type_matrix, Eigen::Dynamic, Eigen::Dynamic> matrix );
 };
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 #endif

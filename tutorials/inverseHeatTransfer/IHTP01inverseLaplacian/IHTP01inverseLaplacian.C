@@ -74,10 +74,18 @@ int main(int argc, char* argv[])
     label CGnoiseTest = para->ITHACAdict->lookupOrDefault<int>("CGnoiseTest", 0);
     label CGnoiseLevelTest =
         para->ITHACAdict->lookupOrDefault<int>("CGnoiseLevelTest", 0);
+    label paramBCnoiseLevelTest =
+        para->ITHACAdict->lookupOrDefault<int>("paramBCnoiseLevelTest", 0);
     label parameterizedBCtest =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest", 0);
     label parameterizedBCtest_RBFwidth =
         para->ITHACAdict->lookupOrDefault<int>("parameterizedBCtest_RBFwidth", 0);
+    label parameterizedBCnoiseTest =
+        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCnoiseTest", 0);
+    label CGandParamNoiseTest =
+        para->ITHACAdict->lookupOrDefault<int>("CGandParamNoiseTest", 0);
+    label parameterizedBCnoiseTest_TSVD =
+        para->ITHACAdict->lookupOrDefault<int>("parameterizedBCnoiseTest_TSVD", 0);
     label thermocouplesLocationTest_CG =
         para->ITHACAdict->lookupOrDefault<int>("thermocouplesLocationTest_CG", 0);
     label thermocouplesLocationTest_paramBC =
@@ -104,6 +112,11 @@ int main(int argc, char* argv[])
     M_Assert(example_paramBC.H > 0, "Heat transfer coeff, H, not specified");
     example_CG.k = example_paramBC.k;
     example_CG.H = example_paramBC.H;
+    // Number of tests performed when considering noisy measurements
+    label Ntests = para->ITHACAdict->lookupOrDefault<double>("NumberNoiseTests",
+                   100);
+    double noiseLevel = para->ITHACAdict->lookupOrDefault<double>("noiseLevel",
+                        0);
     int rbfWidthTest_size =
         para->ITHACAdict->lookupOrDefault<int>("rbfWidthTest_size", 0);
     // Setting analytical solution
@@ -172,6 +185,30 @@ int main(int argc, char* argv[])
     if (parameterizedBCtest_RBFwidth)
     {
 #include"parameterizedBCtest_RBFwidth.H"
+    }
+
+    // Test the Alifanov's regularization with noise in the measurements
+    if (CGnoiseTest)
+    {
+#include"CGnoiseTest.H"
+    }
+
+    // Test the parameterization method with noise in the measurements
+    if (parameterizedBCnoiseTest)
+    {
+#include"parameterizedBCnoiseTest.H"
+    }
+
+    // Test the Alifanov's regularization and/or parameterized heat flux method with different noise levels
+    if (CGnoiseLevelTest || paramBCnoiseLevelTest)
+    {
+#include"noiseLevelTest.H"
+    }
+
+    // Test the parameterization method with noise in the measurements and TSVD regularization for different values of the regularization parameter
+    if (parameterizedBCnoiseTest_TSVD)
+    {
+#include"parameterizedBCnoiseTest_TSVD.H"
     }
 
     // Test the Alifanov's regularization changing the distance of the thermocouples from the hotSide

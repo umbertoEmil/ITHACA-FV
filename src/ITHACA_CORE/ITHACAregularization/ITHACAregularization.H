@@ -61,6 +61,8 @@ SourceFiles
 #include <Eigen/Eigen>
 #include "EigenFunctions.H"
 #include "ITHACAutilities.H"
+#define OPTIM_ENABLE_EIGEN_WRAPPERS
+#include "optim.hpp"
 
 
 #include <unsupported/Eigen/CXX11/Tensor>
@@ -112,13 +114,204 @@ Eigen::VectorXd  TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b,
 //--------------------------------------------------------------------------
 /// @brief      Truncated Singular Value regularization
 ///
+/// @param[in]  A                Matrix of coefficient
+/// @param[in]  b                Column vector of solutions
+/// @param[in]  parameterMethod  Regularization parameter selection method
+///
+/// @return     Column vector of variables    
+///
+Eigen::VectorXd  TSVD(Eigen::MatrixXd A, Eigen::MatrixXd b, 
+        double noiseVariance, word parameterMethod);
+
+//--------------------------------------------------------------------------
+/// @brief      Tikhonov regularization
+///
 /// @param[in]  A      Matrix of coefficient
 /// @param[in]  b      Column vector of solutions
+/// @param[in]  regularizationParameter Regularization parameter
 ///
 /// @return     Column vector of variables
 ///
 Eigen::VectorXd  Tikhonov(Eigen::MatrixXd A, Eigen::MatrixXd b,
                           double regularizationParameter);
+
+//--------------------------------------------------------------------------
+/// @brief      Tikhonov regularization
+///
+/// @param[in]  U      
+/// @param[in]  s     
+/// @param[in]  V      
+/// @param[in]  b      Column vector of solutions
+/// @param[in]  regularizationParameter Regularization parameter
+///
+/// @return     Column vector of variables
+///
+Eigen::VectorXd  Tikhonov(Eigen::MatrixXd U, Eigen::VectorXd s, Eigen::MatrixXd V, 
+        Eigen::MatrixXd b, double regularizationParameter);
+
+//--------------------------------------------------------------------------
+/// @brief      Conjugate gradient applied implictly on the normal equation A'*A*x = A'*b
+///
+/// @param[in]  A      
+/// @param[in]  b      Column vector of solutions
+/// @param[in]  regularizationParameter Regularization parameter
+///
+/// @return     Column vector of variables
+///
+Eigen::VectorXd conjugateGradient(Eigen::MatrixXd A, Eigen::MatrixXd b, label Nsteps, bool reorth = 0, Eigen::VectorXd s = Eigen::VectorXd::Zero(1));
+
+//--------------------------------------------------------------------------
+/// @brief      Preconditioned conjugate gradient applied implictly on the normal equation A'*A*x = A'*b
+///
+/// @param[in]  A      
+/// @param[in]  b      Column vector of solutions
+/// @param[in]  regularizationParameter Regularization parameter
+///
+/// @return     Column vector of variables
+///
+Eigen::VectorXd PCGLS(Eigen::MatrixXd A, Eigen::MatrixXd L, Eigen::MatrixXd W, 
+        Eigen::MatrixXd b, label Nsteps, bool reorth = 0, 
+        Eigen::VectorXd s = Eigen::VectorXd::Zero(1));
+
+
+//--------------------------------------------------------------------------
+/// @brief      Generalized Cross Validation
+///
+/// @param[in]  U      
+/// @param[in]  s     
+/// @param[in]  b      Column vector of solutions
+///
+/// @return     Column vector of variables
+///
+scalar GCV(Eigen::MatrixXd U, Eigen::VectorXd s, Eigen::MatrixXd b, scalar regPar0, word method);
+
+struct GCVfun_properties
+{
+    Eigen::VectorXd s2;
+    Eigen::VectorXd beta;
+    scalar delta0;
+    label MnN;
+};
+        
+inline
+double
+GCVfun(const Eigen::VectorXd& vals_inp, Eigen::VectorXd* grad_out,
+          void* opt_data);
+
+
+//--------------------------------------------------------------------------
+/// @brief      L-curve
+///
+/// @param[in]  U      
+/// @param[in]  s     
+/// @param[in]  b      Column vector of solutions
+///
+/// @return     Column vector of variables
+///
+void Lcurve(Eigen::MatrixXd U, Eigen::VectorXd s, Eigen::MatrixXd b, word method, label step = 0);
+
+//--------------------------------------------------------------------------
+/// @brief      L-curve
+///
+/// @param[in]  A      
+/// @param[in]  b      Column vector of solutions
+///
+/// @return     Column vector of variables
+///
+void Lcurve_CG(Eigen::MatrixXd A, Eigen::MatrixXd b);
+
+//--------------------------------------------------------------------------
+/// @brief      Picard
+///
+/// @param[in]  U      
+/// @param[in]  s     
+/// @param[in]  b      Column vector of solutions
+///
+/// @return     Column vector of variables
+///
+void Picard(Eigen::MatrixXd U, Eigen::VectorXd s, Eigen::MatrixXd b);
+
+
+//--------------------------------------------------------------------------
+/// @brief      Computes the discrete approximation L to the derivative operator
+///             of order d on a regular grid with n points, i.e. L is (n-d)-by-n.
+///
+/// @param[in]  n       Grid size 
+/// @param[in]  d       Derivative order
+/// @param[in]  W       Orthonormal basis for the null space of L
+///
+/// @return     Column vector of variables
+///
+Eigen::MatrixXd get_L(label n, label d, Eigen::Ref<Eigen::MatrixXd> W);
+
+
+//--------------------------------------------------------------------------
+/// @brief      Method for calculating the pseudo-Inverse as recommended by Eigen developers 
+///
+/// @param[in]  
+///
+/// @return    
+///
+Eigen::MatrixXd pseudoInverse(Eigen::MatrixXd a, double epsilon = std::numeric_limits<double>::epsilon());
+
+//--------------------------------------------------------------------------
+/// @brief      Utility routine for "preconditioned" iterative methods.
+///             Computes the vector
+///                x = (L_p)'*y
+///              where L_p is the A-weighted generalized inverse of L.
+///             
+///              Here, L is a p-by-n matrix, W holds a basis for the null space of L,
+///              and T is a utility matrix which should be computed by routine pinit.
+///             
+///              Alternatively, L is square, and W and T are not needed.
+///             
+///              If W and T are not specified, then instead the routine computes
+///                x = inv(L(:,1:p))'*y(1:p) .
+///             
+///              Notice that x and y may be matrices, in which case x(:,i)
+///              corresponds to y(:,i).
+///
+/// @param[in]  
+///
+/// @return    
+///
+Eigen::VectorXd ltsolve(Eigen::MatrixXd L, Eigen::VectorXd y, 
+        Eigen::MatrixXd W = Eigen::MatrixXd::Zero(0,0), 
+        Eigen::MatrixXd T = Eigen::MatrixXd::Zero(0,0));
+
+//--------------------------------------------------------------------------
+/// @brief      Utility routine for "preconditioned" iterative methods.
+///             Computes the vector
+///                x = (L_p)'*y
+///              where L_p is the A-weighted generalized inverse of L.
+///             
+///              Here, L is a p-by-n matrix, W holds a basis for the null space of L,
+///              and T is a utility matrix which should be computed by routine pinit.
+///             
+///              Alternatively, L is square, and W and T are not needed.
+///             
+///              If W and T are not specified, then instead the routine computes
+///                x = inv(L(:,1:p))'*y(1:p) .
+///             
+///              Notice that x and y may be matrices, in which case x(:,i)
+///              corresponds to y(:,i).
+///
+/// @param[in]  
+///
+/// @return    
+///
+Eigen::VectorXd lsolve(Eigen::MatrixXd L, Eigen::VectorXd y, 
+        Eigen::MatrixXd W, Eigen::MatrixXd T);
+
+//--------------------------------------------------------------------------
+/// @brief      General method to precondition a linear system
+///
+/// @param[in]  linSys The linear system 
+/// @param[in]  method Type of preconditioning to be used
+///
+/// @return    Preconditioned linear system
+///
+List<Eigen::MatrixXd> precondition(List<Eigen::MatrixXd> linSys, word method = "None");
 
 };
 
