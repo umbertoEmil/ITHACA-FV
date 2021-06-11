@@ -57,6 +57,26 @@ namespace ITHACAmuq
 namespace muq2ithaca
 {
 //--------------------------------------------------------------------------
+/// @brief      Returns confidence levers for a vector of samples 
+///
+/// @param[in]  samps               Samples
+/// @param[in]  confidenceInterval  Confidence interval can be 90%, 95% or 99%
+///
+/// @return     Tuple containing min and max of the confidence interval 
+///
+std::tuple<double, double> confidenceLevel(Eigen::VectorXd samps, double confidenceInterval);
+
+//--------------------------------------------------------------------------
+/// @brief      Returns confidence levers for a matrix with the samples on the columns 
+///
+/// @param[in]  samps               Samples
+/// @param[in]  confidenceInterval  Confidence interval can be 90%, 95% or 99%
+///
+/// @return     Tuple containing min and max of the confidence interval 
+///
+std::tuple<Eigen::VectorXd, Eigen::VectorXd> confidenceLevel(Eigen::MatrixXd samps, double confidenceInterval);
+
+//--------------------------------------------------------------------------
 /// @brief      Ensemble Kalman Filter
 ///
 /// @param[in]  prior           Samples of the prior

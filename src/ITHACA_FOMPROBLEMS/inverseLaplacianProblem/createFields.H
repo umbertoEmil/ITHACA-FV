@@ -38,3 +38,45 @@ _T = autoPtr<volScalarField>
              mesh
          )
      );
+
+Info << "Create field lambda" << endl;
+_lambda = autoPtr<volScalarField>
+          (
+              new volScalarField
+              (
+                  IOobject
+                  (
+                      "lambda",
+                      runTime.timeName(),
+                      mesh,
+                      IOobject::MUST_READ,
+                      IOobject::NO_WRITE
+                  ),
+                  mesh
+              )
+          );
+
+Info << "Create field deltaT" << endl;
+_deltaT = autoPtr<volScalarField>
+          (
+              new volScalarField
+              (
+                  IOobject
+                  (
+                      "deltaT",
+                      runTime.timeName(),
+                      mesh,
+                      IOobject::MUST_READ,
+                      IOobject::NO_WRITE
+                  ),
+                  mesh
+              )
+          );
+
+//_DT = autoPtr<dimensionedScalar>
+//(
+//    "DT",
+//    dimensionSet(1, 1, -3, -1, 0, 0, 0),
+//    1.0
+//);
+

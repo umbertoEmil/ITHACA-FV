@@ -5,27 +5,21 @@
      ██║   ██║   ██╔══██║██╔══██║██║     ██╔══██║╚════╝██╔══╝  ╚██╗ ██╔╝
      ██║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██║      ██║      ╚████╔╝
      ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝      ╚═╝       ╚═══╝
-
  * In real Time Highly Advanced Computational Applications for Finite Volumes
  * Copyright (C) 2017 by the ITHACA-FV authors
 -------------------------------------------------------------------------------
-
 License
     This file is part of ITHACA-FV
-
     ITHACA-FV is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     ITHACA-FV is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
     GNU Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public License
     along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
-
 \*---------------------------------------------------------------------------*/
 
 
@@ -460,8 +454,9 @@ void read_fields(
             last_s = min(runTime2.times().size(), n_snap + 2);
         }
 
-        for (int i = 2 + first_snap; i < last_s + first_snap; i++)
+        for (int i = 1 + first_snap; i < last_s + first_snap; i++)
         {
+<<<<<<< HEAD
             GeometricField<Type, PatchField, GeoMesh> tmp_field(
                 IOobject
                 (
@@ -473,6 +468,22 @@ void read_fields(
                 mesh
             );
             Lfield.append(tmp_field.clone());
+=======
+            if (runTime2.times()[i].name() != "0")
+            {
+                GeometricField<Type, PatchField, GeoMesh> tmp_field(
+                    IOobject
+                    (
+                        Name,
+                        casename + runTime2.times()[i].name(),
+                        mesh,
+                        IOobject::MUST_READ
+                    ),
+                    mesh
+                );
+                Lfield.append(tmp_field);
+            }
+>>>>>>> 3f825189... Updated EnKF test2
             printProgress(double(i + 1) / (last_s + first_snap));
         }
 
@@ -927,7 +938,6 @@ template void load(List<Eigen::SparseMatrix<double>>& MatrixList, word folder,
                    word MatrixName);
 
 }
-
 
 
 

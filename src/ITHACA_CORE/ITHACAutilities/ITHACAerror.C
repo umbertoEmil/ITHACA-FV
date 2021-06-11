@@ -83,6 +83,26 @@ double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
     return err;
 }
 
+template<typename T>
+double errorLinfRel(GeometricField<T, fvPatchField, volMesh>& field1,
+                    GeometricField<T, fvPatchField, volMesh>& field2)
+{
+    double err;
+
+    if (LinfNorm(field1) <= 1e-6)
+    {
+        err = 0;
+    }
+    else
+    {
+        GeometricField<T, fvPatchField, volMesh> fieldDiff = field1 - field2;
+        err = LinfNorm(fieldDiff) / LinfNorm(field1);
+    }
+
+    return err;
+}
+
+
 template double errorL2Rel(GeometricField<scalar, fvPatchField, volMesh>&
                            field1,
                            GeometricField<scalar, fvPatchField, volMesh>& field2);
@@ -447,5 +467,9 @@ double integralOnPatch(fvMesh& mesh, List<scalar> field,
     }
     return integral;
 }
+}
+
 
 }
+
+

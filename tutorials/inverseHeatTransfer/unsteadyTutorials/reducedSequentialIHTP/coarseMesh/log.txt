@@ -1,0 +1,3685 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _7bdb509494-20201222 OPENFOAM=2012
+Arch   : "LSB;label=32;scalar=64"
+Exec   : redSequential
+Date   : Jun 10 2021
+Time   : 16:18:35
+Host   : inspiron-UM
+PID    : 1235
+I/O    : uncollated
+Case   : /media/Data/ITHACA-FV/tutorials/inverseHeatTransfer/unsteadyTutorials/reducedSequentialIHTP/coarseMesh
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Create field T
+First sampling time = 1
+Delta time between samples = 1
+Number of samplings = 10
+Offline data already exist, reading existing data
+POD data already exist, reading existing modes
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _7bdb509494-20201222 OPENFOAM=2012
+Arch   : "LSB;label=32;scalar=64"
+Exec   : redSequential
+Date   : Jun 10 2021
+Time   : 16:18:35
+Host   : inspiron-UM
+PID    : 1235
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry startDate which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry startTime which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry userName which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry foamVersion which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry code which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry argList which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry currentDir which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry PPID which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry PGID which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry foamBuild which already exists in dictionary "JobInfo"
+I/O    : uncollated
+Case   : /media/Data/ITHACA-FV/tutorials/inverseHeatTransfer/unsteadyTutorials/reducedSequentialIHTP/coarseMesh
+nProcs : 1
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry root which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry case which already exists in dictionary "JobInfo"
+--> FOAM Warning : 
+    From Foam::entry* Foam::dictionary::add(Foam::entry*, bool)
+    in file db/dictionary/dictionary.C at line 777
+    Reading "JobInfo" at line 0
+    Attempt to add entry nProcs which already exists in dictionary "JobInfo"
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Create field T
+Offline data already exist, reading existing data
+POD data already exist, reading existing modes
+
+ ************************************************************ 
+Conducting chirp test to compare performance of steady and unsteady inverse solvers
+We assume the heat flux to estimate has the shape:
+
+ g = A + B sin [2 pi (a t) t] 
+Maximum frequency is 0.1Hz
+ 
+Using time basis of type constant
+
+Defining positions of thermocouples
+Reading thermocouples cells from file
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+DT = DT [1 1 -3 -1 0 0 0] 1
+DICPCG:  Solving for T, Initial residual = 1, Final residual = 7.163419008537754e-13, No Iterations 55
+DICPCG:  Solving for T, Initial residual = 2.632934387751992e-13, Final residual = 2.632934387751992e-13, No Iterations 0
+
+SIMPLE solution converged in 0.2 iterations
+
+Performing true computation
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Thermal diffusivity = 0.0001098491366947743 m2/s
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 7.256500188984104e-06, Final residual = 4.916050674619661e-13, No Iterations 3
+
+ExecutionTime = 0.5600000000000001 s  ClockTime = 1 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 1.50939751178287e-05, Final residual = 9.623695391828622e-13, No Iterations 3
+
+ExecutionTime = 0.63 s  ClockTime = 1 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 2.348465221538782e-05, Final residual = 4.13555607833874e-15, No Iterations 4
+
+ExecutionTime = 0.68 s  ClockTime = 1 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 3.240085520813244e-05, Final residual = 5.373675888749828e-15, No Iterations 4
+
+ExecutionTime = 0.75 s  ClockTime = 1 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 4.181507629219499e-05, Final residual = 6.567463733631839e-15, No Iterations 4
+
+ExecutionTime = 0.8100000000000001 s  ClockTime = 1 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 5.170003350308494e-05, Final residual = 7.730642481843981e-15, No Iterations 4
+
+ExecutionTime = 0.88 s  ClockTime = 1 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 6.20287123597186e-05, Final residual = 8.868796981971972e-15, No Iterations 4
+
+ExecutionTime = 0.95 s  ClockTime = 1 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 7.277439397084825e-05, Final residual = 9.992777176522548e-15, No Iterations 4
+
+ExecutionTime = 1.01 s  ClockTime = 2 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 8.391066508745173e-05, Final residual = 1.110207063201502e-14, No Iterations 4
+
+ExecutionTime = 1.08 s  ClockTime = 2 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 9.541141295790822e-05, Final residual = 1.2196861043097e-14, No Iterations 4
+
+ExecutionTime = 1.14 s  ClockTime = 2 s
+
+Time = 1.1
+
+DICPCG:  Solving for T, Initial residual = 0.0001072508018050693, Final residual = 1.32895310784639e-14, No Iterations 4
+
+ExecutionTime = 1.2 s  ClockTime = 2 s
+
+Time = 1.2
+
+DICPCG:  Solving for T, Initial residual = 0.0001194032336447411, Final residual = 1.444400073266917e-14, No Iterations 4
+
+ExecutionTime = 1.27 s  ClockTime = 2 s
+
+Time = 1.3
+
+DICPCG:  Solving for T, Initial residual = 0.0001318432914778325, Final residual = 1.558878050155665e-14, No Iterations 4
+
+ExecutionTime = 1.34 s  ClockTime = 2 s
+
+Time = 1.4
+
+DICPCG:  Solving for T, Initial residual = 0.0001445456651579136, Final residual = 1.671849986504695e-14, No Iterations 4
+
+ExecutionTime = 1.4 s  ClockTime = 2 s
+
+Time = 1.5
+
+DICPCG:  Solving for T, Initial residual = 0.0001574850563538892, Final residual = 1.783171785734316e-14, No Iterations 4
+
+ExecutionTime = 1.46 s  ClockTime = 2 s
+
+Time = 1.6
+
+DICPCG:  Solving for T, Initial residual = 0.0001706360762744878, Final residual = 1.892681635798825e-14, No Iterations 4
+
+ExecutionTime = 1.52 s  ClockTime = 2 s
+
+Time = 1.7
+
+DICPCG:  Solving for T, Initial residual = 0.000183973118680805, Final residual = 2.000233807506034e-14, No Iterations 4
+
+ExecutionTime = 1.59 s  ClockTime = 2 s
+
+Time = 1.8
+
+DICPCG:  Solving for T, Initial residual = 0.0001974702146218706, Final residual = 2.10574846315108e-14, No Iterations 4
+
+ExecutionTime = 1.66 s  ClockTime = 3 s
+
+Time = 1.9
+
+DICPCG:  Solving for T, Initial residual = 0.0002111008718039243, Final residual = 2.2090739977742e-14, No Iterations 4
+
+ExecutionTime = 1.73 s  ClockTime = 3 s
+
+Time = 2
+
+DICPCG:  Solving for T, Initial residual = 0.0002248379124958392, Final residual = 2.310009134656287e-14, No Iterations 4
+
+ExecutionTime = 1.79 s  ClockTime = 3 s
+
+Time = 2.1
+
+DICPCG:  Solving for T, Initial residual = 0.0002386532983401325, Final residual = 2.408279185487511e-14, No Iterations 4
+
+ExecutionTime = 1.85 s  ClockTime = 3 s
+
+Time = 2.2
+
+DICPCG:  Solving for T, Initial residual = 0.0002525179226334284, Final residual = 2.50389539758831e-14, No Iterations 4
+
+ExecutionTime = 1.92 s  ClockTime = 3 s
+
+Time = 2.3
+
+DICPCG:  Solving for T, Initial residual = 0.0002664014100803312, Final residual = 2.596503455875471e-14, No Iterations 4
+
+ExecutionTime = 1.98 s  ClockTime = 3 s
+
+Time = 2.4
+
+DICPCG:  Solving for T, Initial residual = 0.0002802719032869992, Final residual = 2.685698189288926e-14, No Iterations 4
+
+ExecutionTime = 2.05 s  ClockTime = 3 s
+
+Time = 2.5
+
+DICPCG:  Solving for T, Initial residual = 0.0002940957972742586, Final residual = 2.771139685520504e-14, No Iterations 4
+
+ExecutionTime = 2.12 s  ClockTime = 3 s
+
+Time = 2.6
+
+DICPCG:  Solving for T, Initial residual = 0.0003078376006455132, Final residual = 2.852399545206817e-14, No Iterations 4
+
+ExecutionTime = 2.18 s  ClockTime = 3 s
+
+Time = 2.7
+
+DICPCG:  Solving for T, Initial residual = 0.0003214596391560603, Final residual = 2.92913844774775e-14, No Iterations 4
+
+ExecutionTime = 2.25 s  ClockTime = 4 s
+
+Time = 2.8
+
+DICPCG:  Solving for T, Initial residual = 0.0003349218926505535, Final residual = 3.001211748501957e-14, No Iterations 4
+
+ExecutionTime = 2.3 s  ClockTime = 4 s
+
+Time = 2.9
+
+DICPCG:  Solving for T, Initial residual = 0.000348181710194074, Final residual = 3.068109057398118e-14, No Iterations 4
+
+ExecutionTime = 2.38 s  ClockTime = 4 s
+
+Time = 3
+
+DICPCG:  Solving for T, Initial residual = 0.0003611936867696995, Final residual = 3.129402981386874e-14, No Iterations 4
+
+ExecutionTime = 2.44 s  ClockTime = 4 s
+
+Time = 3.1
+
+DICPCG:  Solving for T, Initial residual = 0.0003739094120223527, Final residual = 3.184311373368224e-14, No Iterations 4
+
+ExecutionTime = 2.5 s  ClockTime = 4 s
+
+Time = 3.2
+
+DICPCG:  Solving for T, Initial residual = 0.0003862773783056522, Final residual = 3.232318950772576e-14, No Iterations 4
+
+ExecutionTime = 2.57 s  ClockTime = 4 s
+
+Time = 3.3
+
+DICPCG:  Solving for T, Initial residual = 0.0003982426813680693, Final residual = 3.272908586922735e-14, No Iterations 4
+
+ExecutionTime = 2.63 s  ClockTime = 4 s
+
+Time = 3.4
+
+DICPCG:  Solving for T, Initial residual = 0.0004097470636916706, Final residual = 3.305541616721568e-14, No Iterations 4
+
+ExecutionTime = 2.7 s  ClockTime = 4 s
+
+Time = 3.5
+
+DICPCG:  Solving for T, Initial residual = 0.0004207288148614889, Final residual = 3.329328039609185e-14, No Iterations 4
+
+ExecutionTime = 2.76 s  ClockTime = 4 s
+
+Time = 3.6
+
+DICPCG:  Solving for T, Initial residual = 0.0004311226701737393, Final residual = 3.343670725465853e-14, No Iterations 4
+
+ExecutionTime = 2.83 s  ClockTime = 4 s
+
+Time = 3.7
+
+DICPCG:  Solving for T, Initial residual = 0.0004408597100345353, Final residual = 3.347853542032096e-14, No Iterations 4
+
+ExecutionTime = 2.89 s  ClockTime = 5 s
+
+Time = 3.8
+
+DICPCG:  Solving for T, Initial residual = 0.0004498675077357594, Final residual = 3.341295812781719e-14, No Iterations 4
+
+ExecutionTime = 2.95 s  ClockTime = 5 s
+
+Time = 3.9
+
+DICPCG:  Solving for T, Initial residual = 0.0004580704039987735, Final residual = 3.322842388727006e-14, No Iterations 4
+
+ExecutionTime = 3.02 s  ClockTime = 5 s
+
+Time = 4
+
+DICPCG:  Solving for T, Initial residual = 0.0004653894565152239, Final residual = 3.291510548144187e-14, No Iterations 4
+
+ExecutionTime = 3.08 s  ClockTime = 5 s
+
+Time = 4.1
+
+DICPCG:  Solving for T, Initial residual = 0.0004717427098679057, Final residual = 3.246452322307976e-14, No Iterations 4
+
+ExecutionTime = 3.15 s  ClockTime = 5 s
+
+Time = 4.2
+
+DICPCG:  Solving for T, Initial residual = 0.0004770454962667375, Final residual = 3.186568108082129e-14, No Iterations 4
+
+ExecutionTime = 3.21 s  ClockTime = 5 s
+
+Time = 4.3
+
+DICPCG:  Solving for T, Initial residual = 0.0004812108336979369, Final residual = 3.11095842386584e-14, No Iterations 4
+
+ExecutionTime = 3.28 s  ClockTime = 5 s
+
+Time = 4.4
+
+DICPCG:  Solving for T, Initial residual = 0.0004841499293185744, Final residual = 3.018627727136424e-14, No Iterations 4
+
+ExecutionTime = 3.34 s  ClockTime = 5 s
+
+Time = 4.5
+
+DICPCG:  Solving for T, Initial residual = 0.0004857727159510845, Final residual = 2.908293763680575e-14, No Iterations 4
+
+ExecutionTime = 3.41 s  ClockTime = 5 s
+
+Time = 4.6
+
+DICPCG:  Solving for T, Initial residual = 0.0004859884678666796, Final residual = 2.779239671105431e-14, No Iterations 4
+
+ExecutionTime = 3.47 s  ClockTime = 5 s
+
+Time = 4.7
+
+DICPCG:  Solving for T, Initial residual = 0.0004847065069491864, Final residual = 2.630067085118727e-14, No Iterations 4
+
+ExecutionTime = 3.54 s  ClockTime = 6 s
+
+Time = 4.8
+
+DICPCG:  Solving for T, Initial residual = 0.0004818369996596997, Final residual = 2.459370460947718e-14, No Iterations 4
+
+ExecutionTime = 3.61 s  ClockTime = 6 s
+
+Time = 4.9
+
+DICPCG:  Solving for T, Initial residual = 0.0004772920314944207, Final residual = 2.266155548475324e-14, No Iterations 4
+
+ExecutionTime = 3.67 s  ClockTime = 6 s
+
+Time = 5
+
+DICPCG:  Solving for T, Initial residual = 0.0004709864946381954, Final residual = 2.049076122583672e-14, No Iterations 4
+
+ExecutionTime = 3.73 s  ClockTime = 6 s
+
+Time = 5.1
+
+DICPCG:  Solving for T, Initial residual = 0.0004628392044019249, Final residual = 1.809140445970254e-14, No Iterations 4
+
+ExecutionTime = 3.79 s  ClockTime = 6 s
+
+Time = 5.2
+
+DICPCG:  Solving for T, Initial residual = 0.0004527741193907522, Final residual = 1.556567554423773e-14, No Iterations 4
+
+ExecutionTime = 3.85 s  ClockTime = 6 s
+
+Time = 5.3
+
+DICPCG:  Solving for T, Initial residual = 0.0004407216163688523, Final residual = 1.296791968646757e-14, No Iterations 4
+
+ExecutionTime = 3.92 s  ClockTime = 6 s
+
+Time = 5.4
+
+DICPCG:  Solving for T, Initial residual = 0.0004266198575499767, Final residual = 1.038756069939845e-14, No Iterations 4
+
+ExecutionTime = 3.98 s  ClockTime = 6 s
+
+Time = 5.5
+
+DICPCG:  Solving for T, Initial residual = 0.0004104270343223061, Final residual = 9.935137918723274e-15, No Iterations 4
+
+ExecutionTime = 4.06 s  ClockTime = 6 s
+
+Time = 5.6
+
+DICPCG:  Solving for T, Initial residual = 0.0003926182199020761, Final residual = 1.217944967512618e-14, No Iterations 4
+
+ExecutionTime = 4.12 s  ClockTime = 6 s
+
+Time = 5.7
+
+DICPCG:  Solving for T, Initial residual = 0.0003745108820937679, Final residual = 1.438744079479448e-14, No Iterations 4
+
+ExecutionTime = 4.19 s  ClockTime = 7 s
+
+Time = 5.8
+
+DICPCG:  Solving for T, Initial residual = 0.0003593539427827005, Final residual = 1.685371242501464e-14, No Iterations 4
+
+ExecutionTime = 4.24 s  ClockTime = 7 s
+
+Time = 5.9
+
+DICPCG:  Solving for T, Initial residual = 0.0003592472923261691, Final residual = 1.92719410300817e-14, No Iterations 4
+
+ExecutionTime = 4.31 s  ClockTime = 7 s
+
+Time = 6
+
+DICPCG:  Solving for T, Initial residual = 0.0003587906310104366, Final residual = 2.159274796187477e-14, No Iterations 4
+
+ExecutionTime = 4.37 s  ClockTime = 7 s
+
+Time = 6.1
+
+DICPCG:  Solving for T, Initial residual = 0.0003571340457952539, Final residual = 2.38116982461727e-14, No Iterations 4
+
+ExecutionTime = 4.44 s  ClockTime = 7 s
+
+Time = 6.2
+
+DICPCG:  Solving for T, Initial residual = 0.0003547450919440199, Final residual = 2.618941081716045e-14, No Iterations 4
+
+ExecutionTime = 4.51 s  ClockTime = 7 s
+
+Time = 6.3
+
+DICPCG:  Solving for T, Initial residual = 0.0003528920117568134, Final residual = 2.881492827395405e-14, No Iterations 4
+
+ExecutionTime = 4.57 s  ClockTime = 7 s
+
+Time = 6.4
+
+DICPCG:  Solving for T, Initial residual = 0.0003574811939715573, Final residual = 3.156503261894372e-14, No Iterations 4
+
+ExecutionTime = 4.63 s  ClockTime = 7 s
+
+Time = 6.5
+
+DICPCG:  Solving for T, Initial residual = 0.0003687864231961644, Final residual = 3.43725944582513e-14, No Iterations 4
+
+ExecutionTime = 4.7 s  ClockTime = 7 s
+
+Time = 6.6
+
+DICPCG:  Solving for T, Initial residual = 0.0003797848091418329, Final residual = 3.727869687264164e-14, No Iterations 4
+
+ExecutionTime = 4.76 s  ClockTime = 7 s
+
+Time = 6.7
+
+DICPCG:  Solving for T, Initial residual = 0.0003917482785383534, Final residual = 4.01317403535008e-14, No Iterations 4
+
+ExecutionTime = 4.83 s  ClockTime = 8 s
+
+Time = 6.8
+
+DICPCG:  Solving for T, Initial residual = 0.0004113094146116392, Final residual = 4.241499761818102e-14, No Iterations 4
+
+ExecutionTime = 4.89 s  ClockTime = 8 s
+
+Time = 6.9
+
+DICPCG:  Solving for T, Initial residual = 0.0004325060596880593, Final residual = 4.431262130602415e-14, No Iterations 4
+
+ExecutionTime = 4.96 s  ClockTime = 8 s
+
+Time = 7
+
+DICPCG:  Solving for T, Initial residual = 0.0004531783658749312, Final residual = 4.674211825753616e-14, No Iterations 4
+
+ExecutionTime = 5.02 s  ClockTime = 8 s
+
+Time = 7.1
+
+DICPCG:  Solving for T, Initial residual = 0.0004746491977607884, Final residual = 4.912921297376703e-14, No Iterations 4
+
+ExecutionTime = 5.09 s  ClockTime = 8 s
+
+Time = 7.2
+
+DICPCG:  Solving for T, Initial residual = 0.0005022013377063485, Final residual = 5.131322286220008e-14, No Iterations 4
+
+ExecutionTime = 5.15 s  ClockTime = 8 s
+
+Time = 7.3
+
+DICPCG:  Solving for T, Initial residual = 0.0005284617828105308, Final residual = 5.326497577085742e-14, No Iterations 4
+
+ExecutionTime = 5.22 s  ClockTime = 8 s
+
+Time = 7.4
+
+DICPCG:  Solving for T, Initial residual = 0.0005533314738302034, Final residual = 5.546060923971965e-14, No Iterations 4
+
+ExecutionTime = 5.28 s  ClockTime = 8 s
+
+Time = 7.5
+
+DICPCG:  Solving for T, Initial residual = 0.0005784360761374941, Final residual = 5.724672118127849e-14, No Iterations 4
+
+ExecutionTime = 5.35 s  ClockTime = 8 s
+
+Time = 7.6
+
+DICPCG:  Solving for T, Initial residual = 0.0006061661280813797, Final residual = 5.88859321899518e-14, No Iterations 4
+
+ExecutionTime = 5.42 s  ClockTime = 8 s
+
+Time = 7.7
+
+DICPCG:  Solving for T, Initial residual = 0.0006310172259490723, Final residual = 6.026170459734985e-14, No Iterations 4
+
+ExecutionTime = 5.48 s  ClockTime = 9 s
+
+Time = 7.8
+
+DICPCG:  Solving for T, Initial residual = 0.0006530717822407749, Final residual = 6.139861236881757e-14, No Iterations 4
+
+ExecutionTime = 5.55 s  ClockTime = 9 s
+
+Time = 7.9
+
+DICPCG:  Solving for T, Initial residual = 0.0006737686864821267, Final residual = 6.240937336606088e-14, No Iterations 4
+
+ExecutionTime = 5.61 s  ClockTime = 9 s
+
+Time = 8
+
+DICPCG:  Solving for T, Initial residual = 0.0006940910601014335, Final residual = 6.2892534620961e-14, No Iterations 4
+
+ExecutionTime = 5.67 s  ClockTime = 9 s
+
+Time = 8.1
+
+DICPCG:  Solving for T, Initial residual = 0.0007099943297594173, Final residual = 6.272525310629474e-14, No Iterations 4
+
+ExecutionTime = 5.73 s  ClockTime = 9 s
+
+Time = 8.2
+
+DICPCG:  Solving for T, Initial residual = 0.0007214330556784328, Final residual = 6.204486746422414e-14, No Iterations 4
+
+ExecutionTime = 5.8 s  ClockTime = 9 s
+
+Time = 8.3
+
+DICPCG:  Solving for T, Initial residual = 0.000729304405255902, Final residual = 6.066892539303223e-14, No Iterations 4
+
+ExecutionTime = 5.87 s  ClockTime = 9 s
+
+Time = 8.4
+
+DICPCG:  Solving for T, Initial residual = 0.0007347107064326958, Final residual = 5.852595044534544e-14, No Iterations 4
+
+ExecutionTime = 5.93 s  ClockTime = 9 s
+
+Time = 8.5
+
+DICPCG:  Solving for T, Initial residual = 0.0007342645814544496, Final residual = 5.570314888787071e-14, No Iterations 4
+
+ExecutionTime = 6 s  ClockTime = 9 s
+
+Time = 8.6
+
+DICPCG:  Solving for T, Initial residual = 0.0007278818733579319, Final residual = 5.203476402865575e-14, No Iterations 4
+
+ExecutionTime = 6.06 s  ClockTime = 9 s
+
+Time = 8.7
+
+DICPCG:  Solving for T, Initial residual = 0.0007159283470097565, Final residual = 4.749360807227481e-14, No Iterations 4
+
+ExecutionTime = 6.12 s  ClockTime = 10 s
+
+Time = 8.8
+
+DICPCG:  Solving for T, Initial residual = 0.0007002071314745517, Final residual = 4.208015761847571e-14, No Iterations 4
+
+ExecutionTime = 6.2 s  ClockTime = 10 s
+
+Time = 8.9
+
+DICPCG:  Solving for T, Initial residual = 0.0006779732926562865, Final residual = 3.577984150010693e-14, No Iterations 4
+
+ExecutionTime = 6.26 s  ClockTime = 10 s
+
+Time = 9
+
+DICPCG:  Solving for T, Initial residual = 0.0006491218980722949, Final residual = 2.864128497732137e-14, No Iterations 4
+
+ExecutionTime = 6.32 s  ClockTime = 10 s
+
+Time = 9.1
+
+DICPCG:  Solving for T, Initial residual = 0.000614020567460276, Final residual = 2.037781400675978e-14, No Iterations 4
+
+ExecutionTime = 6.39 s  ClockTime = 10 s
+
+Time = 9.2
+
+DICPCG:  Solving for T, Initial residual = 0.0005740999755045021, Final residual = 1.56815650916427e-14, No Iterations 4
+
+ExecutionTime = 6.45 s  ClockTime = 10 s
+
+Time = 9.3
+
+DICPCG:  Solving for T, Initial residual = 0.0005287733204913785, Final residual = 2.063591550346962e-14, No Iterations 4
+
+ExecutionTime = 6.51 s  ClockTime = 10 s
+
+Time = 9.4
+
+DICPCG:  Solving for T, Initial residual = 0.0004776353636167361, Final residual = 2.536277341392675e-14, No Iterations 4
+
+ExecutionTime = 6.58 s  ClockTime = 10 s
+
+Time = 9.5
+
+DICPCG:  Solving for T, Initial residual = 0.0004667506364474452, Final residual = 3.052313145955243e-14, No Iterations 4
+
+ExecutionTime = 6.65 s  ClockTime = 10 s
+
+Time = 9.6
+
+DICPCG:  Solving for T, Initial residual = 0.0004677029108735736, Final residual = 3.438698187818636e-14, No Iterations 4
+
+ExecutionTime = 6.71 s  ClockTime = 11 s
+
+Time = 9.7
+
+DICPCG:  Solving for T, Initial residual = 0.0004656611823380182, Final residual = 3.704313056932052e-14, No Iterations 4
+
+ExecutionTime = 6.78 s  ClockTime = 11 s
+
+Time = 9.8
+
+DICPCG:  Solving for T, Initial residual = 0.0004590735317316888, Final residual = 4.02741747633707e-14, No Iterations 4
+
+ExecutionTime = 6.84 s  ClockTime = 11 s
+
+Time = 9.9
+
+DICPCG:  Solving for T, Initial residual = 0.0004477602044533788, Final residual = 4.334945157406377e-14, No Iterations 4
+
+ExecutionTime = 6.91 s  ClockTime = 11 s
+
+Time = 10
+
+DICPCG:  Solving for T, Initial residual = 0.0004625761429184365, Final residual = 4.422487002558911e-14, No Iterations 4
+
+ExecutionTime = 6.97 s  ClockTime = 11 s
+
+
+ Sampling for ALL sampling times 
+
+
+
+Sampling done 
+
+End
+
+Radial Basis Functions are used.
+The center of each function is at the projection 
+of each thermocouple on the boundary hotSide.
+
+Using CONSTANT basis in time
+
+Offline already computed.
+Check that the basis used for the parameterized BC are correct (RBF, POD, etc.)
+######### Reading the Data for Tad #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T1 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T2 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T3 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T4 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T5 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T6 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T7 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T8 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T9 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T10 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T11 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T12 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T13 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T14 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+######### Reading the Data for T15 #########
+ 16% [||||||||||                                                  ] 25% [|||||||||||||||                                             ] 33% [||||||||||||||||||||                                        ] 41% [|||||||||||||||||||||||||                                   ] 50% [||||||||||||||||||||||||||||||                              ] 58% [|||||||||||||||||||||||||||||||||||                         ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+singularValues = 
+Condition number = 3531835799161920
+
+Offline ENDED
+
+Using quasilinearity of direct problem
+debug: addSol -0.0003974828355041818
+-0.0003974828355041817
+-0.0003974828355041814
+-0.0003974828355041817
+-0.0003974828355041816
+-0.0003974828355012863
+-0.0003974828355012856
+-0.0003974828355012859
+-0.0003974828355012862
+-0.0003974828355012858
+-0.0003974828355012852
+-0.0003974828355012853
+-0.0003974828355012845
+-0.0003974828355012853
+-0.0003974828355012853
+debug: T0_vector 
+
+Time sample 1
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01077542796640861, Final residual = 5.349493109857186e-15, No Iterations 5
+ExecutionTime = 10.11 s  ClockTime = 14 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009350990001088138, Final residual = 4.234089649838208e-15, No Iterations 5
+ExecutionTime = 10.16 s  ClockTime = 14 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008387107327485288, Final residual = 3.273876100287971e-15, No Iterations 5
+ExecutionTime = 10.2 s  ClockTime = 14 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007695067611117239, Final residual = 8.699589957547875e-13, No Iterations 4
+ExecutionTime = 10.25 s  ClockTime = 14 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007173099827200655, Final residual = 7.056965772738294e-13, No Iterations 4
+ExecutionTime = 10.29 s  ClockTime = 14 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006763381987012535, Final residual = 5.890016440622769e-13, No Iterations 4
+ExecutionTime = 10.34 s  ClockTime = 15 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006431419359848115, Final residual = 5.102106555616238e-13, No Iterations 4
+ExecutionTime = 10.38 s  ClockTime = 15 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006155567440511094, Final residual = 4.466841362713216e-13, No Iterations 4
+ExecutionTime = 10.43 s  ClockTime = 15 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005921682530560028, Final residual = 3.953316513218687e-13, No Iterations 4
+ExecutionTime = 10.47 s  ClockTime = 15 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005720117182105786, Final residual = 3.538204476992837e-13, No Iterations 4
+ExecutionTime = 10.52 s  ClockTime = 15 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-1621775.988857426
+-1569968.662844747
+-1492541.397218622
+-1385647.952228413
+-1250132.009115477
+-478042.9831702659
+-335788.3362710773
+-179830.9407231471
+-18117.70494651362
+139681.3663338135
+672954.0788851109
+903703.5397368866
+1135478.658844827
+1348886.368541463
+1525935.974845254
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (0, 1]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+854.4265731996861 860.6458047180615  879.563994970041  911.156951791429 955.3592388744264   910.28158846447   916.55327653967 935.4947240360394 967.0783369213715 1011.239809963477 986.1078974663103 992.4297898077426 1011.383688027207 1042.940335661674 1087.039170558873
+TmeasShort = 
+854.4038405926192 860.7090265102879 879.6371463865395 911.1924426264618 955.3611775208692 910.2109967743042 916.5161826908848  935.444302566789 966.9995988072174 1011.168333702648 986.1544309961492 992.4596169128985 1011.387736788861 1042.943033029211 1087.111767924468
+J = 0.09960840405156547
+
+Time sample 2
+Reconstructing field T
+
+Exporting solution in the time domain (1, 2]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01081180951468208, Final residual = 5.352453265704038e-15, No Iterations 5
+ExecutionTime = 11.65 s  ClockTime = 17 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009349385626414413, Final residual = 4.238137257525948e-15, No Iterations 5
+ExecutionTime = 11.69 s  ClockTime = 17 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008383699589653029, Final residual = 3.278456585244421e-15, No Iterations 5
+ExecutionTime = 11.74 s  ClockTime = 17 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007691283310740113, Final residual = 8.706069749711337e-13, No Iterations 4
+ExecutionTime = 11.78 s  ClockTime = 17 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007169522811007663, Final residual = 7.064040431302805e-13, No Iterations 4
+ExecutionTime = 11.83 s  ClockTime = 17 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006760063145200303, Final residual = 5.894683189637065e-13, No Iterations 4
+ExecutionTime = 11.87 s  ClockTime = 17 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006428313084143954, Final residual = 5.107938914451688e-13, No Iterations 4
+ExecutionTime = 11.92 s  ClockTime = 17 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006152639690600216, Final residual = 4.471815282309701e-13, No Iterations 4
+ExecutionTime = 11.97 s  ClockTime = 17 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005918906612380146, Final residual = 3.957653146776277e-13, No Iterations 4
+ExecutionTime = 12.01 s  ClockTime = 17 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.00571747275701372, Final residual = 3.54197088941249e-13, No Iterations 4
+ExecutionTime = 12.05 s  ClockTime = 17 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-1730525.328224371
+-1661716.230313549
+-1574119.362285039
+-1464857.900068596
+-1333979.397731473
+-515641.1239532958
+-350576.729555258
+-179546.7539046062
+-12237.65209642293
+141979.4704401456
+702743.8218781046
+961348.3555592925
+1212657.401162289
+1434896.355977446
+1609831.696012874
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (1, 2]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+  855.79044005938 861.8947737510541 880.8359874214111 912.5505775516701 956.9021140876885 911.8482832914225 918.0771659822409 937.0736124159438 968.7660387772994 1013.020701127243 987.6899491606924 994.0379106704787 1013.063863144728 1044.692287447571 1088.798318242759
+TmeasShort = 
+855.7367977843426 862.0454131288856 881.0101717179186 912.6353159565878  956.907108135631 911.6796921896214 917.9883075331089 936.9530661218159  968.578210360967 1012.850002541007  987.800684870967 994.1093002146265 1013.074058803391 1044.699203042466 1088.970995222326
+J = 0.2375453206353408
+
+Time sample 3
+Reconstructing field T
+
+Exporting solution in the time domain (2, 3]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01095952994120256, Final residual = 5.365262888350924e-15, No Iterations 5
+ExecutionTime = 13.13 s  ClockTime = 19 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009366360747560811, Final residual = 4.257868058680555e-15, No Iterations 5
+ExecutionTime = 13.17 s  ClockTime = 19 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008383470727446451, Final residual = 3.30066617865673e-15, No Iterations 5
+ExecutionTime = 13.23 s  ClockTime = 19 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007682480855903809, Final residual = 8.737898003054144e-13, No Iterations 4
+ExecutionTime = 13.27 s  ClockTime = 19 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007155405056110845, Final residual = 7.097825081091393e-13, No Iterations 4
+ExecutionTime = 13.31 s  ClockTime = 19 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006742926172594694, Final residual = 5.92097970181223e-13, No Iterations 4
+ExecutionTime = 13.35 s  ClockTime = 19 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006410526435260324, Final residual = 5.139985778475303e-13, No Iterations 4
+ExecutionTime = 13.41 s  ClockTime = 19 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006135794464859421, Final residual = 4.499690353356077e-13, No Iterations 4
+ExecutionTime = 13.45 s  ClockTime = 19 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005902925049644563, Final residual = 3.98226331646754e-13, No Iterations 4
+ExecutionTime = 13.5 s  ClockTime = 20 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005702243516784666, Final residual = 3.563816303024689e-13, No Iterations 4
+ExecutionTime = 13.54 s  ClockTime = 20 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-2000905.653399972
+-1722798.021881733
+-1548646.879127033
+-1493151.109720589
+-1543820.231905502
+-677339.8663001125
+-291736.3538908224
+-26481.59838652296
+89507.93768538578
+59339.00131442996
+587785.8441448821
+1068466.281034767
+1417366.400540119
+1593441.971574213
+1589795.829558888
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (2, 3]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+858.3226563166893 864.3966835878184 883.4571788140864 915.3985370213329 960.0154398250861 914.7196666887492 920.9890725178758 940.1364096414561  972.043324101915 1016.508726410181 990.7597530184474 997.2140887125865 1016.406860389345 1048.213712961812 1092.447373671931
+TmeasShort = 
+858.2433836898319 864.6407983588572 883.7377146174836 915.5383748709107 960.0290414098072 914.4407686132176 920.8381832812199 939.9350995395398 971.7357597934267 1016.226426333291 990.9370836604899 997.3344983286661 1016.431414587043 1048.232074840856 1092.722741380536
+J = 0.3880704839888305
+
+Time sample 4
+Reconstructing field T
+
+Exporting solution in the time domain (3, 4]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01111093889855641, Final residual = 5.36122162601309e-15, No Iterations 5
+ExecutionTime = 14.61 s  ClockTime = 21 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009423649607882048, Final residual = 4.268209948317701e-15, No Iterations 5
+ExecutionTime = 14.65 s  ClockTime = 21 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008413202518619099, Final residual = 3.318021398751062e-15, No Iterations 5
+ExecutionTime = 14.7 s  ClockTime = 22 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007695609548592964, Final residual = 8.754921619484657e-13, No Iterations 4
+ExecutionTime = 14.75 s  ClockTime = 22 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007155884810250201, Final residual = 7.123333390495408e-13, No Iterations 4
+ExecutionTime = 14.79 s  ClockTime = 22 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006733325082855294, Final residual = 5.956788577496518e-13, No Iterations 4
+ExecutionTime = 14.83 s  ClockTime = 22 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006392554460294215, Final residual = 5.172943209890567e-13, No Iterations 4
+ExecutionTime = 14.89 s  ClockTime = 22 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006109702959146551, Final residual = 4.529806132316933e-13, No Iterations 4
+ExecutionTime = 14.93 s  ClockTime = 22 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.00587377149390521, Final residual = 4.010290869391158e-13, No Iterations 4
+ExecutionTime = 14.98 s  ClockTime = 22 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005674443145486714, Final residual = 3.589411661341087e-13, No Iterations 4
+ExecutionTime = 15.02 s  ClockTime = 22 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-2369382.543959844
+-1755782.512417105
+-1445235.239624806
+-1480954.983222658
+-1830187.671294615
+-918234.3160707487
+-182781.4727054758
+227964.0792775696
+254394.2110618686
+-79849.09128509785
+374239.5475568228
+1203552.625757742
+1700207.62337851
+1792882.819031182
+1493722.288243501
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (3, 4]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+861.8097507364037 867.9940787299963 887.3111970933339 919.6070311664226 964.6092634243831 918.6776056024357 925.1278637067243 944.5636734798168 976.8134235087023 1021.610590448216 995.0842493667031 1001.781618154916 1021.277173923598 1053.391559793209 1097.876787835907
+TmeasShort = 
+861.7138325216403 868.3455349606015 887.7109574817356 919.8143424902935  964.641952276877 918.2625353414243 924.8942377793951  944.259660300241 976.3630453092366 1021.190655096759 995.3345062897524 1001.966208727898   1021.3316312488 1053.435016257723  1098.26262604506
+J = 0.5668947711807518
+
+Time sample 5
+Reconstructing field T
+
+Exporting solution in the time domain (4, 5]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.0112360266707446, Final residual = 5.338768873048127e-15, No Iterations 5
+ExecutionTime = 16.09 s  ClockTime = 24 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009485314401907315, Final residual = 4.265693572671097e-15, No Iterations 5
+ExecutionTime = 16.13 s  ClockTime = 24 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008453360291674875, Final residual = 3.325915282199053e-15, No Iterations 5
+ExecutionTime = 16.18 s  ClockTime = 24 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007717068146346494, Final residual = 8.750252882972264e-13, No Iterations 4
+ExecutionTime = 16.23 s  ClockTime = 24 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007170253553904984, Final residual = 7.132672476548591e-13, No Iterations 4
+ExecutionTime = 16.28 s  ClockTime = 24 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006737961630539358, Final residual = 5.983880338487123e-13, No Iterations 4
+ExecutionTime = 16.31 s  ClockTime = 24 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006386807520128959, Final residual = 5.197541950369718e-13, No Iterations 4
+ExecutionTime = 16.36 s  ClockTime = 24 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006095262900934585, Final residual = 4.554477864256595e-13, No Iterations 4
+ExecutionTime = 16.41 s  ClockTime = 24 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005848648019020863, Final residual = 4.034388787446102e-13, No Iterations 4
+ExecutionTime = 16.45 s  ClockTime = 24 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005639179914912361, Final residual = 3.612203153813175e-13, No Iterations 4
+ExecutionTime = 16.5 s  ClockTime = 24 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-2692263.083765864
+-1740172.811866091
+-1293774.66889416
+-1425310.943819771
+-2081458.219025762
+-1147504.035841435
+-61831.95093837904
+491530.9722529933
+422110.7456038943
+-225330.1464435121
+136738.5361370279
+1312272.803210398
+1951471.841301633
+1952925.537051861
+1348643.836137418
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (4, 5]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+865.6442405432734 872.0794342350157 891.7745909731643 924.5208307848332 969.9813831940069 923.0538334441553 929.8246362406965 949.6703268997408 982.3596142473065 1027.563098182304 999.9145795024526 1006.990283147484 1026.908204116844 1059.427915435314 1104.243000630417
+TmeasShort = 
+865.5413155224231 872.5520163343822 892.3062134146782 924.8081491686092 970.0440858867164 922.4763522957396 929.4870531067404 949.2412501867652 981.7431859411137 1026.979122660131 1000.243861336104  1007.25456214728  1027.00875922736 1059.510694981638 1104.746631700468
+J = 0.7753186761057046
+
+Time sample 6
+Reconstructing field T
+
+Exporting solution in the time domain (5, 6]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01126400205645049, Final residual = 5.29988721377292e-15, No Iterations 5
+ExecutionTime = 17.57 s  ClockTime = 26 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009510387578036898, Final residual = 4.245106979152202e-15, No Iterations 5
+ExecutionTime = 17.61 s  ClockTime = 26 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008472600407123122, Final residual = 3.316616420848386e-15, No Iterations 5
+ExecutionTime = 17.66 s  ClockTime = 26 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007731407306965731, Final residual = 8.713623266886512e-13, No Iterations 4
+ExecutionTime = 17.7 s  ClockTime = 26 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007181443566787024, Final residual = 7.126214046162312e-13, No Iterations 4
+ExecutionTime = 17.75 s  ClockTime = 26 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006737563925755846, Final residual = 5.988360839074647e-13, No Iterations 4
+ExecutionTime = 17.79 s  ClockTime = 26 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.00638505833771994, Final residual = 5.199825430569939e-13, No Iterations 4
+ExecutionTime = 17.84 s  ClockTime = 26 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006085223464388267, Final residual = 4.560296420822294e-13, No Iterations 4
+ExecutionTime = 17.88 s  ClockTime = 27 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005833462996638133, Final residual = 4.04250717662778e-13, No Iterations 4
+ExecutionTime = 17.93 s  ClockTime = 27 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005615434692383278, Final residual = 3.621176180798874e-13, No Iterations 4
+ExecutionTime = 17.98 s  ClockTime = 27 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-2707085.309285762
+-1662946.661713911
+-1182232.751937181
+-1345464.189188316
+-2093538.761966205
+-1189290.672259178
+-12493.77332075552
+573430.0130592264
+469762.6349662744
+-272391.4651560147
+39233.04857849874
+1300670.719329357
+1968892.976770737
+1934993.567445059
+1237360.224842301
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (5, 6]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+868.6298730330708 875.3598718104023  895.440797303437 928.6099376029194 974.4722851223812 926.5013347695344  933.630853647088 953.8917181373106 986.9942605930551 1032.552304615829 1003.725101145443 1011.210665355376  1031.55436261405 1064.456285195101 1109.557210519657
+TmeasShort = 
+868.5253861454335 875.9513447721766 896.1006469961496 928.9775352226941 974.5682717422948 925.7604859068982 933.1864445327149 953.3357467564322  986.212634983375 1031.803371503857 1004.130480616444 1011.556439242435 1031.705741466206  1064.58262969308 1110.173366213374
+J = 0.9836436513477401
+
+Time sample 7
+Reconstructing field T
+
+Exporting solution in the time domain (6, 7]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01110730104868991, Final residual = 5.246147057011955e-15, No Iterations 5
+ExecutionTime = 19.05 s  ClockTime = 28 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009457107897218056, Final residual = 4.204255277446891e-15, No Iterations 5
+ExecutionTime = 19.1 s  ClockTime = 29 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008443392763993446, Final residual = 3.28403413648522e-15, No Iterations 5
+ExecutionTime = 19.15 s  ClockTime = 29 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007710692625011727, Final residual = 8.640957478305945e-13, No Iterations 4
+ExecutionTime = 19.19 s  ClockTime = 29 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007162593331407311, Final residual = 7.062714766125126e-13, No Iterations 4
+ExecutionTime = 19.24 s  ClockTime = 29 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006723882981572111, Final residual = 5.941366514101882e-13, No Iterations 4
+ExecutionTime = 19.28 s  ClockTime = 29 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006368481933593253, Final residual = 5.16519214777226e-13, No Iterations 4
+ExecutionTime = 19.32 s  ClockTime = 29 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006068652614826953, Final residual = 4.532901061536957e-13, No Iterations 4
+ExecutionTime = 19.37 s  ClockTime = 29 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005816951951541008, Final residual = 4.020415312145159e-13, No Iterations 4
+ExecutionTime = 19.42 s  ClockTime = 29 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005595401685803935, Final residual = 3.603115778846307e-13, No Iterations 4
+ExecutionTime = 19.46 s  ClockTime = 29 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-2176495.499928139
+-1516066.028488552
+-1195271.095442731
+-1262592.188871777
+-1681827.437223766
+-883033.8675311004
+-112516.7549862497
+297711.6450079767
+284259.8967024097
+-124360.8787088715
+234217.0260795362
+1084585.029968039
+1569263.283710706
+1615000.509144425
+1239863.418547128
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (6, 7]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+869.0683348724972 875.9443882195684 896.2103306712634 929.5649925594444 975.5677114746086 927.0901975644249 934.4150411963793 954.8834207757874 988.1637756574419 1033.825386173287 1004.320449183425 1012.042352377599 1032.602460625214 1065.657976815598 1110.808286037444
+TmeasShort = 
+ 868.958557349191 876.6209633203439 896.9629265825213 929.9886895411084 975.6845144865363 926.2355019566348 933.8979079268913 954.2398711888287 987.2656341477958 1032.961459094077 1004.781472047204 1012.443878017633 1032.785841279623 1065.811604238523 1111.507429184616
+J = 1.130738608629316
+
+Time sample 8
+Reconstructing field T
+
+Exporting solution in the time domain (7, 8]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01077140753748871, Final residual = 5.191327469612775e-15, No Iterations 5
+ExecutionTime = 20.55 s  ClockTime = 31 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009333670843139468, Final residual = 4.141527481845037e-15, No Iterations 5
+ExecutionTime = 20.61 s  ClockTime = 31 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008360432161048533, Final residual = 3.221436532003322e-15, No Iterations 5
+ExecutionTime = 20.65 s  ClockTime = 31 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007654604146690645, Final residual = 8.531942980682027e-13, No Iterations 4
+ExecutionTime = 20.7 s  ClockTime = 31 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007115352352056101, Final residual = 6.948399743051432e-13, No Iterations 4
+ExecutionTime = 20.74 s  ClockTime = 31 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006689309237845471, Final residual = 5.833490541229129e-13, No Iterations 4
+ExecutionTime = 20.79 s  ClockTime = 31 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006338173177043923, Final residual = 5.07995104251966e-13, No Iterations 4
+ExecutionTime = 20.84 s  ClockTime = 31 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006046951469410563, Final residual = 4.459022542521008e-13, No Iterations 4
+ExecutionTime = 20.88 s  ClockTime = 31 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005796764740147297, Final residual = 3.955215661938298e-13, No Iterations 4
+ExecutionTime = 20.93 s  ClockTime = 31 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005583377783393652, Final residual = 3.545874717621292e-13, No Iterations 4
+ExecutionTime = 20.97 s  ClockTime = 32 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-1209399.440476868
+-1341370.529985034
+-1346192.235816273
+-1205504.014749333
+-930722.5247653618
+-286822.2691923588
+-348066.9441363614
+-289698.7262170409
+-102419.2575816231
+194569.5920514495
+694894.7003531002
+710896.0419445941
+833706.1140729146
+1062495.89281762
+1371647.122900189
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (7, 8]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+865.7750716992176 872.4689617186627 892.5362380925593 925.6655607475709  971.387976041412 923.4609311023593 930.6311138840751 950.9127534015346 983.9624469202365  1029.32175219195 1000.145199142331 1007.741229769812 1028.122248470204  1060.93252011476 1105.745805791905
+TmeasShort = 
+865.6470707792422 873.1685653257738 893.3177727184168 926.0989353625971 971.4983155486941 922.5878883081738  930.109382853839 950.2585902462561 983.0397528907986  1028.43913307772 1000.625969862854  1008.14746440869 1028.296671801159 1061.077834445635 1106.477214632371
+J = 1.161033708091099
+
+Time sample 9
+Reconstructing field T
+
+Exporting solution in the time domain (8, 9]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01072043687512595, Final residual = 5.136274446202451e-15, No Iterations 5
+ExecutionTime = 22.05 s  ClockTime = 33 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009283284334970519, Final residual = 4.061085350610327e-15, No Iterations 5
+ExecutionTime = 22.1 s  ClockTime = 33 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008320623319793915, Final residual = 3.13296606395439e-15, No Iterations 5
+ExecutionTime = 22.15 s  ClockTime = 33 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007624356698389344, Final residual = 8.401668757003189e-13, No Iterations 4
+ExecutionTime = 22.19 s  ClockTime = 34 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007091946381449607, Final residual = 6.813343120207613e-13, No Iterations 4
+ExecutionTime = 22.23 s  ClockTime = 34 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006674383534447968, Final residual = 5.714974301838871e-13, No Iterations 4
+ExecutionTime = 22.28 s  ClockTime = 34 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006332278002233652, Final residual = 4.94989187915565e-13, No Iterations 4
+ExecutionTime = 22.33 s  ClockTime = 34 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006048453947783401, Final residual = 4.344628252167668e-13, No Iterations 4
+ExecutionTime = 22.38 s  ClockTime = 34 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005810727613517267, Final residual = 3.853737666751779e-13, No Iterations 4
+ExecutionTime = 22.42 s  ClockTime = 34 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005612981483247927, Final residual = 3.454891180086769e-13, No Iterations 4
+ExecutionTime = 22.47 s  ClockTime = 34 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-524383.521593902
+-1260528.595217907
+-1511728.661658419
+-1208382.534835733
+-398348.0461579962
+153006.3059707725
+-539472.1409892829
+-744911.6068057853
+-398697.6956455588
+443157.7688565545
+1069745.248673312
+455493.6769202772
+309390.2361666323
+685332.8471779914
+1523693.864558756
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (8, 9]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+859.9901608909009 866.2184429811261 885.7767782877127 918.3669567730376 963.5042980717972 916.9954511817468 923.7111521059931 943.4877101846698 975.9945501547262 1020.757654591617 992.7504318676705 999.9126259905229 1019.795757440824 1052.055651274336 1096.251861715411
+TmeasShort = 
+859.8314532003191 866.8899645029881 886.5351266284988 918.7711819823141 963.5843928547665 916.1840598328135 923.2425711346452 942.8877332599432 975.1237886141038 1019.936999487353 993.2219000958614 1000.280411397862  1019.92557352321 1052.161628877306 1096.974839750372
+J = 1.09532650462067
+
+Time sample 10
+Reconstructing field T
+
+Exporting solution in the time domain (9, 10]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01079344664802356, Final residual = 5.133414884856014e-15, No Iterations 5
+ExecutionTime = 23.54 s  ClockTime = 36 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009334888347997387, Final residual = 4.025048349019316e-15, No Iterations 5
+ExecutionTime = 23.58 s  ClockTime = 36 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008361972485498395, Final residual = 3.080298694238367e-15, No Iterations 5
+ExecutionTime = 23.64 s  ClockTime = 36 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.00766147939031762, Final residual = 8.341436515809242e-13, No Iterations 4
+ExecutionTime = 23.68 s  ClockTime = 36 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007131029460037655, Final residual = 6.736663814577532e-13, No Iterations 4
+ExecutionTime = 23.72 s  ClockTime = 36 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.00671699271193075, Final residual = 5.660932786951222e-13, No Iterations 4
+ExecutionTime = 23.77 s  ClockTime = 36 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006386678437742033, Final residual = 4.8711815265639e-13, No Iterations 4
+ExecutionTime = 23.82 s  ClockTime = 36 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006114354045563025, Final residual = 4.257407370451186e-13, No Iterations 4
+ExecutionTime = 23.86 s  ClockTime = 36 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005883541272751361, Final residual = 3.774027096560407e-13, No Iterations 4
+ExecutionTime = 23.9 s  ClockTime = 36 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005684681868403965, Final residual = 3.382677956837324e-13, No Iterations 4
+ExecutionTime = 23.96 s  ClockTime = 36 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-998668.741093504
+-1401517.981648127
+-1513313.598148597
+-1292212.477830569
+-766216.9613575165
+-116807.827543938
+-455626.7534246824
+-507293.687758675
+-237906.5527515542
+316034.9609938198
+906398.6787535746
+650730.1148784788
+665866.8019368111
+974609.912059579
+1534800.354900172
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (9, 10]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+856.0703671306144 861.9153768342037 881.0847857162212 913.2866754384986 958.0157473057604 912.6094145798795 918.9588532979425 938.3531571162565 970.4672801544285 1014.806881619752 987.6979057740897 994.5182108201994 1014.026811425175 1045.883783446009 1089.630034625829
+TmeasShort = 
+855.8833392194701  862.573819228286 881.8355344133206 913.6727271800728 958.0716598188294 911.8371442048201 918.5276242128273 937.7893393976617 969.6265321647428  1014.02546480427 988.1689492133099 994.8594292214832 1014.121144406367 1045.958337173385  1090.35726981273
+J = 1.05873407798694
+End
+
+debug : g.size() = 101
+debug : gTrue.size() = 101
+debug : Ttrue.size() = 101
+debug : timeSteps.size() = 101
+######### Reading the Data for Treconstructed #########
+  1% [|                                                           ]  2% [|                                                           ]  3% [||                                                          ]  4% [||                                                          ]  5% [|||                                                         ]  6% [||||                                                        ]  7% [||||                                                        ]  8% [|||||                                                       ]  9% [|||||                                                       ] 10% [||||||                                                      ] 11% [||||||                                                      ] 12% [|||||||                                                     ] 13% [||||||||                                                    ] 14% [||||||||                                                    ] 15% [|||||||||                                                   ] 16% [|||||||||                                                   ] 17% [||||||||||                                                  ] 18% [|||||||||||                                                 ] 19% [|||||||||||                                                 ] 20% [||||||||||||                                                ] 21% [||||||||||||                                                ] 22% [|||||||||||||                                               ] 23% [|||||||||||||                                               ] 24% [||||||||||||||                                              ] 25% [|||||||||||||||                                             ] 26% [|||||||||||||||                                             ] 27% [||||||||||||||||                                            ] 28% [||||||||||||||||                                            ] 29% [|||||||||||||||||                                           ] 30% [||||||||||||||||||                                          ] 31% [||||||||||||||||||                                          ] 32% [|||||||||||||||||||                                         ] 33% [|||||||||||||||||||                                         ] 33% [||||||||||||||||||||                                        ] 34% [||||||||||||||||||||                                        ] 35% [|||||||||||||||||||||                                       ] 36% [||||||||||||||||||||||                                      ] 37% [||||||||||||||||||||||                                      ] 38% [|||||||||||||||||||||||                                     ] 39% [|||||||||||||||||||||||                                     ] 40% [||||||||||||||||||||||||                                    ] 41% [|||||||||||||||||||||||||                                   ] 42% [|||||||||||||||||||||||||                                   ] 43% [||||||||||||||||||||||||||                                  ] 44% [||||||||||||||||||||||||||                                  ] 45% [|||||||||||||||||||||||||||                                 ] 46% [|||||||||||||||||||||||||||                                 ] 47% [||||||||||||||||||||||||||||                                ] 48% [|||||||||||||||||||||||||||||                               ] 49% [|||||||||||||||||||||||||||||                               ] 50% [||||||||||||||||||||||||||||||                              ] 51% [||||||||||||||||||||||||||||||                              ] 52% [|||||||||||||||||||||||||||||||                             ] 53% [||||||||||||||||||||||||||||||||                            ] 54% [||||||||||||||||||||||||||||||||                            ] 55% [|||||||||||||||||||||||||||||||||                           ] 56% [|||||||||||||||||||||||||||||||||                           ] 57% [||||||||||||||||||||||||||||||||||                          ] 58% [||||||||||||||||||||||||||||||||||                          ] 59% [|||||||||||||||||||||||||||||||||||                         ] 60% [||||||||||||||||||||||||||||||||||||                        ] 61% [||||||||||||||||||||||||||||||||||||                        ] 62% [|||||||||||||||||||||||||||||||||||||                       ] 63% [|||||||||||||||||||||||||||||||||||||                       ] 64% [||||||||||||||||||||||||||||||||||||||                      ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 67% [||||||||||||||||||||||||||||||||||||||||                    ] 68% [|||||||||||||||||||||||||||||||||||||||||                   ] 69% [|||||||||||||||||||||||||||||||||||||||||                   ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 71% [|||||||||||||||||||||||||||||||||||||||||||                 ] 72% [|||||||||||||||||||||||||||||||||||||||||||                 ] 73% [||||||||||||||||||||||||||||||||||||||||||||                ] 74% [||||||||||||||||||||||||||||||||||||||||||||                ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 76% [||||||||||||||||||||||||||||||||||||||||||||||              ] 77% [||||||||||||||||||||||||||||||||||||||||||||||              ] 78% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 79% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 81% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+debug: Trec.size() = 101
+######### Postprocessing #########
+  0% [                                                            ]  1% [|                                                           ]  2% [|                                                           ]  3% [||                                                          ]  4% [||                                                          ]  5% [|||                                                         ]  6% [||||                                                        ]  7% [||||                                                        ]  8% [|||||                                                       ]  9% [|||||                                                       ] 10% [||||||                                                      ] 11% [|||||||                                                     ] 12% [|||||||                                                     ] 13% [||||||||                                                    ] 14% [||||||||                                                    ] 15% [|||||||||                                                   ] 16% [||||||||||                                                  ] 17% [||||||||||                                                  ] 18% [|||||||||||                                                 ] 19% [|||||||||||                                                 ] 20% [||||||||||||                                                ] 21% [|||||||||||||                                               ] 22% [|||||||||||||                                               ] 23% [||||||||||||||                                              ] 24% [||||||||||||||                                              ] 25% [|||||||||||||||                                             ] 26% [||||||||||||||||                                            ] 27% [||||||||||||||||                                            ] 28% [|||||||||||||||||                                           ] 29% [|||||||||||||||||                                           ] 30% [||||||||||||||||||                                          ] 31% [|||||||||||||||||||                                         ] 32% [|||||||||||||||||||                                         ] 33% [||||||||||||||||||||                                        ] 34% [||||||||||||||||||||                                        ] 35% [|||||||||||||||||||||                                       ] 36% [|||||||||||||||||||||                                       ] 37% [||||||||||||||||||||||                                      ] 38% [|||||||||||||||||||||||                                     ] 39% [|||||||||||||||||||||||                                     ] 40% [||||||||||||||||||||||||                                    ] 41% [||||||||||||||||||||||||                                    ] 42% [|||||||||||||||||||||||||                                   ] 43% [||||||||||||||||||||||||||                                  ] 44% [||||||||||||||||||||||||||                                  ] 45% [|||||||||||||||||||||||||||                                 ] 46% [|||||||||||||||||||||||||||                                 ] 47% [||||||||||||||||||||||||||||                                ] 48% [|||||||||||||||||||||||||||||                               ] 49% [|||||||||||||||||||||||||||||                               ] 50% [||||||||||||||||||||||||||||||                              ] 51% [||||||||||||||||||||||||||||||                              ] 52% [|||||||||||||||||||||||||||||||                             ] 53% [||||||||||||||||||||||||||||||||                            ] 54% [||||||||||||||||||||||||||||||||                            ] 55% [|||||||||||||||||||||||||||||||||                           ] 56% [|||||||||||||||||||||||||||||||||                           ] 57% [||||||||||||||||||||||||||||||||||                          ] 58% [|||||||||||||||||||||||||||||||||||                         ] 59% [|||||||||||||||||||||||||||||||||||                         ] 60% [||||||||||||||||||||||||||||||||||||                        ] 61% [||||||||||||||||||||||||||||||||||||                        ] 62% [|||||||||||||||||||||||||||||||||||||                       ] 63% [||||||||||||||||||||||||||||||||||||||                      ] 64% [||||||||||||||||||||||||||||||||||||||                      ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [|||||||||||||||||||||||||||||||||||||||                     ] 67% [||||||||||||||||||||||||||||||||||||||||                    ] 68% [||||||||||||||||||||||||||||||||||||||||                    ] 69% [|||||||||||||||||||||||||||||||||||||||||                   ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 71% [||||||||||||||||||||||||||||||||||||||||||                  ] 72% [|||||||||||||||||||||||||||||||||||||||||||                 ] 73% [|||||||||||||||||||||||||||||||||||||||||||                 ] 74% [||||||||||||||||||||||||||||||||||||||||||||                ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 76% [|||||||||||||||||||||||||||||||||||||||||||||               ] 77% [||||||||||||||||||||||||||||||||||||||||||||||              ] 78% [||||||||||||||||||||||||||||||||||||||||||||||              ] 79% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 81% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 83% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 88% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+Using quasilinearity of direct problem AND reduced T0
+
+Time sample 1
+debug: T0field.size() = 0
+Using FULL T0
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01077542796640861, Final residual = 5.349493109857186e-15, No Iterations 5
+ExecutionTime = 34.59 s  ClockTime = 54 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009350990001088138, Final residual = 4.234089649838208e-15, No Iterations 5
+ExecutionTime = 34.64 s  ClockTime = 54 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008387107327485288, Final residual = 3.273876100287971e-15, No Iterations 5
+ExecutionTime = 34.68 s  ClockTime = 54 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007695067611117239, Final residual = 8.699589957547875e-13, No Iterations 4
+ExecutionTime = 34.72 s  ClockTime = 54 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007173099827200655, Final residual = 7.056965772738294e-13, No Iterations 4
+ExecutionTime = 34.76 s  ClockTime = 54 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006763381987012535, Final residual = 5.890016440622769e-13, No Iterations 4
+ExecutionTime = 34.82 s  ClockTime = 54 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006431419359848115, Final residual = 5.102106555616238e-13, No Iterations 4
+ExecutionTime = 34.86 s  ClockTime = 54 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006155567440511094, Final residual = 4.466841362713216e-13, No Iterations 4
+ExecutionTime = 34.9 s  ClockTime = 54 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005921682530560028, Final residual = 3.953316513218687e-13, No Iterations 4
+ExecutionTime = 34.95 s  ClockTime = 55 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005720117182105786, Final residual = 3.538204476992837e-13, No Iterations 4
+ExecutionTime = 35 s  ClockTime = 55 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Weights = 
+
+15
+(
+-1621775.988857426
+-1569968.662844747
+-1492541.397218622
+-1385647.952228413
+-1250132.009115477
+-478042.9831702659
+-335788.3362710773
+-179830.9407231471
+-18117.70494651362
+139681.3663338135
+672954.0788851109
+903703.5397368866
+1135478.658844827
+1348886.368541463
+1525935.974845254
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (0, 1]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+854.4265731996861 860.6458047180615  879.563994970041  911.156951791429 955.3592388744264   910.28158846447   916.55327653967 935.4947240360394 967.0783369213715 1011.239809963477 986.1078974663103 992.4297898077426 1011.383688027207 1042.940335661674 1087.039170558873
+TmeasShort = 
+854.4038405926192 860.7090265102879 879.6371463865395 911.1924426264618 955.3611775208692 910.2109967743042 916.5161826908848  935.444302566789 966.9995988072174 1011.168333702648 986.1544309961492 992.4596169128985 1011.387736788861 1042.943033029211 1087.111767924468
+J = 0.09960840405156547
+
+Time sample 2
+debug: T0field.size() = 11
+Reconstructing field T
+
+Exporting solution in the time domain (1, 2]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Using FULL T0
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01081180951468208, Final residual = 5.352453265704038e-15, No Iterations 5
+ExecutionTime = 36.12 s  ClockTime = 56 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009349385626414413, Final residual = 4.238137257525948e-15, No Iterations 5
+ExecutionTime = 36.16 s  ClockTime = 57 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008383699589653029, Final residual = 3.278456585244421e-15, No Iterations 5
+ExecutionTime = 36.21 s  ClockTime = 57 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007691283310740113, Final residual = 8.706069749711337e-13, No Iterations 4
+ExecutionTime = 36.26 s  ClockTime = 57 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007169522811007663, Final residual = 7.064040431302805e-13, No Iterations 4
+ExecutionTime = 36.31 s  ClockTime = 57 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006760063145200303, Final residual = 5.894683189637065e-13, No Iterations 4
+ExecutionTime = 36.35 s  ClockTime = 57 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006428313084143954, Final residual = 5.107938914451688e-13, No Iterations 4
+ExecutionTime = 36.39 s  ClockTime = 57 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006152639690600216, Final residual = 4.471815282309701e-13, No Iterations 4
+ExecutionTime = 36.45 s  ClockTime = 57 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005918906612380146, Final residual = 3.957653146776277e-13, No Iterations 4
+ExecutionTime = 36.49 s  ClockTime = 57 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.00571747275701372, Final residual = 3.54197088941249e-13, No Iterations 4
+ExecutionTime = 36.53 s  ClockTime = 57 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Computing T0 modes
+Performing POD for T0 using the L2 norm
+####### Performing the POD using EigenDecomposition T0 #######
+Using Spectra EigenSolver 
+####### End of the POD for T #######
+####### Saving the POD bases for T #######
+######### Exporting the Data for T #########
+  5% [|||                                                         ] 10% [||||||                                                      ] 15% [|||||||||                                                   ] 20% [||||||||||||                                                ] 25% [|||||||||||||||                                             ] 30% [||||||||||||||||||                                          ] 35% [|||||||||||||||||||||                                       ] 40% [||||||||||||||||||||||||                                    ] 45% [|||||||||||||||||||||||||||                                 ] 50% [||||||||||||||||||||||||||||||                              ] 55% [|||||||||||||||||||||||||||||||||                           ] 60% [||||||||||||||||||||||||||||||||||||                        ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+T0 modes COMPUTED
+
+
+*****************************************************
+Computing projection matrices
+Projection matrices COMPUTED
+
+Computing direct problem projection matrices
+Computing the offline part for the projection error
+debug : getting in
+cells = 
+ 4889
+ 4894
+ 4899
+ 4904
+ 4909
+12889
+12894
+12899
+12904
+12909
+20889
+20894
+20899
+20904
+20909
+Weights = 
+
+15
+(
+-1730525.328224371
+-1661716.230313549
+-1574119.362285039
+-1464857.900068596
+-1333979.397731473
+-515641.1239532958
+-350576.729555258
+-179546.7539046062
+-12237.65209642293
+141979.4704401456
+702743.8218781046
+961348.3555592925
+1212657.401162289
+1434896.355977446
+1609831.696012874
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (1, 2]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+  855.79044005938 861.8947737510541 880.8359874214111 912.5505775516701 956.9021140876885 911.8482832914225 918.0771659822409 937.0736124159438 968.7660387772994 1013.020701127243 987.6899491606924 994.0379106704787 1013.063863144728 1044.692287447571 1088.798318242759
+TmeasShort = 
+855.7367977843426 862.0454131288856 881.0101717179186 912.6353159565878  956.907108135631 911.6796921896214 917.9883075331089 936.9530661218159  968.578210360967 1012.850002541007  987.800684870967 994.1093002146265 1013.074058803391 1044.699203042466 1088.970995222326
+J = 0.2375453206353408
+
+Time sample 3
+debug: T0field.size() = 22
+Reconstructing field T
+
+Exporting solution in the time domain (2, 3]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 26.58745658323912
+Projection Reduced = 0.07031730244283685
+Error Norm = 0.266108342522822
+Projection error = 0.0007037913064439361
+Previous step was full
+Projection error Points = 0.02606288905930348
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 39.09 s  ClockTime = 61 s
+
+Time = 0.2
+
+ExecutionTime = 39.13 s  ClockTime = 61 s
+
+Time = 0.3
+
+ExecutionTime = 39.18 s  ClockTime = 61 s
+
+Time = 0.4
+
+ExecutionTime = 39.22 s  ClockTime = 62 s
+
+Time = 0.5
+
+ExecutionTime = 39.26 s  ClockTime = 62 s
+
+Time = 0.6
+
+ExecutionTime = 39.31 s  ClockTime = 62 s
+
+Time = 0.7
+
+ExecutionTime = 39.35 s  ClockTime = 62 s
+
+Time = 0.8
+
+ExecutionTime = 39.39 s  ClockTime = 62 s
+
+Time = 0.9
+
+ExecutionTime = 39.44 s  ClockTime = 62 s
+
+Time = 1
+
+ExecutionTime = 39.48 s  ClockTime = 62 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-1841360.516671676
+-1953283.415182764
+-1916575.55940603
+-1710908.413564899
+-1350065.403435924
+-481217.3244229982
+-487432.4476504308
+-356823.7901954385
+-82697.79508200022
+309831.4775111462
+947036.7106434882
+1052778.315231469
+1277462.617931349
+1613142.867911017
+2025088.227107619
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (2, 3]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+ 858.310428008816 864.4253509784403 883.4897312083585 915.4142672544228 960.0148244392169 914.6898929307597 920.9744314426914 940.1142848408986 972.0091386967688 1016.478378768102  990.780565898081 997.2268207094314   1016.4064523629 1048.213796298009 1092.480462249748
+TmeasShort = 
+858.2433836898319 864.6407983588572 883.7377146174836 915.5383748709107 960.0290414098072 914.4407686132176 920.8381832812199 939.9350995395398 971.7357597934267 1016.226426333291 990.9370836604899 997.3344983286661 1016.431414587043 1048.232074840856 1092.722741380536
+J = 0.3444966242543477
+
+Time sample 4
+debug: T0field.size() = 22
+Reconstructing field T
+
+Exporting solution in the time domain (3, 4]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 30.30602878228947
+Projection Reduced = 0.07998317027306376
+Error Norm = 0.6382349549213565
+Projection error = 0.001684419144468311
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.02754821154410821
+
+debug: Coming back of one step
+
+Using FULL T0
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01095952994120256, Final residual = 5.365262888350924e-15, No Iterations 5
+ExecutionTime = 40.56 s  ClockTime = 64 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009366360747560811, Final residual = 4.257868058680555e-15, No Iterations 5
+ExecutionTime = 40.6 s  ClockTime = 64 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008383470727446451, Final residual = 3.30066617865673e-15, No Iterations 5
+ExecutionTime = 40.66 s  ClockTime = 64 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007682480855903809, Final residual = 8.737898003054144e-13, No Iterations 4
+ExecutionTime = 40.7 s  ClockTime = 64 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007155405056110845, Final residual = 7.097825081091393e-13, No Iterations 4
+ExecutionTime = 40.75 s  ClockTime = 64 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006742926172594694, Final residual = 5.92097970181223e-13, No Iterations 4
+ExecutionTime = 40.79 s  ClockTime = 64 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.006410526435260324, Final residual = 5.139985778475303e-13, No Iterations 4
+ExecutionTime = 40.83 s  ClockTime = 64 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006135794464859421, Final residual = 4.499690353356077e-13, No Iterations 4
+ExecutionTime = 40.89 s  ClockTime = 64 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005902925049644563, Final residual = 3.98226331646754e-13, No Iterations 4
+ExecutionTime = 40.93 s  ClockTime = 64 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005702243516784666, Final residual = 3.563816303024689e-13, No Iterations 4
+ExecutionTime = 40.97 s  ClockTime = 64 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Computing T0 modes
+Performing POD for T0 using the L2 norm
+####### Performing the POD using EigenDecomposition T0 #######
+Using Spectra EigenSolver 
+####### End of the POD for T #######
+####### Saving the POD bases for T #######
+######### Exporting the Data for T #########
+  5% [|||                                                         ] 10% [||||||                                                      ] 15% [|||||||||                                                   ] 20% [||||||||||||                                                ] 25% [|||||||||||||||                                             ] 30% [||||||||||||||||||                                          ] 35% [|||||||||||||||||||||                                       ] 40% [||||||||||||||||||||||||                                    ] 45% [|||||||||||||||||||||||||||                                 ] 50% [||||||||||||||||||||||||||||||                              ] 55% [|||||||||||||||||||||||||||||||||                           ] 60% [||||||||||||||||||||||||||||||||||||                        ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+T0 modes COMPUTED
+
+
+*****************************************************
+Computing projection matrices
+Projection matrices COMPUTED
+
+Computing direct problem projection matrices
+Computing the offline part for the projection error
+debug : getting in
+cells = 
+ 4889
+ 4894
+ 4899
+ 4904
+ 4909
+12889
+12894
+12899
+12904
+12909
+20889
+20894
+20899
+20904
+20909
+Weights = 
+
+15
+(
+-2000905.653399972
+-1722798.021881733
+-1548646.879127033
+-1493151.109720589
+-1543820.231905502
+-677339.8663001125
+-291736.3538908224
+-26481.59838652296
+89507.93768538578
+59339.00131442996
+587785.8441448821
+1068466.281034767
+1417366.400540119
+1593441.971574213
+1589795.829558888
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (2, 3]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+858.3226563166893 864.3966835878184 883.4571788140864 915.3985370213329 960.0154398250861 914.7196666887492 920.9890725178758 940.1364096414561  972.043324101915 1016.508726410181 990.7597530184474 997.2140887125865 1016.406860389345 1048.213712961812 1092.447373671931
+TmeasShort = 
+858.2433836898319 864.6407983588572 883.7377146174836 915.5383748709107 960.0290414098072 914.4407686132176 920.8381832812199 939.9350995395398 971.7357597934267 1016.226426333291 990.9370836604899 997.3344983286661 1016.431414587043 1048.232074840856 1092.722741380536
+J = 0.3880704839888305
+
+Time sample 4
+debug: T0field.size() = 33
+Reconstructing field T
+
+Exporting solution in the time domain (3, 4]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 5.820418383407276
+Projection Reduced = 0.0153624091263602
+Error Norm = 0.0421103453455421
+Projection error = 0.0001111460226802168
+Previous step was full
+Projection error Points = 0.02756173355585833
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 43.51 s  ClockTime = 69 s
+
+Time = 0.2
+
+ExecutionTime = 43.55 s  ClockTime = 69 s
+
+Time = 0.3
+
+ExecutionTime = 43.6 s  ClockTime = 69 s
+
+Time = 0.4
+
+ExecutionTime = 43.65 s  ClockTime = 69 s
+
+Time = 0.5
+
+ExecutionTime = 43.68 s  ClockTime = 69 s
+
+Time = 0.6
+
+ExecutionTime = 43.73 s  ClockTime = 69 s
+
+Time = 0.7
+
+ExecutionTime = 43.78 s  ClockTime = 69 s
+
+Time = 0.8
+
+ExecutionTime = 43.82 s  ClockTime = 69 s
+
+Time = 0.9
+
+ExecutionTime = 43.86 s  ClockTime = 69 s
+
+Time = 1
+
+ExecutionTime = 43.9 s  ClockTime = 69 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-2568598.946321164
+-1710177.067083788
+-1302606.509681619
+-1410278.002280616
+-1985473.641893389
+-1074391.780112897
+-87571.51614734528
+423396.7021825614
+376650.7838712074
+-188609.8300705864
+186982.9152794911
+1262824.171136687
+1857990.531610842
+1879721.547907842
+1354989.240085896
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (3, 4]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+861.8063836228334 868.0039792938555 887.3226088528556 919.6126531129912 964.6097052919615 918.6664077486056 925.1218808499881 944.5556267556312 976.8010134269575  1021.59925418459 995.0914833483085 1001.786407891916 1021.278009992219 1053.392162977562 1097.888044015748
+TmeasShort = 
+861.7138325216403 868.3455349606015 887.7109574817356 919.8143424902935  964.641952276877 918.2625353414243 924.8942377793951  944.259660300241 976.3630453092366 1021.190655096759 995.3345062897524 1001.966208727898   1021.3316312488 1053.435016257723  1098.26262604506
+J = 0.5512419293686477
+
+Time sample 5
+debug: T0field.size() = 33
+Reconstructing field T
+
+Exporting solution in the time domain (4, 5]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 6.541528719899357
+Projection Reduced = 0.01721551430642844
+Error Norm = 0.1661946149177767
+Projection error = 0.0004373787677587953
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.02901784703716603
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 44.99 s  ClockTime = 71 s
+
+Time = 0.2
+
+ExecutionTime = 45.03 s  ClockTime = 71 s
+
+Time = 0.3
+
+ExecutionTime = 45.07 s  ClockTime = 71 s
+
+Time = 0.4
+
+ExecutionTime = 45.12 s  ClockTime = 71 s
+
+Time = 0.5
+
+ExecutionTime = 45.16 s  ClockTime = 71 s
+
+Time = 0.6
+
+ExecutionTime = 45.2 s  ClockTime = 71 s
+
+Time = 0.7
+
+ExecutionTime = 45.25 s  ClockTime = 71 s
+
+Time = 0.8
+
+ExecutionTime = 45.29 s  ClockTime = 71 s
+
+Time = 0.9
+
+ExecutionTime = 45.34 s  ClockTime = 71 s
+
+Time = 1
+
+ExecutionTime = 45.38 s  ClockTime = 72 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-3394159.675477453
+-1582470.98907701
+-795149.2333187029
+-1178769.872971698
+-2627507.111865132
+-1696601.627512383
+271784.3985668825
+1177426.261163259
+851716.077369432
+-606012.4937707846
+-519808.5319987059
+1521589.928721121
+2507178.304888455
+2260256.22830811
+864831.4146024706
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (4, 5]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+865.6276448129545 872.1281339457256 891.8307172573138 924.5484772596276 969.9835311706677  922.998788309432 929.7952433320305 949.6307615738442 982.2985941988119 1027.507369800657  999.950160669591 1007.013828087846 1026.912278594111 1059.430860278672 1104.298374906321
+TmeasShort = 
+865.5413155224231 872.5520163343822 892.3062134146782 924.8081491686092 970.0440858867164 922.4763522957396 929.4870531067404 949.2412501867652 981.7431859411137 1026.979122660131 1000.243861336104  1007.25456214728  1027.00875922736 1059.510694981638 1104.746631700468
+J = 0.6986262070002234
+
+Time sample 6
+debug: T0field.size() = 33
+Reconstructing field T
+
+Exporting solution in the time domain (5, 6]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 8.070233658134036
+Projection Reduced = 0.02116813205064085
+Error Norm = 0.3761599465710417
+Projection error = 0.000986663305981514
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.02979179067431713
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 46.46 s  ClockTime = 73 s
+
+Time = 0.2
+
+ExecutionTime = 46.5 s  ClockTime = 73 s
+
+Time = 0.3
+
+ExecutionTime = 46.55 s  ClockTime = 73 s
+
+Time = 0.4
+
+ExecutionTime = 46.59 s  ClockTime = 74 s
+
+Time = 0.5
+
+ExecutionTime = 46.64 s  ClockTime = 74 s
+
+Time = 0.6
+
+ExecutionTime = 46.68 s  ClockTime = 74 s
+
+Time = 0.7
+
+ExecutionTime = 46.72 s  ClockTime = 74 s
+
+Time = 0.8
+
+ExecutionTime = 46.77 s  ClockTime = 74 s
+
+Time = 0.9
+
+ExecutionTime = 46.81 s  ClockTime = 74 s
+
+Time = 1
+
+ExecutionTime = 46.85 s  ClockTime = 74 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-4183184.276625636
+-1338668.711531849
+-143254.4298414151
+-833098.939883548
+-3239230.34935134
+-2341354.769039378
+684563.1499300497
+2009272.198762383
+1370413.695060483
+-1066743.6053777
+-1333548.373243012
+1742069.938382203
+3137036.617908099
+2584714.19392525
+232235.2064203592
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (5, 6]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+868.5836146064454 875.4954431527947 895.5970304592324 928.6868882943239 974.4782192395762 926.3481625504855 933.5490926119103 953.7816022213995 986.8244340997608 1032.397225792947 1003.824149288359 1011.276183382712 1031.565637738429 1064.464444554841 1109.711373620185
+TmeasShort = 
+868.5253861454335 875.9513447721766 896.1006469961496 928.9775352226941 974.5682717422948 925.7604859068982 933.1864445327149 953.3357467564322  986.212634983375 1031.803371503857 1004.130480616444 1011.556439242435 1031.705741466206  1064.58262969308 1110.173366213374
+J = 0.7712803238218571
+
+Time sample 7
+debug: T0field.size() = 33
+Reconstructing field T
+
+Exporting solution in the time domain (6, 7]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 9.656003519343869
+Projection Reduced = 0.02525932932146792
+Error Norm = 0.6125140307713828
+Projection error = 0.001602287487393688
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.02898241937851753
+
+debug: Coming back of one step
+
+Using FULL T0
+
+Solving FULL T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+DICPCG:  Solving for T, Initial residual = 0.01127033146572278, Final residual = 5.300424653843925e-15, No Iterations 5
+ExecutionTime = 47.94 s  ClockTime = 76 s
+
+Time = 0.2
+
+DICPCG:  Solving for T, Initial residual = 0.009512752382575797, Final residual = 4.245602256308273e-15, No Iterations 5
+ExecutionTime = 47.98 s  ClockTime = 76 s
+
+Time = 0.3
+
+DICPCG:  Solving for T, Initial residual = 0.008474385601738904, Final residual = 3.317459355853562e-15, No Iterations 5
+ExecutionTime = 48.03 s  ClockTime = 76 s
+
+Time = 0.4
+
+DICPCG:  Solving for T, Initial residual = 0.007735098523820922, Final residual = 8.7148848907472e-13, No Iterations 4
+ExecutionTime = 48.07 s  ClockTime = 76 s
+
+Time = 0.5
+
+DICPCG:  Solving for T, Initial residual = 0.007182538455171612, Final residual = 7.129525087187555e-13, No Iterations 4
+ExecutionTime = 48.12 s  ClockTime = 76 s
+
+Time = 0.6
+
+DICPCG:  Solving for T, Initial residual = 0.006739329193140281, Final residual = 5.991061211938081e-13, No Iterations 4
+ExecutionTime = 48.17 s  ClockTime = 76 s
+
+Time = 0.7
+
+DICPCG:  Solving for T, Initial residual = 0.00638564636432904, Final residual = 5.201644358654395e-13, No Iterations 4
+ExecutionTime = 48.22 s  ClockTime = 76 s
+
+Time = 0.8
+
+DICPCG:  Solving for T, Initial residual = 0.006086180871212122, Final residual = 4.561901443018407e-13, No Iterations 4
+ExecutionTime = 48.27 s  ClockTime = 76 s
+
+Time = 0.9
+
+DICPCG:  Solving for T, Initial residual = 0.005833684694398983, Final residual = 4.043990336088982e-13, No Iterations 4
+ExecutionTime = 48.32 s  ClockTime = 76 s
+
+Time = 1
+
+DICPCG:  Solving for T, Initial residual = 0.005615675455129846, Final residual = 3.622494938681867e-13, No Iterations 4
+ExecutionTime = 48.36 s  ClockTime = 76 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+Computing T0 modes
+Performing POD for T0 using the L2 norm
+####### Performing the POD using EigenDecomposition T0 #######
+Using Spectra EigenSolver 
+####### End of the POD for T #######
+####### Saving the POD bases for T #######
+######### Exporting the Data for T #########
+  5% [|||                                                         ] 10% [||||||                                                      ] 15% [|||||||||                                                   ] 20% [||||||||||||                                                ] 25% [|||||||||||||||                                             ] 30% [||||||||||||||||||                                          ] 35% [|||||||||||||||||||||                                       ] 40% [||||||||||||||||||||||||                                    ] 45% [|||||||||||||||||||||||||||                                 ] 50% [||||||||||||||||||||||||||||||                              ] 55% [|||||||||||||||||||||||||||||||||                           ] 60% [||||||||||||||||||||||||||||||||||||                        ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+T0 modes COMPUTED
+
+
+*****************************************************
+Computing projection matrices
+Projection matrices COMPUTED
+
+Computing direct problem projection matrices
+Computing the offline part for the projection error
+debug : getting in
+cells = 
+ 4889
+ 4894
+ 4899
+ 4904
+ 4909
+12889
+12894
+12899
+12904
+12909
+20889
+20894
+20899
+20904
+20909
+Weights = 
+
+15
+(
+-2418230.458891114
+-1728332.006014678
+-1388077.382793358
+-1447351.759867399
+-1868693.990766239
+-963130.0123088079
+-150078.4845547122
+290724.8042925228
+292760.8726710101
+-115361.6586030308
+309964.6407914818
+1214622.447840937
+1740169.183273349
+1808723.007150558
+1437234.5855048
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (5, 6]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+868.6148972675105 875.4038243431354 895.4914510880824  928.634891551088 974.4742243320775 926.4516546068137 933.6043233050423 953.8560062809589 986.9391893712203 1032.502006944098 1003.757213293328 1011.231916381082  1031.55804167028 1064.458946670928 1109.607184640158
+TmeasShort = 
+868.5253861454335 875.9513447721766 896.1006469961496 928.9775352226941 974.5682717422948 925.7604859068982 933.1864445327149 953.3357467564322  986.212634983375 1031.803371503857 1004.130480616444 1011.556439242435 1031.705741466206  1064.58262969308 1110.173366213374
+J = 0.9146662727554199
+
+Time sample 7
+debug: T0field.size() = 44
+Reconstructing field T
+
+Exporting solution in the time domain (6, 7]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 4.772931364720215
+Projection Reduced = 0.01248738828293112
+Error Norm = 0.002649583594387181
+Projection error = 6.9320877680663e-06
+Previous step was full
+Projection error Points = 0.02849795702714089
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 50.91 s  ClockTime = 81 s
+
+Time = 0.2
+
+ExecutionTime = 50.95 s  ClockTime = 81 s
+
+Time = 0.3
+
+ExecutionTime = 51 s  ClockTime = 81 s
+
+Time = 0.4
+
+ExecutionTime = 51.05 s  ClockTime = 81 s
+
+Time = 0.5
+
+ExecutionTime = 51.09 s  ClockTime = 81 s
+
+Time = 0.6
+
+ExecutionTime = 51.13 s  ClockTime = 81 s
+
+Time = 0.7
+
+ExecutionTime = 51.18 s  ClockTime = 81 s
+
+Time = 0.8
+
+ExecutionTime = 51.22 s  ClockTime = 81 s
+
+Time = 0.9
+
+ExecutionTime = 51.27 s  ClockTime = 81 s
+
+Time = 1
+
+ExecutionTime = 51.31 s  ClockTime = 81 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-2298630.531431037
+-1494734.868332798
+-1116503.957501627
+-1224784.143036118
+-1774686.347907642
+-976336.4987749506
+-58215.970416836
+411599.9989469317
+356683.8672390581
+-185453.4179963056
+126575.1824520016
+1122030.121916923
+1665563.256515258
+1671322.415623351
+1165919.07897414
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (6, 7]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+869.0541111348524 875.9858380283729 896.2580801282554 929.5885068421145 975.5694608838937 927.0434546369301 934.3901282429796 954.8497876624282 988.1119138296788  1033.77805250802 1004.350728861901 1012.062346231442 1032.605814095229 1065.660421852608 1110.855433767312
+TmeasShort = 
+ 868.958557349191 876.6209633203439 896.9629265825213 929.9886895411084 975.6845144865363 926.2355019566348 933.8979079268913 954.2398711888287 987.2656341477958 1032.961459094077 1004.781472047204 1012.443878017633 1032.785841279623 1065.811604238523 1111.507429184616
+J = 1.06586319629625
+
+Time sample 8
+debug: T0field.size() = 44
+Reconstructing field T
+
+Exporting solution in the time domain (7, 8]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 4.348453183673519
+Projection Reduced = 0.01137240574772156
+Error Norm = 0.003791226713484674
+Projection error = 9.915104669685165e-06
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.02518172552170723
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 52.4 s  ClockTime = 83 s
+
+Time = 0.2
+
+ExecutionTime = 52.45 s  ClockTime = 83 s
+
+Time = 0.3
+
+ExecutionTime = 52.49 s  ClockTime = 83 s
+
+Time = 0.4
+
+ExecutionTime = 52.53 s  ClockTime = 83 s
+
+Time = 0.5
+
+ExecutionTime = 52.58 s  ClockTime = 83 s
+
+Time = 0.6
+
+ExecutionTime = 52.62 s  ClockTime = 83 s
+
+Time = 0.7
+
+ExecutionTime = 52.66 s  ClockTime = 83 s
+
+Time = 0.8
+
+ExecutionTime = 52.71 s  ClockTime = 84 s
+
+Time = 0.9
+
+ExecutionTime = 52.75 s  ClockTime = 84 s
+
+Time = 1
+
+ExecutionTime = 52.79 s  ClockTime = 84 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-1139245.687523363
+-1387872.478399401
+-1436243.112049006
+-1255702.367240297
+-865176.4328760554
+-220687.1108676962
+-400334.6296079211
+-385782.5808675766
+-157105.3052895647
+258542.9941496544
+793665.0981320902
+695024.0525817114
+776060.4847637697
+1045990.973839981
+1471468.060430575
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (7, 8]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+865.7588881214954 872.5153415019521 892.5896131184948 925.6918198328178 971.3897236451437 923.4089170154894 930.6035234357303 950.8752417133312 983.9046112736559 1029.269055504752 1000.179068492193 1007.763476975294 1028.125692398409 1060.935081820121 1105.798612556385
+TmeasShort = 
+865.6470707792422 873.1685653257738 893.3177727184168 926.0989353625971 971.4983155486941 922.5878883081738  930.109382853839 950.2585902462561 983.0397528907986  1028.43913307772 1000.625969862854  1008.14746440869 1028.296671801159 1061.077834445635 1106.477214632371
+J = 1.088520752332789
+
+Time sample 9
+debug: T0field.size() = 44
+Reconstructing field T
+
+Exporting solution in the time domain (8, 9]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 3.414253235788278
+Projection Reduced = 0.008953610283072146
+Error Norm = 0.01191398394763868
+Projection error = 3.124348483228591e-05
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.02015197179880792
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 53.92 s  ClockTime = 85 s
+
+Time = 0.2
+
+ExecutionTime = 53.96 s  ClockTime = 86 s
+
+Time = 0.3
+
+ExecutionTime = 54.01 s  ClockTime = 86 s
+
+Time = 0.4
+
+ExecutionTime = 54.05 s  ClockTime = 86 s
+
+Time = 0.5
+
+ExecutionTime = 54.09 s  ClockTime = 86 s
+
+Time = 0.6
+
+ExecutionTime = 54.14 s  ClockTime = 86 s
+
+Time = 0.7
+
+ExecutionTime = 54.18 s  ClockTime = 86 s
+
+Time = 0.8
+
+ExecutionTime = 54.23 s  ClockTime = 86 s
+
+Time = 0.9
+
+ExecutionTime = 54.27 s  ClockTime = 86 s
+
+Time = 1
+
+ExecutionTime = 54.31 s  ClockTime = 86 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-455876.7998726598
+-1355388.200297803
+-1664318.725541678
+-1298404.987958873
+-316484.4144281974
+235657.1143171154
+-620999.8954216337
+-883047.4334082466
+-470958.0666872527
+547466.3102961889
+1219471.334172445
+448043.0299141044
+249652.5130725042
+692065.9304049388
+1704030.686300568
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (8, 9]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+859.9673682607111 866.2826604235346 885.8506028750213 918.4032390325816 963.5064176797327 916.9238471780038 923.6733621805485 943.4359465383486 975.9147498563448 1020.685074818863 992.7973086349905  999.943251433883 1019.800083549027 1052.058947643286 1096.325050955678
+TmeasShort = 
+859.8314532003191 866.8899645029881 886.5351266284988 918.7711819823141 963.5843928547665 916.1840598328135 923.2425711346452 942.8877332599432 975.1237886141038 1019.936999487353 993.2219000958614 1000.280411397862  1019.92557352321 1052.161628877306 1096.974839750372
+J = 0.9947911696954784
+
+Time sample 10
+debug: T0field.size() = 44
+Reconstructing field T
+
+Exporting solution in the time domain (9, 10]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Error Norm Reduced = 3.385760779075698
+Projection Reduced = 0.008918398140686488
+Error Norm = 0.03064521276956342
+Projection error = 8.072224425129882e-05
+Previous step was reduced
+pointsProjectionMatrix = 15, 20
+T0red.size() = 20
+Projection error Points = 0.01721037213333899
+Using REDUCED T0
+
+Solving REDUCED T0 problem
+Setting endTime to offlineEndTime
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+Ready for new offline computation
+Time = 0.1
+
+ExecutionTime = 55.39 s  ClockTime = 88 s
+
+Time = 0.2
+
+ExecutionTime = 55.44 s  ClockTime = 88 s
+
+Time = 0.3
+
+ExecutionTime = 55.48 s  ClockTime = 88 s
+
+Time = 0.4
+
+ExecutionTime = 55.52 s  ClockTime = 88 s
+
+Time = 0.5
+
+ExecutionTime = 55.56 s  ClockTime = 88 s
+
+Time = 0.6
+
+ExecutionTime = 55.61 s  ClockTime = 88 s
+
+Time = 0.7
+
+ExecutionTime = 55.66 s  ClockTime = 88 s
+
+Time = 0.8
+
+ExecutionTime = 55.7 s  ClockTime = 88 s
+
+Time = 0.9
+
+ExecutionTime = 55.74 s  ClockTime = 88 s
+
+Time = 1
+
+ExecutionTime = 55.78 s  ClockTime = 88 s
+
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+SolveT0 ENDED
+
+T0 computed
+Weights = 
+
+15
+(
+-829919.6222675077
+-1577982.461908995
+-1814350.84739571
+-1466396.650996887
+-584959.7645814802
+65844.37974268485
+-621240.8935753632
+-796335.0477080831
+-394044.4773594897
+524737.0562931474
+1213535.59506173
+622980.6154939117
+522623.9874690798
+964738.995595709
+1883243.350743946
+)
+
+Reconstructing field T
+
+Exporting solution in the time domain (9, 10]
+
+
+SIMPLE: convergence criteria
+    field T	 tolerance 1e-12
+
+Ready for new computation
+
+Field size = 10.
+Sampling ONLY the last timestep
+
+
+
+Sampling done 
+
+Tcomp = 
+856.0355498775807 862.0131367630562 881.1971414723417 913.3418910863541 958.0188774374271 912.5005431052371 918.9014516285679 938.2744037757146   970.34589127452 1014.696512350468 987.7692600200925 994.5647778512716 1014.033257394152 1045.888730226573 1089.741469861222
+TmeasShort = 
+855.8833392194701  862.573819228286 881.8355344133206 913.6727271800728 958.0716598188294 911.8371442048201 918.5276242128273 937.7893393976617 969.6265321647428  1014.02546480427 988.1689492133099 994.8594292214832 1014.121144406367 1045.958337173385  1090.35726981273
+J = 0.905342683903725
+End
+
+debug : g.size() = 101
+debug : gTrue.size() = 101
+debug : Ttrue.size() = 101
+debug : timeSteps.size() = 101
+######### Reading the Data for Treconstructed #########
+  1% [|                                                           ]  2% [|                                                           ]  3% [||                                                          ]  4% [||                                                          ]  5% [|||                                                         ]  6% [||||                                                        ]  7% [||||                                                        ]  8% [|||||                                                       ]  9% [|||||                                                       ] 10% [||||||                                                      ] 11% [||||||                                                      ] 12% [|||||||                                                     ] 13% [||||||||                                                    ] 14% [||||||||                                                    ] 15% [|||||||||                                                   ] 16% [|||||||||                                                   ] 17% [||||||||||                                                  ] 18% [|||||||||||                                                 ] 19% [|||||||||||                                                 ] 20% [||||||||||||                                                ] 21% [||||||||||||                                                ] 22% [|||||||||||||                                               ] 23% [|||||||||||||                                               ] 24% [||||||||||||||                                              ] 25% [|||||||||||||||                                             ] 26% [|||||||||||||||                                             ] 27% [||||||||||||||||                                            ] 28% [||||||||||||||||                                            ] 29% [|||||||||||||||||                                           ] 30% [||||||||||||||||||                                          ] 31% [||||||||||||||||||                                          ] 32% [|||||||||||||||||||                                         ] 33% [|||||||||||||||||||                                         ] 33% [||||||||||||||||||||                                        ] 34% [||||||||||||||||||||                                        ] 35% [|||||||||||||||||||||                                       ] 36% [||||||||||||||||||||||                                      ] 37% [||||||||||||||||||||||                                      ] 38% [|||||||||||||||||||||||                                     ] 39% [|||||||||||||||||||||||                                     ] 40% [||||||||||||||||||||||||                                    ] 41% [|||||||||||||||||||||||||                                   ] 42% [|||||||||||||||||||||||||                                   ] 43% [||||||||||||||||||||||||||                                  ] 44% [||||||||||||||||||||||||||                                  ] 45% [|||||||||||||||||||||||||||                                 ] 46% [|||||||||||||||||||||||||||                                 ] 47% [||||||||||||||||||||||||||||                                ] 48% [|||||||||||||||||||||||||||||                               ] 49% [|||||||||||||||||||||||||||||                               ] 50% [||||||||||||||||||||||||||||||                              ] 51% [||||||||||||||||||||||||||||||                              ] 52% [|||||||||||||||||||||||||||||||                             ] 53% [||||||||||||||||||||||||||||||||                            ] 54% [||||||||||||||||||||||||||||||||                            ] 55% [|||||||||||||||||||||||||||||||||                           ] 56% [|||||||||||||||||||||||||||||||||                           ] 57% [||||||||||||||||||||||||||||||||||                          ] 58% [||||||||||||||||||||||||||||||||||                          ] 59% [|||||||||||||||||||||||||||||||||||                         ] 60% [||||||||||||||||||||||||||||||||||||                        ] 61% [||||||||||||||||||||||||||||||||||||                        ] 62% [|||||||||||||||||||||||||||||||||||||                       ] 63% [|||||||||||||||||||||||||||||||||||||                       ] 64% [||||||||||||||||||||||||||||||||||||||                      ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 67% [||||||||||||||||||||||||||||||||||||||||                    ] 68% [|||||||||||||||||||||||||||||||||||||||||                   ] 69% [|||||||||||||||||||||||||||||||||||||||||                   ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 71% [|||||||||||||||||||||||||||||||||||||||||||                 ] 72% [|||||||||||||||||||||||||||||||||||||||||||                 ] 73% [||||||||||||||||||||||||||||||||||||||||||||                ] 74% [||||||||||||||||||||||||||||||||||||||||||||                ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 76% [||||||||||||||||||||||||||||||||||||||||||||||              ] 77% [||||||||||||||||||||||||||||||||||||||||||||||              ] 78% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 79% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 81% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+debug: Trec.size() = 101
+######### Postprocessing #########
+  0% [                                                            ]  1% [|                                                           ]  2% [|                                                           ]  3% [||                                                          ]  4% [||                                                          ]  5% [|||                                                         ]  6% [||||                                                        ]  7% [||||                                                        ]  8% [|||||                                                       ]  9% [|||||                                                       ] 10% [||||||                                                      ] 11% [|||||||                                                     ] 12% [|||||||                                                     ] 13% [||||||||                                                    ] 14% [||||||||                                                    ] 15% [|||||||||                                                   ] 16% [||||||||||                                                  ] 17% [||||||||||                                                  ] 18% [|||||||||||                                                 ] 19% [|||||||||||                                                 ] 20% [||||||||||||                                                ] 21% [|||||||||||||                                               ] 22% [|||||||||||||                                               ] 23% [||||||||||||||                                              ] 24% [||||||||||||||                                              ] 25% [|||||||||||||||                                             ] 26% [||||||||||||||||                                            ] 27% [||||||||||||||||                                            ] 28% [|||||||||||||||||                                           ] 29% [|||||||||||||||||                                           ] 30% [||||||||||||||||||                                          ] 31% [|||||||||||||||||||                                         ] 32% [|||||||||||||||||||                                         ] 33% [||||||||||||||||||||                                        ] 34% [||||||||||||||||||||                                        ] 35% [|||||||||||||||||||||                                       ] 36% [|||||||||||||||||||||                                       ] 37% [||||||||||||||||||||||                                      ] 38% [|||||||||||||||||||||||                                     ] 39% [|||||||||||||||||||||||                                     ] 40% [||||||||||||||||||||||||                                    ] 41% [||||||||||||||||||||||||                                    ] 42% [|||||||||||||||||||||||||                                   ] 43% [||||||||||||||||||||||||||                                  ] 44% [||||||||||||||||||||||||||                                  ] 45% [|||||||||||||||||||||||||||                                 ] 46% [|||||||||||||||||||||||||||                                 ] 47% [||||||||||||||||||||||||||||                                ] 48% [|||||||||||||||||||||||||||||                               ] 49% [|||||||||||||||||||||||||||||                               ] 50% [||||||||||||||||||||||||||||||                              ] 51% [||||||||||||||||||||||||||||||                              ] 52% [|||||||||||||||||||||||||||||||                             ] 53% [||||||||||||||||||||||||||||||||                            ] 54% [||||||||||||||||||||||||||||||||                            ] 55% [|||||||||||||||||||||||||||||||||                           ] 56% [|||||||||||||||||||||||||||||||||                           ] 57% [||||||||||||||||||||||||||||||||||                          ] 58% [|||||||||||||||||||||||||||||||||||                         ] 59% [|||||||||||||||||||||||||||||||||||                         ] 60% [||||||||||||||||||||||||||||||||||||                        ] 61% [||||||||||||||||||||||||||||||||||||                        ] 62% [|||||||||||||||||||||||||||||||||||||                       ] 63% [||||||||||||||||||||||||||||||||||||||                      ] 64% [||||||||||||||||||||||||||||||||||||||                      ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [|||||||||||||||||||||||||||||||||||||||                     ] 67% [||||||||||||||||||||||||||||||||||||||||                    ] 68% [||||||||||||||||||||||||||||||||||||||||                    ] 69% [|||||||||||||||||||||||||||||||||||||||||                   ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 71% [||||||||||||||||||||||||||||||||||||||||||                  ] 72% [|||||||||||||||||||||||||||||||||||||||||||                 ] 73% [|||||||||||||||||||||||||||||||||||||||||||                 ] 74% [||||||||||||||||||||||||||||||||||||||||||||                ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 76% [|||||||||||||||||||||||||||||||||||||||||||||               ] 77% [||||||||||||||||||||||||||||||||||||||||||||||              ] 78% [||||||||||||||||||||||||||||||||||||||||||||||              ] 79% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 81% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 83% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 88% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]######### Reading the Data for gReconstructed #########
+  1% [|                                                           ]  2% [|                                                           ]  3% [||                                                          ]  4% [||                                                          ]  5% [|||                                                         ]  6% [||||                                                        ]  7% [||||                                                        ]  8% [|||||                                                       ]  9% [|||||                                                       ] 10% [||||||                                                      ] 11% [||||||                                                      ] 12% [|||||||                                                     ] 13% [||||||||                                                    ] 14% [||||||||                                                    ] 15% [|||||||||                                                   ] 16% [|||||||||                                                   ] 17% [||||||||||                                                  ] 18% [|||||||||||                                                 ] 19% [|||||||||||                                                 ] 20% [||||||||||||                                                ] 21% [||||||||||||                                                ] 22% [|||||||||||||                                               ] 23% [|||||||||||||                                               ] 24% [||||||||||||||                                              ] 25% [|||||||||||||||                                             ] 26% [|||||||||||||||                                             ] 27% [||||||||||||||||                                            ] 28% [||||||||||||||||                                            ] 29% [|||||||||||||||||                                           ] 30% [||||||||||||||||||                                          ] 31% [||||||||||||||||||                                          ] 32% [|||||||||||||||||||                                         ] 33% [|||||||||||||||||||                                         ] 33% [||||||||||||||||||||                                        ] 34% [||||||||||||||||||||                                        ] 35% [|||||||||||||||||||||                                       ] 36% [||||||||||||||||||||||                                      ] 37% [||||||||||||||||||||||                                      ] 38% [|||||||||||||||||||||||                                     ] 39% [|||||||||||||||||||||||                                     ] 40% [||||||||||||||||||||||||                                    ] 41% [|||||||||||||||||||||||||                                   ] 42% [|||||||||||||||||||||||||                                   ] 43% [||||||||||||||||||||||||||                                  ] 44% [||||||||||||||||||||||||||                                  ] 45% [|||||||||||||||||||||||||||                                 ] 46% [|||||||||||||||||||||||||||                                 ] 47% [||||||||||||||||||||||||||||                                ] 48% [|||||||||||||||||||||||||||||                               ] 49% [|||||||||||||||||||||||||||||                               ] 50% [||||||||||||||||||||||||||||||                              ] 51% [||||||||||||||||||||||||||||||                              ] 52% [|||||||||||||||||||||||||||||||                             ] 53% [||||||||||||||||||||||||||||||||                            ] 54% [||||||||||||||||||||||||||||||||                            ] 55% [|||||||||||||||||||||||||||||||||                           ] 56% [|||||||||||||||||||||||||||||||||                           ] 57% [||||||||||||||||||||||||||||||||||                          ] 58% [||||||||||||||||||||||||||||||||||                          ] 59% [|||||||||||||||||||||||||||||||||||                         ] 60% [||||||||||||||||||||||||||||||||||||                        ] 61% [||||||||||||||||||||||||||||||||||||                        ] 62% [|||||||||||||||||||||||||||||||||||||                       ] 63% [|||||||||||||||||||||||||||||||||||||                       ] 64% [||||||||||||||||||||||||||||||||||||||                      ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [||||||||||||||||||||||||||||||||||||||||                    ] 67% [||||||||||||||||||||||||||||||||||||||||                    ] 68% [|||||||||||||||||||||||||||||||||||||||||                   ] 69% [|||||||||||||||||||||||||||||||||||||||||                   ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 71% [|||||||||||||||||||||||||||||||||||||||||||                 ] 72% [|||||||||||||||||||||||||||||||||||||||||||                 ] 73% [||||||||||||||||||||||||||||||||||||||||||||                ] 74% [||||||||||||||||||||||||||||||||||||||||||||                ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 76% [||||||||||||||||||||||||||||||||||||||||||||||              ] 77% [||||||||||||||||||||||||||||||||||||||||||||||              ] 78% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 79% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 81% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]
+  0% [                                                            ]  1% [|                                                           ]  2% [|                                                           ]  3% [||                                                          ]  4% [||                                                          ]  5% [|||                                                         ]  6% [||||                                                        ]  7% [||||                                                        ]  8% [|||||                                                       ]  9% [|||||                                                       ] 10% [||||||                                                      ] 11% [|||||||                                                     ] 12% [|||||||                                                     ] 13% [||||||||                                                    ] 14% [||||||||                                                    ] 15% [|||||||||                                                   ] 16% [||||||||||                                                  ] 17% [||||||||||                                                  ] 18% [|||||||||||                                                 ] 19% [|||||||||||                                                 ] 20% [||||||||||||                                                ] 21% [|||||||||||||                                               ] 22% [|||||||||||||                                               ] 23% [||||||||||||||                                              ] 24% [||||||||||||||                                              ] 25% [|||||||||||||||                                             ] 26% [||||||||||||||||                                            ] 27% [||||||||||||||||                                            ] 28% [|||||||||||||||||                                           ] 29% [|||||||||||||||||                                           ] 30% [||||||||||||||||||                                          ] 31% [|||||||||||||||||||                                         ] 32% [|||||||||||||||||||                                         ] 33% [||||||||||||||||||||                                        ] 34% [||||||||||||||||||||                                        ] 35% [|||||||||||||||||||||                                       ] 36% [|||||||||||||||||||||                                       ] 37% [||||||||||||||||||||||                                      ] 38% [|||||||||||||||||||||||                                     ] 39% [|||||||||||||||||||||||                                     ] 40% [||||||||||||||||||||||||                                    ] 41% [||||||||||||||||||||||||                                    ] 42% [|||||||||||||||||||||||||                                   ] 43% [||||||||||||||||||||||||||                                  ] 44% [||||||||||||||||||||||||||                                  ] 45% [|||||||||||||||||||||||||||                                 ] 46% [|||||||||||||||||||||||||||                                 ] 47% [||||||||||||||||||||||||||||                                ] 48% [|||||||||||||||||||||||||||||                               ] 49% [|||||||||||||||||||||||||||||                               ] 50% [||||||||||||||||||||||||||||||                              ] 51% [||||||||||||||||||||||||||||||                              ] 52% [|||||||||||||||||||||||||||||||                             ] 53% [||||||||||||||||||||||||||||||||                            ] 54% [||||||||||||||||||||||||||||||||                            ] 55% [|||||||||||||||||||||||||||||||||                           ] 56% [|||||||||||||||||||||||||||||||||                           ] 57% [||||||||||||||||||||||||||||||||||                          ] 58% [|||||||||||||||||||||||||||||||||||                         ] 59% [|||||||||||||||||||||||||||||||||||                         ] 60% [||||||||||||||||||||||||||||||||||||                        ] 61% [||||||||||||||||||||||||||||||||||||                        ] 62% [|||||||||||||||||||||||||||||||||||||                       ] 63% [||||||||||||||||||||||||||||||||||||||                      ] 64% [||||||||||||||||||||||||||||||||||||||                      ] 65% [|||||||||||||||||||||||||||||||||||||||                     ] 66% [|||||||||||||||||||||||||||||||||||||||                     ] 67% [||||||||||||||||||||||||||||||||||||||||                    ] 68% [||||||||||||||||||||||||||||||||||||||||                    ] 69% [|||||||||||||||||||||||||||||||||||||||||                   ] 70% [||||||||||||||||||||||||||||||||||||||||||                  ] 71% [||||||||||||||||||||||||||||||||||||||||||                  ] 72% [|||||||||||||||||||||||||||||||||||||||||||                 ] 73% [|||||||||||||||||||||||||||||||||||||||||||                 ] 74% [||||||||||||||||||||||||||||||||||||||||||||                ] 75% [|||||||||||||||||||||||||||||||||||||||||||||               ] 76% [|||||||||||||||||||||||||||||||||||||||||||||               ] 77% [||||||||||||||||||||||||||||||||||||||||||||||              ] 78% [||||||||||||||||||||||||||||||||||||||||||||||              ] 79% [|||||||||||||||||||||||||||||||||||||||||||||||             ] 80% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 81% [||||||||||||||||||||||||||||||||||||||||||||||||            ] 82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 83% [|||||||||||||||||||||||||||||||||||||||||||||||||           ] 84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ] 85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ] 87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 88% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ] 89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ] 90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ] 92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ] 94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ] 97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ] 99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]I/O    : uncollated
