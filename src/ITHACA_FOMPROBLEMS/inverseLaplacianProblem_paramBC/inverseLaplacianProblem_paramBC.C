@@ -203,7 +203,6 @@ void inverseLaplacianProblem_paramBC::parameterizedBCoffline(bool force)
     Tad_base.resize(0);
     char recomputeOffline;
 
-    char recomputeOffline;
     if (ITHACAutilities::check_file(folderOffline + "Theta_mat.txt") && force == 0)
     {
         do

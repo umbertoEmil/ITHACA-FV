@@ -73,27 +73,6 @@ hotSide patch given pointwise temeprature measurements in the interior of the do
 The different solution methodologies are implemented as child of this class */
 using namespace SPLINTER;
 
-/// Class defining a plane for thermocouples measurements interpolation
-class thermocouplesPlane
-{
-    public:
-        double minX;
-        double minZ;
-        double Y;
-        double maxX;
-        double maxZ;
-        List<scalar> Tmeas;
-        List<scalar> Tdirect;
-        List<scalar> Tsens;
-        List<scalar> Tdiff;
-        List<scalar> cellVol;
-        List<int> cellID;
-        List<scalar> thermocoupleX;
-        List<scalar> thermocoupleZ;
-        Foam::vector thermocoupleCellDim;
-};
-
-/// Class to implement a full order inverse parameterized laplacian problem
 class inverseLaplacianProblem: public laplacianProblem
 {
 

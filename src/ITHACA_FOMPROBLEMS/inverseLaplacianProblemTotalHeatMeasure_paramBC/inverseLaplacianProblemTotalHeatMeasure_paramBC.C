@@ -83,31 +83,6 @@ void inverseLaplacianProblemTotalHeatMeasure_paramBC::parameterizedBCoffline(
         force = 1;
     }
 
-    char recomputeOffline;
-    if (ITHACAutilities::check_file(folderOffline + "Theta_mat.txt") && force == 0)
-    {
-        do
-        {
-            metaData_offline metaData;
-            std::ifstream fin(folderOffline + "metaData.txt");
-            fin >> metaData.numberTC >> metaData.numberBasis >> 
-                metaData.basisType >> metaData.shapeParameter;
-            fin.close();
-            std::cout << "\nOffline FOUND with parameter:\n" <<
-                "Number of thermocouples = " << metaData.numberTC <<
-                "\nNumber of basis functions = " << metaData.numberBasis <<
-                "\nType of basis functions = " << metaData.basisType <<
-                "\nRBF shape parameters = " << metaData.shapeParameter <<
-                "\n\nShould I recompute it? [y/n]" << std::endl;
-            std::cin >> recomputeOffline;
-        }
-        while( !cin.fail() && recomputeOffline != 'y' && recomputeOffline != 'n' );
-    }
-    if(recomputeOffline == 'y')
-    {
-        force = 1;
-    }
-
     if (ITHACAutilities::check_file(folderOffline + "Theta_mat.txt") && force == 0)
     {
         Info << "\nOffline already computed." << endl;

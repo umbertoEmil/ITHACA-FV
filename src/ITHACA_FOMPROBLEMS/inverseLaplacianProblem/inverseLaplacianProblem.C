@@ -336,20 +336,3 @@ void inverseLaplacianProblem::restart()
 
     Info << "Ready for new computation" << endl;
 }
-
-void inverseLaplacianProblem::reconstructT()
-{
-    Info << "Reconstructing field T" << endl;
-    restart();
-    update_gParametrized(gWeights);
-
-    volScalarField& T = _T();
-    ITHACAutilities::assignIF(T, homogeneousBC);
-
-    forAll(Tbasis, baseI)
-    {
-        T += gWeights[baseI] * (Tbasis[baseI] + Tad_base[0]);
-    }
-
-    T += - Tad_base[0];
-}

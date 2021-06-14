@@ -456,6 +456,7 @@ void Modes<Type, PatchField, GeoMesh>::operator=(const
     }
 }
 
+template<class Type, template<class> class PatchField, class GeoMesh>
 void Modes<Type, PatchField, GeoMesh>::projectSnapshot(
     GeometricField<Type, PatchField, GeoMesh> snapshot,
     GeometricField<Type, PatchField, GeoMesh>& projSnapshot,
