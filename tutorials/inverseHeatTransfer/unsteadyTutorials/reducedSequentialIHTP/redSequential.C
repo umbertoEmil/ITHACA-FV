@@ -89,6 +89,8 @@ int main(int argc, char* argv[])
                             "None");
     word linSysSolver = para->ITHACAdict->lookupOrDefault<word>("linSysSolver",
                         "None");
+    unsigned NmagicPoints =
+        para->ITHACAdict->lookupOrDefault<unsigned>("NmagicPoints", 0);
     label TSVDtruncation =
         para->ITHACAdict->lookupOrDefault<label>("TSVDtruncation", 0);
     scalar shapeParameter =
@@ -147,12 +149,12 @@ int main(int argc, char* argv[])
     // Reduced 
     example.T0field.resize(0);
     word outputFolderRED = "./ITHACAoutput/testInverseReduced/";
-    Eigen::VectorXi errorPoints(example.thermocouplesCellID.size());
-    forAll(example.thermocouplesCellID, tcI)
-    {
-        errorPoints(tcI) = example.thermocouplesCellID[tcI]; 
-    }
-    example.parameterizedBC(outputFolderRED, initialField, errorPoints, linSysSolver, 
+    //Eigen::VectorXi errorPoints(example.thermocouplesCellID.size());
+    //forAll(example.thermocouplesCellID, tcI)
+    //{
+    //    errorPoints(tcI) = example.thermocouplesCellID[tcI]; 
+    //}
+    example.parameterizedBC(outputFolderRED, initialField, NmagicPoints, linSysSolver, 
             TSVDtruncation);
     example.inverseProblemPostProcess(outputFolderRED);
     example.inverseProblemPostProcess(outputFolderRED, outputFolderFULL);

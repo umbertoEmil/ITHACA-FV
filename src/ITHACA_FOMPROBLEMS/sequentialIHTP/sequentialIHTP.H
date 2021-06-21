@@ -120,11 +120,19 @@ class sequentialIHTP: public laplacianProblem
         /// Projection of Tad on the reduced space
         Eigen::VectorXd Tad_projected;
 
-        /// Matrix that project some points on the the reduced basis space
-        Eigen::MatrixXd pointsProjectionMatrix;
+        /// Magic points for the T0 projection error estimation
+        List<label> magicPoints;
+
+        /// Matrix that reconstruct some points into the full order space
+        Eigen::MatrixXd pointsReconstructMatrix;
+
+        /// Matrix that reconstructs the Tbasis at the magic points  
+        Eigen::MatrixXd pointTbasis_reconstructionMat;
+
+        /// Reconstruction of Tsd at the magic points 
+        Eigen::VectorXd pointTad_reconstructed;
 
         /// L2 norm of the projection error of Tbasis on the T0 modes
-        //Eigen::VectorXd projectionErrorTbasis;
         PtrList<volScalarField> projectionErrorTbasis;
 
         /// L2 norm of the projection error of Tad on the T0 modes
@@ -384,7 +392,7 @@ class sequentialIHTP: public laplacianProblem
         /// Assemble the matrix pointsProjectionMatrix to project some points on the 
         /// reduced basis space
         ///
-        void pointProjectionOffline(Eigen::VectorXi cells); 
+        void pointProjectionOffline(); 
 
         //--------------------------------------------------------------------------
 
@@ -396,7 +404,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// Assemble all the matrices required in the online phase
         ///
-        void T0offline(Eigen::VectorXi cells);
+        void T0offline(int NmagicPoints);
 
 
         //--------------------------------------------------------------------------
@@ -481,6 +489,12 @@ class sequentialIHTP: public laplacianProblem
         ///
         void parameterizedBC_postProcess(List<Eigen::MatrixXd> linSys,
                                          Eigen::VectorXd weigths, word outputFolder, label verbose = 0);
+
+        //--------------------------------------------------------------------------
+
+        /// Find the points at with the projection error is computed
+        ///
+        void findMagicPoints(int NmagicPoints);
 
 };
 

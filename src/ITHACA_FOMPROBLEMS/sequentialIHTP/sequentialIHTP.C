@@ -654,7 +654,8 @@ void sequentialIHTP::projectT0()
 
 void sequentialIHTP::projectDirectOntoT0()
 {
-    /// Creation of the matrices to project direct solution to reduced space
+    /// Creation of the matrices to project direct solution at the last timestep
+    /// onto the T0 reduced space
     Info << "Computing direct problem projection matrices" << endl;
     int internalFieldSize = Tbasis[0][0].internalField().size();
     Eigen::MatrixXd Tbasis_Eigen(internalFieldSize, Nbasis);
@@ -675,20 +676,21 @@ void sequentialIHTP::projectDirectOntoT0()
     Tbasis_projectionMat = T0modes.project(Tbasis_lastTime); 
     Tad_projected = T0modes.project(Tad_time[NtimeStepsBetweenSamples - 1]);
 }
-void sequentialIHTP::pointProjectionOffline(Eigen::VectorXi cells)
+void sequentialIHTP::pointProjectionOffline()
 {
+    int Ncells = magicPoints.size();
+    M_Assert(Ncells > 0, "Set the number of magic points");
 
-    int Ncells = cells.size();
     int lastTimestepID = NtimeStepsBetweenSamples - 1;
-    pointsProjectionMatrix.resize(Ncells, NmodesT0);
 
-    Eigen::MatrixXd M_vol = ITHACAutilities::getMassMatrixFV(T0_time[lastTimestepID]);
-
-    Eigen::MatrixXd M = T0modes.EigenModes[0].transpose() * M_vol.asDiagonal();
+    pointsReconstructMatrix.resize(Ncells, NmodesT0);
     for(int cellI = 0; cellI < Ncells; cellI++)
     {
-        pointsProjectionMatrix.row(cellI) = T0modes.EigenModes[0].row(cells(cellI));
+        pointsReconstructMatrix.row(cellI) = 
+            T0modes.EigenModes[0].row(magicPoints[cellI]);
     }
+    pointTbasis_reconstructionMat = pointsReconstructMatrix * Tbasis_projectionMat;
+    pointTad_reconstructed = pointsReconstructMatrix * Tad_projected;
 }
 
 void sequentialIHTP::projectionErrorOffline()
@@ -737,15 +739,14 @@ void sequentialIHTP::projectionErrorOffline()
     //Info << "Projection error Tad = " << projectionErrorTad << endl;
 }
 
-void sequentialIHTP::T0offline(Eigen::VectorXi cells)
+void sequentialIHTP::T0offline(int NmagicPoints)
 {
     getT0modes();
+    findMagicPoints(NmagicPoints);
     projectT0();
     projectDirectOntoT0();
     projectionErrorOffline();
-    Info << "debug : getting in" << endl;
-    std::cout << "cells = \n" << cells << std::endl;
-    pointProjectionOffline(cells);
+    pointProjectionOffline();
 }
 
 void sequentialIHTP::solveAdditional()
@@ -1110,4 +1111,43 @@ void sequentialIHTP::parameterizedBC_postProcess(
     Info << "J = " << J << endl;
     Jlist.conservativeResize(Jlist.size() + 1);
     Jlist(Jlist.size() - 1) = J;
+}
+
+void sequentialIHTP::findMagicPoints(int NmagicPoints)
+{
+    magicPoints.clear();
+    M_Assert(NmagicPoints <= NmodesT0, 
+            "Number of magic points bigger than number of modes");
+    Eigen::MatrixXd A;
+    Eigen::VectorXd b;
+    Eigen::VectorXd c;
+    Eigen::VectorXd r;
+    Eigen::VectorXd rho(1);
+    Eigen::MatrixXd MatrixModes = T0modes.toEigen()[0];
+    label ind_max, c1;
+    double max = MatrixModes.cwiseAbs().col(0).maxCoeff(&ind_max, &c1);
+    rho(0) = max;
+    magicPoints.append(ind_max);
+    Eigen::MatrixXd U = MatrixModes.col(0);
+    Eigen::SparseMatrix<double> P;
+    P.resize(MatrixModes.rows(), 1);
+    P.insert(ind_max, 0) = 1;
+
+    for (label i = 1; i < NmagicPoints; i++)
+    {
+        A = P.transpose() * U;
+        b = P.transpose() * MatrixModes.col(i);
+        c = A.fullPivLu().solve(b);
+        r = MatrixModes.col(i) - U * c;
+        max = r.cwiseAbs().maxCoeff(&ind_max, &c1);
+        P.conservativeResize(MatrixModes.rows(), i + 1);
+        P.insert(ind_max, i) = 1;
+        U.conservativeResize(MatrixModes.rows(), i + 1);
+        U.col(i) =  MatrixModes.col(i);
+        rho.conservativeResize(i + 1);
+        rho(i) = max;
+        magicPoints.append(ind_max);
+    }
+
+    Info << "magicPoints:\n" << magicPoints << endl;
 }

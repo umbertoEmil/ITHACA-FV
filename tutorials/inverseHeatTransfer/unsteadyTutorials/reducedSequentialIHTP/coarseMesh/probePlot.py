@@ -22,6 +22,7 @@ probe1_Trec = np.loadtxt("./ITHACAoutput/testInverse/probe1_Trec_mat.txt")
 probe2_Ttrue = np.loadtxt("./ITHACAoutput/testInverse/probe2_Ttrue_mat.txt")
 probe2_Trec = np.loadtxt("./ITHACAoutput/testInverse/probe2_Trec_mat.txt")
 onlineWindowsVec = np.loadtxt("./ITHACAoutput/testInverseReduced/onlineWindowsVec_mat.txt")
+offlineWindowsVec = np.loadtxt("./ITHACAoutput/testInverseReduced/offlineWindowsVec_mat.txt")
 
 REDprobe1_gRec = np.loadtxt( "./ITHACAoutput/testInverseReduced/probe1_gRec_mat.txt")
 REDprobe1_Trec = np.loadtxt( "./ITHACAoutput/testInverseReduced/probe1_Trec_mat.txt")
@@ -46,9 +47,9 @@ plt.grid()
 plt.legend()
 
 deltaT = 1 #size of time windows
-for x in onlineWindowsVec:
+for x in offlineWindowsVec:
     plt.axvline(x = x)
-    plt.axvspan(x - deltaT, x, facecolor='#2ca02c', alpha=0.2)
+    plt.axvspan(x - deltaT, x, facecolor='#DC143C', alpha=0.2)
 
 ##############################################################
 fig, axes = plt.subplots(figsize=(12,8))
@@ -68,9 +69,10 @@ leg = plt.legend()
 axes.add_artist(leg)
 h = [plt.plot([],[], color="k", linestyle=i, linewidth = 2, ls="")[0] for i in ["-", "--"]]# for j in ["-" "--"]]
 plt.legend(handles=h, labels=["True", "Estimated"], ncol = 2, bbox_to_anchor=(0., 1.1),loc=2, borderaxespad=0.)
-for x in onlineWindowsVec:
+
+for x in offlineWindowsVec:
     plt.axvline(x = x)
-    plt.axvspan(x - deltaT, x, facecolor='#2ca02c', alpha=0.2)
+    plt.axvspan(x - deltaT, x, facecolor='#DC143C', alpha=0.2)
 
 ##############################################################
 fig = plt.figure(3,figsize=(12,8))
@@ -85,9 +87,10 @@ leg = plt.legend()
 #plt.legend(handles=h, labels=["Linf", "L2"], ncol = 2, bbox_to_anchor=(0., 1.1),loc=2, borderaxespad=0.)
 plt.xlabel('Time [s]', fontsize=25)
 plt.grid()
-for x in onlineWindowsVec:
+
+for x in offlineWindowsVec:
     plt.axvline(x = x)
-    plt.axvspan(x - deltaT, x, facecolor='#2ca02c', alpha=0.2)
+    plt.axvspan(x - deltaT, x, facecolor='#DC143C', alpha=0.2)
 
 ##############################################################
 fig = plt.figure(4,figsize=(12,8))
@@ -101,6 +104,10 @@ leg = plt.legend()
 plt.xlabel('Time [s]', fontsize=25)
 plt.grid()
 
+
+for x in offlineWindowsVec:
+    plt.axvline(x = x)
+    plt.axvspan(x - deltaT, x, facecolor='#DC143C', alpha=0.2)
 
 ##############################################################
 plt.show()

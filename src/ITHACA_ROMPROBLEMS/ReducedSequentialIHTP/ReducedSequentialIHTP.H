@@ -46,6 +46,7 @@ SourceFiles
 #include <Eigen/Eigen>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
+#include <chrono>
 
 
 /*---------------------------------------------------------------------------*\
@@ -72,6 +73,8 @@ class reducedSequentialIHTP: public sequentialIHTP
         bool previousWasReduced = 0;
         Eigen::VectorXi onlineCountVec; 
         Eigen::VectorXd onlineWindowsVec; 
+        Eigen::VectorXi offlineCountVec; 
+        Eigen::VectorXd offlineWindowsVec; 
 
 
         // Functions
@@ -83,8 +86,7 @@ class reducedSequentialIHTP: public sequentialIHTP
         /// of parametrized boundary conditions.
         ///
         void parameterizedBC(word outputFolder, volScalarField initialField,
-                Eigen::VectorXi errorCells, word linSys_solver = "fullPivLU", 
-                label TSVD_filter = 0);
+                int NmagicPoints, word linSys_solver = "fullPivLU", label TSVD_filter = 0);
 
         /// Method to perform an online solve using a PPE stabilisation method
         ///
@@ -100,13 +102,12 @@ class reducedSequentialIHTP: public sequentialIHTP
         /// @param[in]  
         /// @param[in]  
         ///
-        double T0projectionError(volScalarField& T0in, Eigen::VectorXi errorCells);
+        double T0projectionError(volScalarField& T0in);
 
         ///
         /// 
         ///
         volScalarField reconstrucT_lastTime();
-
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

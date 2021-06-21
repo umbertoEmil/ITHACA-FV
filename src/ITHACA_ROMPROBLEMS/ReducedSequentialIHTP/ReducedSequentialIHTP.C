@@ -50,11 +50,12 @@ reducedSequentialIHTP::reducedSequentialIHTP(int argc, char* argv[])
 // * * * * * * * * * * * * * * * Solve Functions  * * * * * * * * * * * * * //
 
 void reducedSequentialIHTP::parameterizedBC(word outputFolder, volScalarField initialField,
-        Eigen::VectorXi errorCells, word linSys_solver, label TSVD_filter)
+        int NmagicPoints, word linSys_solver, label TSVD_filter)
 {
     Info << endl << "Using quasilinearity of direct problem AND reduced T0" << endl;
     timeSampleI = 0;
     onlineCountVec = Eigen::VectorXi::Zero(samplingTime.size());
+    offlineCountVec = Eigen::VectorXi::Zero(samplingTime.size());
     bool recomputeLastStep = 0;
     M_Assert(T0projectionTol > 0.0, "Initialize T0projectionTol");
 
@@ -73,7 +74,7 @@ void reducedSequentialIHTP::parameterizedBC(word outputFolder, volScalarField in
         bool doOnline = 0;
         if(T0field.size() >= NmodesT0 + 2)
         {
-            if(T0projectionError(initialField, errorCells) > T0projectionTol)
+            if(T0projectionError(initialField) > T0projectionTol)
             {
                 if(previousWasReduced)
                 {
@@ -90,29 +91,44 @@ void reducedSequentialIHTP::parameterizedBC(word outputFolder, volScalarField in
 
         if(doOnline)
         {
+            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
             Info << "Using REDUCED T0" << endl;
             onlineCountVec(timeSampleI) = 1;
             onlineWindowsVec.conservativeResize(onlineWindowsVec.size() + 1);
             onlineWindowsVec(onlineWindowsVec.size() - 1) = samplingTime[timeSampleI];
             bool useReducedInitialField = 1;
-            solveT0online(initialField, 0);//, useReducedInitialField);
+            solveT0online(initialField, useReducedInitialField);
             previousWasReduced = 1;
             Info << "T0 computed" << endl;
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            std::cout << "Time difference = " 
+                << std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count() 
+                << "[microseconds]" << std::endl;
         }
         else
         {
+            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+            offlineCountVec(timeSampleI) = 1;
+            offlineWindowsVec.conservativeResize(offlineWindowsVec.size() + 1);
+            offlineWindowsVec(offlineWindowsVec.size() - 1) = samplingTime[timeSampleI];
             previousWasReduced = 0;
             Info << "Using FULL T0" << endl;
             solveT0(initialField);
+            Info << "T0 computed" << endl;
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            std::cout << "Time difference = " 
+                << std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count() 
+                << "[microseconds]" << std::endl;
             if(T0field.size() >= NmodesT0 + 2)
             {
-                T0offline(errorCells);
+                T0offline(NmagicPoints);
             }
         }
         List<Eigen::MatrixXd> linSys;
         linSys.resize(2);
                                                                                            
-        TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum * NsamplesWindow);
+        TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, 
+                thermocouplesNum * NsamplesWindow);
         linSys[0] = Theta.transpose() * Theta;                                             
         linSys[1] = Theta.transpose() * (TmeasShort + addSol - T0_vector);                 
         Eigen::VectorXd weigths;                                                           
@@ -165,6 +181,9 @@ void reducedSequentialIHTP::parameterizedBC(word outputFolder, volScalarField in
     ITHACAstream::exportMatrix(onlineCountVec, "onlineCountVec", "eigen", outputFolder);
     ITHACAstream::exportMatrix(onlineWindowsVec, "onlineWindowsVec", "eigen", 
             outputFolder);
+    ITHACAstream::exportMatrix(offlineCountVec, "offlineCountVec", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(offlineWindowsVec, "offlineWindowsVec", "eigen", 
+            outputFolder);
     Info << "End" << endl;
     Info << endl;
 }
@@ -182,12 +201,13 @@ void reducedSequentialIHTP::solveT0online(volScalarField initialField,
     set_valueFraction();
     List<scalar> RobinBC = Tf * 0.0;
     word outputFolder = "./ITHACAoutput/debugT0/";
+    Eigen::VectorXd T0red_prova;
 
     if(useReducedInitialField)
     {
         Eigen::VectorXd gWeights_Eig = Foam2Eigen::List2EigenMatrix(gWeights);
 
-        if(T0red.size() == 0)
+        if(T0red.size() == 0 || !previousWasReduced)
         {
             T0red = T0modes.project(initialField);
         }
@@ -195,7 +215,6 @@ void reducedSequentialIHTP::solveT0online(volScalarField initialField,
         {
             T0red = Tbasis_projectionMat * gWeights_Eig - Tad_projected + T0red;
         }
-        //TODO projection error
     }
     else
     {
@@ -212,14 +231,10 @@ void reducedSequentialIHTP::solveT0online(volScalarField initialField,
 
         /// Reduced
         T0red = T0implicitMatrix_red.fullPivLu().solve(T0explicitMatrix_red * T0red); 
-        //std::cout << "debug : T0red = \n" << T0red << std::endl;
         
         T0 = T0modes.reconstruct(T0, T0red, "T");
-
-        ITHACAstream::exportSolution(T0, std::to_string(timeSteps[samplingSteps[timeSampleI] - NtimeStepsBetweenSamples + timeI]),
-                                     outputFolder,
-                                     "T0reduced");
         T0_time.append(T0.clone());
+
         
         runTime.printExecutionTime(Info);
         runTime.write();
@@ -227,6 +242,101 @@ void reducedSequentialIHTP::solveT0online(volScalarField initialField,
 
     T0_vector = fieldValueAtThermocouples(T0_time);
     Info << "SolveT0 ENDED\n" << endl;
+}
+
+double reducedSequentialIHTP::T0projectionError(volScalarField& T0in)
+{
+    double error = 0;
+    //int lastTimestepID = NtimeStepsBetweenSamples - 1;
+    //volScalarField errorField(_T());
+    //ITHACAutilities::assignIF(errorField, 0.0);
+    //forAll(Tbasis, baseI)                                                              
+    //{                                                                                  
+    //    volScalarField temp (projectionErrorTbasis[baseI] + projectionErrorTad[0]);
+    //    error += std::abs(gWeights[baseI]) * ITHACAutilities::L2Norm(temp);
+    //}                                                                                  
+    //if(previousWasReduced)
+    //{
+    //    error += ITHACAutilities::L2Norm(projectionErrorTad[0]);
+    //}
+    //else
+    //{
+    //    volScalarField T0Proj(T0_time[lastTimestepID]);                                 
+    //    T0modes.projectSnapshot(T0_time[lastTimestepID], T0Proj, NmodesT0, "L2");
+    //    volScalarField T0Perp = T0_time[lastTimestepID] - T0Proj;
+    //    error += ITHACAutilities::L2Norm(projectionErrorTad[0]) + 
+    //        ITHACAutilities::L2Norm(T0Perp);               
+    //}
+    //error = std::abs(error);
+
+    //Info << "Error Norm Reduced = " << error << endl;
+    //Info << "Projection Reduced = " << error / ITHACAutilities::L2Norm(T0in) << endl;
+
+    //volScalarField T0inProjected(T0in);
+    //T0modes.projectSnapshot(T0in, T0inProjected, NmodesT0, "L2");
+    //volScalarField T0inPerp(T0in - T0inProjected);
+    //error = ITHACAutilities::L2Norm(T0inPerp) / ITHACAutilities::L2Norm(T0in);
+    //Info << "Error Norm = " << ITHACAutilities::L2Norm(T0inPerp) << endl;
+    //Info << "Projection error = " << error << endl;
+
+    // Pointwise
+    Eigen::VectorXd TatPoints(magicPoints.size());
+    Eigen::VectorXd TperpAtPoints = TatPoints;
+    Eigen::VectorXd TprojAtPoints = TatPoints;
+    Eigen::VectorXd magicPointsVolume = TatPoints;
+    fvMesh& mesh = _mesh();
+
+    //double error_num = 0;
+    //double error_den = 0;
+    //error = 0;
+    //forAll(magicPoints, cellI)
+    //{
+    //    TatPoints(cellI) = T0in.internalField()[magicPoints[cellI]];
+    //    TprojAtPoints(cellI) = T0inProjected.internalField()[magicPoints[cellI]];
+    //    TperpAtPoints(cellI) = T0inPerp.internalField()[magicPoints[cellI]];
+    //    magicPointsVolume(cellI) = mesh.V()[magicPoints[cellI]];
+    //    error_num += TperpAtPoints(cellI) * TperpAtPoints(cellI) * 
+    //        magicPointsVolume(cellI);
+    //    error_den += TatPoints(cellI) * TatPoints(cellI) * magicPointsVolume(cellI);
+    //    double tmp = TperpAtPoints(cellI) / TatPoints(cellI);
+    //    error += tmp * tmp * magicPointsVolume(cellI);
+    //}
+
+
+    if(previousWasReduced)
+    {
+        Info <<"Previous step was reduced" << endl;
+        TprojAtPoints = pointTbasis_reconstructionMat * 
+            Foam2Eigen::List2EigenMatrix(gWeights) - pointTad_reconstructed 
+            + pointsReconstructMatrix * T0red; 
+        forAll(magicPoints, cellI)
+        {
+            TatPoints(cellI) = T0in.internalField()[magicPoints[cellI]];
+        }
+    }
+    else
+    {
+        Info << "Previous step was full" << endl;
+        volScalarField T0Proj(T0in);                                
+        T0modes.projectSnapshot(T0in, T0Proj, NmodesT0, "L2");
+        forAll(magicPoints, cellI)
+        {
+            TprojAtPoints(cellI) = T0Proj.internalField()[magicPoints[cellI]];
+            TatPoints(cellI) = T0in.internalField()[magicPoints[cellI]];
+        }
+    }
+
+
+    error = 0;
+    TperpAtPoints = TatPoints - TprojAtPoints;
+    forAll(magicPoints, cellI)
+    {
+        double tmp = TperpAtPoints(cellI) / TatPoints(cellI);
+        error += tmp * tmp * mesh.V()[magicPoints[cellI]];
+    }
+    std::cout << "Projection error Points = " << error << std::endl;
+
+    return error;
 }
 
 volScalarField reducedSequentialIHTP::reconstrucT_lastTime()
@@ -245,75 +355,3 @@ volScalarField reducedSequentialIHTP::reconstrucT_lastTime()
     Tout += - Tad_time[timeI] + T0_time[timeI];
     return Tout;
 }   
-
-double reducedSequentialIHTP::T0projectionError(volScalarField& T0in, 
-        Eigen::VectorXi errorCells)
-{
-    double error = 0;
-    int lastTimestepID = NtimeStepsBetweenSamples - 1;
-    volScalarField errorField(_T());
-    ITHACAutilities::assignIF(errorField, 0.0);
-    forAll(Tbasis, baseI)                                                              
-    {                                                                                  
-        //errorField += gWeights[baseI] * (projectionErrorTbasis[baseI] + projectionErrorTad[0]);
-        volScalarField temp (projectionErrorTbasis[baseI] + projectionErrorTad[0]);
-        error += std::abs(gWeights[baseI]) * ITHACAutilities::L2Norm(temp);
-    }                                                                                  
-    if(previousWasReduced)
-    {
-        error += ITHACAutilities::L2Norm(projectionErrorTad[0]);
-    }
-    else
-    {
-        volScalarField T0Proj(T0_time[lastTimestepID]);                                 
-        T0modes.projectSnapshot(T0_time[lastTimestepID], T0Proj, NmodesT0, "L2");
-        volScalarField T0Perp = T0_time[lastTimestepID] - T0Proj;
-        error += ITHACAutilities::L2Norm(projectionErrorTad[0]) + ITHACAutilities::L2Norm(T0Perp);               
-    }
-    error = std::abs(error);
-
-    Info << "Error Norm Reduced = " << error << endl;
-    Info << "Projection Reduced = " << error / ITHACAutilities::L2Norm(T0in) << endl;
-    volScalarField T0inProjected(T0in);
-    T0modes.projectSnapshot(T0in, T0inProjected, NmodesT0, "L2");
-    volScalarField T0inPerp(T0in - T0inProjected);
-    error = ITHACAutilities::L2Norm(T0inPerp) / ITHACAutilities::L2Norm(T0in);
-    Info << "Error Norm = " << ITHACAutilities::L2Norm(T0inPerp) << endl;
-    Info << "Projection error = " << error << endl;
-
-
-    // Pointwise
-    Eigen::VectorXd TatPonts(errorCells.size());
-    Eigen::VectorXd TperpAtPoint = TatPonts;
-    Eigen::VectorXd TprojAtPoints = TatPonts;
-
-    for(int cellI = 0; cellI < errorCells.size(); cellI++)
-    {
-        TatPonts(cellI) = T0in.internalField()[errorCells(cellI)];
-    }
-
-    if(previousWasReduced)
-    {
-        Info <<"Previous step was reduced" << endl;
-        Info << "pointsProjectionMatrix = " << pointsProjectionMatrix.rows() << ", " << pointsProjectionMatrix.cols() << endl;
-        Info << "T0red.size() = " << T0red.size() << endl;
-        TprojAtPoints = pointsProjectionMatrix * T0red; 
-    }
-    else
-    {
-        Info <<"Previous step was full" << endl;
-        volScalarField T0Proj(T0_time[lastTimestepID]);                                
-        T0modes.projectSnapshot(T0_time[lastTimestepID], T0Proj, NmodesT0, "L2");
-        for(int cellI = 0; cellI < errorCells.size(); cellI++)
-        {
-            TprojAtPoints(cellI) = T0Proj.internalField()[errorCells(cellI)];
-        }
-    }
-
-    TperpAtPoint = TatPonts - TprojAtPoints;
-    std::cout << "Projection error Points = " << TperpAtPoint.norm() / TatPonts.norm() 
-        << std::endl;
-
-
-    return error;
-}

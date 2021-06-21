@@ -29,11 +29,12 @@ linSysSolver        TSVD;
 TSVDtruncation      5;
 shapeParameter      .6;
 NmodesT0            20;
-T0projectionTol     1e-3;
+NmagicPoints        18;
+T0projectionTol     1e-9;
 
 
 //Test to perform
 parameterizedBC_steadyTest 1;
 parameterizedBC_unsteadyTest 1;
-parameterizedBC_unsteadyTestFULL 1;
+parameterizedBC_unsteadyTestFULL 0;
 
