@@ -1,5 +1,6 @@
 **/ITHACAoutput
 **/polyMesh
+**/debug
 **/ITHACAoutput*
 Working_examples
 *.bak
@@ -18,6 +19,8 @@ Working_examples
 *.png
 *.dep
 *.orig
+*.swp
+*.bak
 examples
 tutorials_dev
 **/StreamTest
@@ -26,3 +29,4 @@ tutorials_dev
 *.foam
 **/__pycache__
 *.npy
+*.swp
