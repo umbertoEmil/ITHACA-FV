@@ -128,13 +128,24 @@ void Fang2017filter::setObservationTime(int _observationStart, int _observationD
 
 //--------------------------------------------------------------------------
 /// Setup of the model error distribution
-void Fang2017filter::setModelError(double cov)
+void Fang2017filter::setModelError(double cov, bool univariate)
 {
     M_Assert(stateSize > 0, "Set the stateSize before setting up the model error");
 
-    Eigen::VectorXd modelError_mu = Eigen::VectorXd::Zero(stateSize);
-    Eigen::MatrixXd modelError_cov = Eigen::MatrixXd::Identity(stateSize,
-                                     stateSize) * cov;
+    Eigen::VectorXd modelError_mu;
+    Eigen::MatrixXd modelError_cov;
+    if(univariate)
+    {
+        modelError_mu = Eigen::VectorXd::Zero(1);
+        modelError_cov = Eigen::MatrixXd::Identity(1,
+                                         1) * cov;
+    }
+    else
+    {
+        modelError_mu = Eigen::VectorXd::Zero(stateSize);
+        modelError_cov = Eigen::MatrixXd::Identity(stateSize,
+                                         stateSize) * cov;
+    }
     modelErrorDensity = std::make_shared<muq::Modeling::Gaussian>(modelError_mu,
                         modelError_cov);
     modelErrorFlag = 1;
@@ -285,7 +296,7 @@ int Fang2017filter::getParameterSize()
 void Fang2017filter::updateJointEns(Eigen::VectorXd _observation)
 {
     M_Assert(_observation.size() == observationSize, "Observation has wrong dimentions");
-    Eigen::MatrixXd temp = - (observationEns.getSamples().colwise() - _observation);
+    Eigen::MatrixXd temp = _observation - observationEns.getSamples().colwise();
     //TODO deal with invertibility of observationEns.cov()
     Eigen::MatrixXd autoCovInverse = observationEns.cov().inverse();
 
@@ -346,18 +357,23 @@ void Fang2017filter::run(int innerLoopMax, word outputFolder)
                 }
                 else
                 {
-                    setParameterPriorDensity(parameterMean.col(timeStepI - 1), parameterPriorCov);
+                    setParameterPriorDensity(
+                            parameterMean.col(timeStepI - 1), parameterPriorCov);
                     sampleParameterDist();
                 }
-                std::cout << "\ndebug : parameterPriorMean = " << parameterPriorMean << std::endl;
-                std::cout << "\ndebug : parameterMean.col(" << timeStepI<< ") =\n" << parameterMean.col(timeStepI) << std::endl;
+                std::cout << "\ndebug : parameterPriorMean = " << 
+                    parameterPriorMean << std::endl;
+                std::cout << "\ndebug : parameterMean.col(" << timeStepI<< ") =\n" << 
+                    parameterMean.col(timeStepI) << std::endl;
             }
             else
             {
-                std::cout << "\ndebug : parameterMean before loop =\n" << parameterMean.col(timeStepI) << std::endl;
+                std::cout << "\ndebug : parameterMean before loop =\n" << 
+                    parameterMean.col(timeStepI) << std::endl;
                 setParameterPriorDensity(parameterMean.col(timeStepI), parameterPriorCov);
                 sampleParameterDist();
-                std::cout << "\ndebug : parameterMean after loop =\n" << parameterMean.col(timeStepI) << std::endl;
+                std::cout << "\ndebug : parameterMean after loop =\n" << 
+                    parameterMean.col(timeStepI) << std::endl;
             }
             stateProjection();
             buildJointEns();
@@ -365,8 +381,12 @@ void Fang2017filter::run(int innerLoopMax, word outputFolder)
             {
                 Eigen::MatrixXd measNoiseSamps = ensembleFromDensity(measNoiseDensity);
                 observeState();
-                std::cout << "\ndebug : observation =\n" << observations.col(observationBoolVec.head(timeStepI + 1).sum() - 1) << std::endl;
-                updateJointEns(observations.col(observationBoolVec.head(timeStepI + 1).sum() - 1));
+                std::cout << "\ndebug : observation =\n" << 
+                    observations.col(observationBoolVec.head(timeStepI + 1).sum() - 1) << 
+                    std::endl;
+                updateJointEns(
+                        observations.col(
+                            observationBoolVec.head(timeStepI + 1).sum() - 1));
             }
             parameterMean.col(timeStepI) = jointEns.mean().tail(parameterSize);
             innerLoopI++;
@@ -386,7 +406,9 @@ void Fang2017filter::run(int innerLoopMax, word outputFolder)
     }
     ITHACAstream::exportMatrix(stateMean, "stateMean", "eigen", outputFolder);
     ITHACAstream::exportMatrix(parameterMean, "parameterMean", "eigen", outputFolder);
-    ITHACAstream::exportMatrix(parameter_maxConf, "parameter_maxConf", "eigen", outputFolder);
-    ITHACAstream::exportMatrix(parameter_minConf, "parameter_minConf", "eigen", outputFolder);
+    ITHACAstream::exportMatrix(parameter_maxConf, "parameter_maxConf", "eigen", 
+            outputFolder);
+    ITHACAstream::exportMatrix(parameter_minConf, "parameter_minConf", "eigen", 
+            outputFolder);
 }
 }

@@ -105,7 +105,7 @@ void sequentialIHTP::setDiffusivity(scalar _diff)
 }
 
 void sequentialIHTP::setSpaceBasis(word type,
-        scalar shapeParameter)
+        scalar shapeParameter, label Npod)
 {
     if (!thermocouplesRead)
     {
@@ -116,43 +116,66 @@ void sequentialIHTP::setSpaceBasis(word type,
     NbasisInSpace = thermocouplesNum;
     heatFluxSpaceBasis.resize(NbasisInSpace);
 
-    if (type == "rbf")
+    Info << "\nRadial Basis Functions are used." << endl;
+    Info << "The center of each function is at the projection " << endl;
+    Info << "of each thermocouple on the boundary hotSide.\n\n";
+
+    int thermocouplesCounter = 0;
+    int rbfCenterTimeI = 0;
+    scalar maxX =  Foam::max(
+            mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::X));
+    scalar maxZ =  Foam::max(
+            mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::Z));
+
+    forAll(heatFluxSpaceBasis, funcI)
     {
-        Info << "Radial Basis Functions are used." << endl;
-        Info << "The center of each function is at the projection " << endl;
-        Info << "of each thermocouple on the boundary hotSide.\n\n";
-
-        int thermocouplesCounter = 0;
-        int rbfCenterTimeI = 0;
-	scalar maxX =  Foam::max(mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::X));
-	scalar maxZ =  Foam::max(mesh.boundaryMesh()[hotSide_ind].faceCentres().component(Foam::vector::Z));
-
-        forAll(heatFluxSpaceBasis, funcI)
+        scalar thermocoupleX =
+            mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
+        scalar thermocoupleZ =
+            mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
+        heatFluxSpaceBasis[funcI].resize(T.boundaryField()[hotSide_ind].size());
+        forAll (T.boundaryField()[hotSide_ind], faceI)
         {
-            scalar thermocoupleX =
-                mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(0);
-            scalar thermocoupleZ =
-                mesh.C()[thermocouplesCellID [thermocouplesCounter]].component(2);
-            heatFluxSpaceBasis[funcI].resize(T.boundaryField()[hotSide_ind].size());
-            forAll (T.boundaryField()[hotSide_ind], faceI)
-            {
-                scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
-                scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
+            scalar faceX = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
+            scalar faceZ = mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-                scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - 
-                        thermocoupleX) / maxX / maxX + (faceZ - thermocoupleZ) * 
-                        (faceZ - thermocoupleZ) / maxZ / maxZ);
-	        heatFluxSpaceBasis[funcI][faceI] = Foam::sqrt(1 + (shapeParameter *
-                            radius) * (shapeParameter * radius));
+            scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - 
+                    thermocoupleX) / maxX / maxX + (faceZ - thermocoupleZ) * 
+                    (faceZ - thermocoupleZ) / maxZ / maxZ);
+            heatFluxSpaceBasis[funcI][faceI] = Foam::sqrt(1 + (shapeParameter *
+                        radius) * (shapeParameter * radius));
 
-            }
-            thermocouplesCounter++;
         }
+        thermocouplesCounter++;
     }
-    else if (type == "pod")
+    if (type == "pod")
     {
-        Info << "Not yet implemented, exiting" << endl;
-        exit(10);
+        List<scalar> massVector(T.boundaryField()[hotSide_ind].size());
+        forAll (T.boundaryField()[hotSide_ind], faceI)
+        {
+            massVector[faceI] = mesh.boundary()[hotSide_ind].magSf()[faceI];
+        }
+        List<List<scalar>> tempBasis;
+        word debugFolder = "./ITHACAoutput/debugParameterizedBasis/";
+        ITHACAPOD::getModesSVD(heatFluxSpaceBasis, massVector, tempBasis, Npod, 
+                debugFolder);
+        forAll(heatFluxSpaceBasis, baseI)
+        {
+            volScalarField base = list2Field(heatFluxSpaceBasis[baseI], 0.0);
+            ITHACAstream::exportSolution(base,
+                                         std::to_string(1),
+                                         debugFolder,
+                                         "RBFbase" + std::to_string(baseI + 1));
+        }
+        forAll(tempBasis, baseI)
+        {
+            volScalarField base = list2Field(tempBasis[baseI], 0.0);
+            ITHACAstream::exportSolution(base,
+                                         std::to_string(1),
+                                         debugFolder,
+                                         "PODbase" + std::to_string(baseI + 1));
+        }
+        heatFluxSpaceBasis = tempBasis;
     }
 }
 
@@ -241,16 +264,19 @@ void sequentialIHTP::update_gParametrized(List<scalar> weights)
                 {
                     if(timeSampleI > 0)
                     {
-                        g[timeI][faceI] += interpolatedWeights[weightI][shortTime] * gBaseFunctions[weightI][shortTime][faceI];
+                        g[timeI][faceI] += interpolatedWeights[weightI][shortTime] * 
+                            gBaseFunctions[weightI][shortTime][faceI];
                     }
                     else
                     {
-                        g[timeI][faceI] += weights[weightI] * gBaseFunctions[weightI][shortTime][faceI];
+                        g[timeI][faceI] += weights[weightI] * 
+                            gBaseFunctions[weightI][shortTime][faceI];
                     }
                 }
                 else
                 {
-                    g[timeI][faceI] += weights[weightI] * gBaseFunctions[weightI][shortTime][faceI];
+                    g[timeI][faceI] += weights[weightI] * 
+                        gBaseFunctions[weightI][shortTime][faceI];
                 }
             }
         }

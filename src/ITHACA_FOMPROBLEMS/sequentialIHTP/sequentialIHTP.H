@@ -32,8 +32,6 @@ SourceFiles
 /// Header file of the sequentialIHTP class.
 /// \dir
 /// Directory containing the header and source files for the sequentialIHTP class.
-
-
 #ifndef sequentialIHTP_H
 #define sequentialIHTP_H
 #include <iostream>
@@ -290,7 +288,7 @@ class sequentialIHTP: public laplacianProblem
         //--------------------------------------------------------------------------
 
         /// Define the base functions used for the parametrization of g
-        void setSpaceBasis(word type, scalar shapeParameter);
+        void setSpaceBasis(word type, scalar shapeParameter, label Npod = 0);
 
         //--------------------------------------------------------------------------
 

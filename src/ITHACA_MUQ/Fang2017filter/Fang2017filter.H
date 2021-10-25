@@ -191,7 +191,7 @@ class Fang2017filter
 
         //--------------------------------------------------------------------------
         /// Setup of the model error distribution
-        void setModelError(double cov);
+        void setModelError(double cov, bool univariate = 0);
 
         //--------------------------------------------------------------------------
         /// Setup of the measurement noise distribution
@@ -215,7 +215,8 @@ class Fang2017filter
 
         //--------------------------------------------------------------------------
         /// General class to sample from an input density 
-        Eigen::MatrixXd ensembleFromDensity(std::shared_ptr<muq::Modeling::Gaussian> _density);
+        Eigen::MatrixXd ensembleFromDensity(
+                std::shared_ptr<muq::Modeling::Gaussian> _density);
 
         //--------------------------------------------------------------------------
         /// Concatenate state and parameter ensambles to create the joint ensamble 
