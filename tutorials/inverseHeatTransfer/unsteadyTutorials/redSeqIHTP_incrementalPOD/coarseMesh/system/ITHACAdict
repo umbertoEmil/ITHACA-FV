@@ -34,11 +34,13 @@ SVDtol              1e-8;
 PODnorm             L2;
 noiseLevel          0.001;
 
+linearTimeBasis     1;
+
 
 
 //Test to perform
-addNoise    1;
-parameterizedBC_unsteadyTest 1;
-parameterizedBC_unsteadyTestFULL 0;
+addNoise    0;
+parameterizedBC_unsteadyTest 0;
+parameterizedBC_unsteadyTestFULL 1;
 parameterizedBC_NoiseTest 0;
 

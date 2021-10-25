@@ -98,6 +98,11 @@ int main(int argc, char* argv[])
         para->ITHACAdict->lookupOrDefault<double>("SVDtol", 0);
     word PODnorm =
         para->ITHACAdict->lookupOrDefault<word>("PODnorm", "L2");
+    example.interpolationFlag =
+        para->ITHACAdict->lookupOrDefault<bool>("linearTimeBasis", 0);
+
+
+
     unsigned parameterizedBC_steadyTest =
         para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_steadyTest", 0);
     unsigned parameterizedBC_unsteadyTest =
