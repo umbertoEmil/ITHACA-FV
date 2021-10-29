@@ -13,15 +13,15 @@ params = {'legend.fontsize': 'x-large',
          'ytick.labelsize':'x-large'}
 pylab.rcParams.update(params)
 
-time = np.loadtxt("./ITHACAoutput/direct/trueTimeVec_mat.txt")
-probe_true = np.loadtxt("./ITHACAoutput/direct/probe_true_mat.txt")
+time = np.loadtxt("./ITHACAoutput/true/trueTimeVec_mat.txt")
+probe_true = np.loadtxt("./ITHACAoutput/true/probe_true_mat.txt")
 probe_rec = np.loadtxt("./ITHACAoutput/reconstruction/probe_rec_mat.txt")
 state_min = np.loadtxt("./ITHACAoutput/reconstruction/probeState_minConf_mat.txt")
 state_max = np.loadtxt("./ITHACAoutput/reconstruction/probeState_maxConf_mat.txt")
 reconstructedBC = np.loadtxt("./ITHACAoutput/reconstruction/parameterMean_mat.txt")
 param_min = np.loadtxt("./ITHACAoutput/reconstruction/parameter_minConf_mat.txt")
 param_max = np.loadtxt("./ITHACAoutput/reconstruction/parameter_maxConf_mat.txt")
-trueBC = np.loadtxt("./ITHACAoutput/direct/trueBC_mat.txt")
+trueBC = np.loadtxt("./ITHACAoutput/true/trueBC_mat.txt")
 
 print state_min.size
 print state_max.size

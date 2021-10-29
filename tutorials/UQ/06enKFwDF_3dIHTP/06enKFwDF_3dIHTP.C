@@ -22,10 +22,10 @@ License
     You should have received a copy of the GNU Lesser General Public License
     along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
 Description
-    Example of a state and boundary condition reconstruction in 1D heat
+    Example of a state and boundary condition reconstruction in 3D heat
     transfer problem using EnKF
 SourceFiles
-    03enKF_1DinverseHeatTransferJointEstimation.C
+    06enKFwDF_3dIHTP.C
 \*---------------------------------------------------------------------------*/
 
 #include <iostream>
@@ -44,18 +44,18 @@ SourceFiles
 #include "MUQ/Modeling/Distributions/Gaussian.h"
 
 #include "muq2ithaca.H"
-#include "Fang2017filter.H"
+#include "Fang2017filter_wDF.H"
 
-#include "05enKF_3dIHTP.H"
+#include "06enKFwDF_3dIHTP.H"
 
 using namespace SPLINTER;
 
-class TutorialUQ5 : public ITHACAmuq::Fang2017filter
+class TutorialUQ5 : public ITHACAmuq::Fang2017filter_wDF
 {
     public:
         explicit TutorialUQ5(int argc, char* argv[], int _Nsamples)
             :
-            ITHACAmuq::Fang2017filter(_Nsamples),
+            ITHACAmuq::Fang2017filter_wDF(_Nsamples),
             HTproblem(argc, argv)
         {
             setTime(HTproblem.startTime, HTproblem.deltaTime, HTproblem.endTime);
@@ -74,16 +74,17 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter
         /// Project the state and adds the model error
         void stateProjection()
         {
-            Info << "\nState porjection" << endl;
+            Info << "\nState projection start" << endl;
             for (int sampI = 0; sampI < getNumberOfSamples(); sampI++)
             {
+                Info << "Sample " << sampI + 1 << ", time = " << getTime() << endl;;
                 Eigen::VectorXd newState = HTproblem.projectState(
                         stateEns.getSample(sampI), parameterEns.getSample(sampI), 
                         getTime(), getTimeStep(), getTime() + HTproblem.deltaTime, 
                         modelErrorDensity);
                 stateEns.assignSample(sampI, newState);
-                Info << "debug : time = " << getTime() << endl;;
             }
+            Info << "\nState projection end" << endl;
         };
 
         //--------------------------------------------------------------------------
@@ -109,7 +110,7 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter
             volScalarField T(HTproblem._T());
             PtrList<volScalarField> TtrueList;
             ITHACAstream::read_fields(TtrueList, "Tdirect",
-                                      "./ITHACAoutput/direct/");
+                                      "./ITHACAoutput/true/");
             Eigen::VectorXd probe_rec(getTimeVector().size() - 1);
             Eigen::VectorXd probeState_maxConf(getTimeVector().size() - 1);
             Eigen::VectorXd probeState_minConf(getTimeVector().size() - 1);
@@ -149,6 +150,15 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter
                                                       TtrueList[timeI].ref()[i];
                     }
                 }
+                volScalarField gTrueField = HTproblem.list2Field(HTproblem.gTrue[timeI]);
+                ITHACAstream::exportSolution(gTrueField,
+                                             std::to_string(HTproblem.timeSteps[timeI]), 
+                                             outputFolder, "gTrue");
+                volScalarField gField = HTproblem.list2Field(HTproblem.updateHeatFlux(
+                            getParameterMean().col(timeI)));
+                ITHACAstream::exportSolution(gField,
+                                             std::to_string(HTproblem.timeSteps[timeI]), 
+                                             outputFolder, "gRec");
 
                 ITHACAstream::exportSolution(relativeErrorField,
                                              std::to_string(getTime(timeI)), outputFolder,
@@ -165,7 +175,7 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter
 
 int main(int argc, char* argv[])
 {
-    int Nsamples = 50;
+    int Nsamples = 100;
     TutorialUQ5 example(argc, argv, Nsamples);
     // Reading parameters from file
     ITHACAparameters* para = ITHACAparameters::getInstance(
@@ -176,7 +186,8 @@ int main(int argc, char* argv[])
     example.HTproblem.b = para->ITHACAdict->lookupOrDefault<scalar>("b", 0);
     example.HTproblem.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
 
-    example.HTproblem.initialField = para->ITHACAdict->lookupOrDefault<scalar>("initialField", 0);
+    example.HTproblem.initialField = 
+        para->ITHACAdict->lookupOrDefault<scalar>("initialField", 0);
 
     label NheatFluxPODbasis = 
         para->ITHACAdict->lookupOrDefault<label>("NheatFluxPODbasis", 0);
@@ -194,7 +205,7 @@ int main(int argc, char* argv[])
                                       stateSize) * 0.5;
     Eigen::VectorXd parameterPriorMean = Eigen::VectorXd::Zero(parameterSize);
     Eigen::MatrixXd parameterPriorCov = Eigen::MatrixXd::Identity(parameterSize,
-                                        parameterSize) * 1;
+                                        parameterSize) * 100;
     example.setObservations(example.HTproblem.solveDirect());
     example.setInitialStateDensity(stateInitialMean, stateInitialCov);
     example.setParameterPriorDensity(parameterPriorMean, parameterPriorCov);

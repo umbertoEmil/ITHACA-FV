@@ -26,7 +26,11 @@ int ensemble::getSize()
 
 Eigen::VectorXd ensemble::getSample(int sampleI)
 {
-    M_Assert(sampleI < samples.cols(), "Sample index bigger than the number of samples");
+    std::string message = "Sample index (" + std::to_string(sampleI) + 
+        ")  is bigger than the number of samples ("  
+        + std::to_string(samplesSize) + ")";
+
+    M_Assert(sampleI < samples.cols(), message.c_str());
     return samples.col(sampleI);
 }
 

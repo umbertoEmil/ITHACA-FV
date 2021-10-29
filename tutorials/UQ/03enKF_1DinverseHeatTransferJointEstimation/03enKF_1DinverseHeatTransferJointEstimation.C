@@ -80,7 +80,7 @@ class TutorialUQ3 : public ITHACAmuq::Fang2017filter
 
             for (int sampI = 0; sampI < getNumberOfSamples(); sampI++)
             {
-                Eigen::VectorXd newState = HTproblem.projectState(oldStateEns.getSample(sampI),
+                Eigen::VectorXd newState = HTproblem.projectState(stateEns.getSample(sampI),
                                            parameterEns.getSample(sampI), getTime(), getTimeStep(),
                                            getTime() + HTproblem.deltaTime, modelErrorDensity->Sample());
                 stateEns.assignSample(sampI, newState);
