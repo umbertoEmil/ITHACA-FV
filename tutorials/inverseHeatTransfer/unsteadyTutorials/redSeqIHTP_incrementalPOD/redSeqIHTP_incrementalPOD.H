@@ -296,6 +296,8 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
             fvMesh& mesh(_mesh());
             Eigen::VectorXd heatFluxL2norm(timeSteps.size());
             Eigen::VectorXd heatFluxLinfNorm(timeSteps.size());
+            Eigen::VectorXd trueHeatFluxL2norm(timeSteps.size());
+            Eigen::VectorXd trueHeatFluxLinfNorm(timeSteps.size());
             Eigen::VectorXd avgRelErrL2norm(timeSteps.size());
             Eigen::VectorXd avgRelErrLinfNorm(timeSteps.size());
             Info << "debug : g.size() = " << g.size() << endl;
@@ -366,11 +368,16 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                 //ITHACAstream::exportSolution(relativeErrorField,
                 //                             std::to_string(timeSteps[timeI]), outputFolder,
                 //                             "relativeErrorField");
-                //heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
-                //                        "hotSide");
-                //heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh,
-                //                          relativeErrorField,
-                //                          "hotSide");
+                heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, gParametrizedField,
+                                        "hotSide");
+                heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh,
+                                          gParametrizedField,
+                                          "hotSide");
+                trueHeatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, gTrueField,
+                                       "hotSide");
+                trueHeatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh,
+                                          gTrueField,
+                                          "hotSide");
                 ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
             }
             //for(int sI = 0; sI < timeSamplesNum; sI++)
@@ -394,48 +401,42 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
             //    ITHACAstream::printProgress(double(sI + 1) / timeSamplesNum);
             //}
             Info << "\nExporting" << endl;
-            ITHACAstream::exportMatrix(heatFluxL2norm, "relErrL2norm", "eigen",
+            ITHACAstream::exportMatrix(heatFluxL2norm, "heatFluxL2norm", "eigen",
                                        outputFolder);
-            Info << "debug 1" << endl;
-            ITHACAstream::exportMatrix(heatFluxLinfNorm, "relErrLinfNorm", "eigen",
+            ITHACAstream::exportMatrix(heatFluxLinfNorm, "heatFluxLinfNorm", "eigen",
                                        outputFolder);
-            //Info << "debug 2" << endl;
+            ITHACAstream::exportMatrix(trueHeatFluxL2norm, "trueHeatFluxL2norm", "eigen",
+                                       outputFolder);
+            ITHACAstream::exportMatrix(trueHeatFluxLinfNorm, "trueHeatFluxLinfNorm", "eigen",
+                                       outputFolder);
+            //ITHACAstream::exportMatrix(heatFluxL2norm, "relErrL2norm", "eigen",
+            //                           outputFolder);
+            //ITHACAstream::exportMatrix(heatFluxLinfNorm, "relErrLinfNorm", "eigen",
+            //                           outputFolder);
             //ITHACAstream::exportMatrix(avgRelErrL2norm, "avgRelErrL2norm", "eigen",
             //                           outputFolder);
-            //Info << "debug 3" << endl;
             //ITHACAstream::exportMatrix(avgRelErrLinfNorm, "avgRelErrLinfNorm", "eigen",
             //                           outputFolder);
-            Info << "debug 4" << endl;
             Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
             Eigen::VectorXd samplingTime_eigen = 
                 Foam2Eigen::List2EigenMatrix(samplingTime);
-            Info << "debug 5" << endl;
             ITHACAstream::exportMatrix(
                     timeSteps_eigen, "timeSteps", "eigen", outputFolder);
-            Info << "debug 6" << endl;
             ITHACAstream::exportMatrix(samplingTime_eigen, "samplingTime", "eigen",
                                        outputFolder);
-            Info << "debug 7" << endl;
             ITHACAstream::exportMatrix(probeCenter_gTrue, "probeCenter_gTrue", "eigen", 
                     outputFolder);
-            Info << "debug 8" << endl;
             ITHACAstream::exportMatrix(probeCenter_gRec, "probeCenter_gRec", "eigen", 
                     outputFolder);
-            Info << "debug 9" << endl;
             ITHACAstream::exportMatrix(probeCenter_Ttrue, "probeCenter_Ttrue", "eigen", 
                     outputFolder);
-            Info << "debug 10" << endl;
             ITHACAstream::exportMatrix(probeCenter_Trec, "probeCenter_Trec", "eigen", outputFolder);
-            Info << "debug 11" << endl;
             ITHACAstream::exportMatrix(probeSide_gTrue, "probeSide_gTrue", "eigen", 
                     outputFolder);
-            Info << "debug 12" << endl;
             ITHACAstream::exportMatrix(probeSide_gRec, "probeSide_gRec", "eigen", 
                     outputFolder);
-            Info << "debug 13" << endl;
             ITHACAstream::exportMatrix(probe2_Ttrue, "probe2_Ttrue", "eigen", 
                     outputFolder);
-            Info << "debug 14" << endl;
             ITHACAstream::exportMatrix(probe2_Trec, "probe2_Trec", "eigen", outputFolder);
             Info << "\n Ended Exporting" << endl;
         }
@@ -445,64 +446,24 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
             fvMesh& mesh(_mesh());
             Eigen::VectorXd heatFluxL2norm(timeSteps.size());
             Eigen::VectorXd heatFluxLinfNorm(timeSteps.size());
-            Eigen::VectorXd REDavgRelErrL2norm(timeSteps.size());
-            Eigen::VectorXd REDavgRelErrLinfNorm(timeSteps.size());
-
-            PtrList<volScalarField> gRecFULL;
-            ITHACAstream::read_fields(gRecFULL, "gReconstructed",
-                 outputFolderFULL);
 
             forAll(timeSteps, timeI)
             {
                 volScalarField gParametrizedField = list2Field(g[timeI]);
-                volScalarField gDiffField(gParametrizedField);
-                if(timeI < timeSteps.size() - 1)
-                {
-                    gDiffField = gParametrizedField - gRecFULL[timeI+1];
-                }
-                else
-                {
-                    gDiffField = gParametrizedField - gRecFULL[timeI];
-                }
 
-                ITHACAstream::exportSolution(gRecFULL[timeI],
-                                             std::to_string(timeSteps[timeI]), 
-                                             outputFolder, "gRecFULL");
                 ITHACAstream::exportSolution(gParametrizedField,
                                              std::to_string(timeSteps[timeI]), 
                                              outputFolder, "gRecRED");
-                ITHACAstream::exportSolution(gDiffField,
-                                             std::to_string(timeSteps[timeI]), 
-                                             outputFolder, "gDiff");
-                scalar EPS = 1e-6;
-                volScalarField relativeErrorField(gDiffField);
-
-                for (label i = 0; i < relativeErrorField.internalField().size(); i++)
-                {
-                    if (std::abs(gRecFULL[timeI].ref()[i]) < EPS)
-                    {
-                        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
-                    }
-                    else
-                    {
-                        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) /
-                                                      std::abs(gRecFULL[timeI].ref()[i]);
-                    }
-                }
-
-                ITHACAstream::exportSolution(relativeErrorField,
-                                             std::to_string(timeSteps[timeI]), outputFolder,
-                                             "REDUCEDrelativeErrorField");
-                heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, relativeErrorField,
+                heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, gParametrizedField,
                                         "hotSide");
                 heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh,
-                                          relativeErrorField,
+                                          gParametrizedField,
                                           "hotSide");
                 ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
             }
-            ITHACAstream::exportMatrix(heatFluxL2norm, "REDErrL2norm", "eigen",
+            ITHACAstream::exportMatrix(heatFluxL2norm, "heatFluxL2norm", "eigen",
                                        outputFolder);
-            ITHACAstream::exportMatrix(heatFluxLinfNorm, "REDErrLinfNorm", "eigen",
+            ITHACAstream::exportMatrix(heatFluxLinfNorm, "heatFluxLinfNorm", "eigen",
                                        outputFolder);
         }
 
