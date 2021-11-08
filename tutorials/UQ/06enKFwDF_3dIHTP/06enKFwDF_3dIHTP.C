@@ -66,7 +66,7 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter_wDF
             HTproblem.k = 3.0;
             HTproblem.rho = 5.0;
             HTproblem.Cp = 2.0;
-            HTproblem.setProbe(1, Foam::vector(1.0, 0.0, 0.6));
+            HTproblem.setProbe(1, Foam::vector(1.0, 0.02, 0.6));
         }
         inverseHeatTransfer_3D HTproblem;
 
@@ -104,6 +104,25 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter_wDF
         };
 
         //--------------------------------------------------------------------------
+        /// Set parameter prior projecting initial gTrue on the parameterized space
+        Eigen::VectorXd setParameterPriorMean()
+        {
+            HTproblem.set_gTrue();
+            Eigen::MatrixXd Temp(HTproblem.heatFluxSpaceBasis[0].size(), 
+                    HTproblem.heatFluxSpaceBasis.size());
+            forAll(HTproblem.heatFluxSpaceBasis, baseI)
+            {
+                Temp.col(baseI) = Foam2Eigen::List2EigenMatrix(
+                        HTproblem.heatFluxSpaceBasis[baseI]);
+            }
+
+            Eigen::MatrixXd Btemp = Foam2Eigen::List2EigenMatrix(HTproblem.gTrue[0]);
+            Eigen::MatrixXd B = Temp.transpose() * Btemp;
+            Temp = Temp.transpose() * Temp;
+            return Temp.fullPivLu().solve(B);
+        };
+
+        //--------------------------------------------------------------------------
         /// Post-processing
         void postProcessing(word outputFolder)
         {
@@ -114,6 +133,9 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter_wDF
             Eigen::VectorXd probe_rec(getTimeVector().size() - 1);
             Eigen::VectorXd probeState_maxConf(getTimeVector().size() - 1);
             Eigen::VectorXd probeState_minConf(getTimeVector().size() - 1);
+            Eigen::MatrixXd gTrue_probe(1,getTimeVector().size() - 1);
+            Eigen::MatrixXd gRec_probe(1,getTimeVector().size() - 1);
+            Foam::vector hotSide_probeLocation(1.0, 0.0, 0.6);
 
             for (int timeI = 0; timeI < getTimeVector().size() - 1; timeI++)
             {
@@ -159,16 +181,25 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter_wDF
                 ITHACAstream::exportSolution(gField,
                                              std::to_string(HTproblem.timeSteps[timeI]), 
                                              outputFolder, "gRec");
+                gTrue_probe.col(timeI) = HTproblem.fieldValueAtProbe(gTrueField, 
+                        hotSide_probeLocation);
+                gRec_probe.col(timeI) = HTproblem.fieldValueAtProbe(gField, 
+                        hotSide_probeLocation);
+
 
                 ITHACAstream::exportSolution(relativeErrorField,
                                              std::to_string(getTime(timeI)), outputFolder,
                                              "relativeErrorField");
-                ITHACAstream::exportMatrix(probe_rec, "probe_rec", "eigen", outputFolder);
-                ITHACAstream::exportMatrix(probeState_maxConf, "probeState_maxConf", 
-                        "eigen", outputFolder);
-                ITHACAstream::exportMatrix(probeState_minConf, "probeState_minConf", 
-                        "eigen", outputFolder);
             }
+            ITHACAstream::exportMatrix(probe_rec, "probe_rec", "eigen", outputFolder);
+            ITHACAstream::exportMatrix(probeState_maxConf, "probeState_maxConf", 
+                    "eigen", outputFolder);
+            ITHACAstream::exportMatrix(probeState_minConf, "probeState_minConf", 
+                    "eigen", outputFolder);
+            ITHACAstream::exportMatrix(gTrue_probe, "gTrue_probe", 
+                    "eigen", outputFolder);
+            ITHACAstream::exportMatrix(gRec_probe, "gRec_probe", 
+                    "eigen", outputFolder);
         }
 
 };
@@ -200,14 +231,15 @@ int main(int argc, char* argv[])
     const int stateSize = example.getStateSize();
     example.setParameterSize(NheatFluxPODbasis);
     const int parameterSize = example.getParameterSize();
-    Eigen::VectorXd stateInitialMean = Eigen::VectorXd::Zero(stateSize);
+    Eigen::VectorXd stateInitialMean = Eigen::VectorXd::Ones(stateSize) * example.HTproblem.initialField;
     Eigen::MatrixXd stateInitialCov = Eigen::MatrixXd::Identity(stateSize,
-                                      stateSize) * 0.5;
-    Eigen::VectorXd parameterPriorMean = Eigen::VectorXd::Zero(parameterSize);
+                                      stateSize) * 10;
+    Eigen::VectorXd parameterPriorMean = example.setParameterPriorMean(); //Eigen::VectorXd::Zero(parameterSize);
     Eigen::MatrixXd parameterPriorCov = Eigen::MatrixXd::Identity(parameterSize,
-                                        parameterSize) * 100;
+                                        parameterSize) * 1000;
     example.setObservations(example.HTproblem.solveDirect());
     example.setInitialStateDensity(stateInitialMean, stateInitialCov);
+    std::cout << "debug: parameterPriorMean = " << parameterPriorMean << std::endl;
     example.setParameterPriorDensity(parameterPriorMean, parameterPriorCov);
     bool univariateModelErrorDistribution = 1;
     example.setModelError(0.1, univariateModelErrorDistribution);

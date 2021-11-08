@@ -151,10 +151,11 @@ class inverseHeatTransfer_3D: public sequentialIHTP
 
                     scalar g1 = - k * (b * faceZ * faceZ  + c);
                     scalar g2 = - k * c / (1 + (faceX - 1) * (faceX - 1) + faceZ * faceZ);
-                    gTrue[timeI][faceI] = g1 + 
-                        g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
-                                    timeSteps[timeI] * timeSteps[timeI] / endTime)) +
-                        g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    //gTrue[timeI][faceI] = g1  +
+                    //    g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
+                    //                timeSteps[timeI] * timeSteps[timeI] / endTime));
+                    //    //+ g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    gTrue[timeI][faceI] = g2 * std::exp(- 0.1 * timeSteps[timeI]);
                 }
             }
         }

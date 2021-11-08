@@ -16,6 +16,8 @@ pylab.rcParams.update(params)
 time = np.loadtxt("./ITHACAoutput/true/trueTimeVec_mat.txt")
 probe_true = np.loadtxt("./ITHACAoutput/true/probe_true_mat.txt")
 probe_rec = np.loadtxt("./ITHACAoutput/reconstruction/probe_rec_mat.txt")
+gTrue_probe = np.loadtxt("./ITHACAoutput/reconstruction/gTrue_probe_mat.txt")
+gRec_probe = np.loadtxt("./ITHACAoutput/reconstruction/gRec_probe_mat.txt")
 state_min = np.loadtxt("./ITHACAoutput/reconstruction/probeState_minConf_mat.txt")
 state_max = np.loadtxt("./ITHACAoutput/reconstruction/probeState_maxConf_mat.txt")
 reconstructedBC = np.loadtxt("./ITHACAoutput/reconstruction/parameterMean_mat.txt")
@@ -44,7 +46,7 @@ fig = plt.figure(2,figsize=(8,6))
 
 
 for i in range(reconstructedBC.shape[0]):
-    plt.plot(time, reconstructedBC[i,:])
+    plt.plot(time, reconstructedBC[i,:], label=i)
 #plt.fill_between(time, param_min, param_max, color='k', alpha=.1)
 
 #plt.fill_between(time, minConfidence, maxConfidence, color='b', alpha=.1)
@@ -55,5 +57,13 @@ plt.xlabel('Time [s]', fontsize=25)
 plt.grid()
 plt.legend()
 
+
+fig = plt.figure(3,figsize=(8,6))
+plt.plot(time, gRec_probe,"k--", linewidth = 2, label="gRec")
+
+plt.plot(time, gTrue_probe, linewidth = 2, color='b', label="gTrue" )
+plt.grid()
+plt.legend()
+plt.xlabel('Time [s]', fontsize=25)
 
 plt.show()

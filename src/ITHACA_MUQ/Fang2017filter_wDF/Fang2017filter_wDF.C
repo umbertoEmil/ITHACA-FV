@@ -307,11 +307,8 @@ void Fang2017filter_wDF::updateJointEns(Eigen::VectorXd _observation)
     M_Assert(_observation.size() == observationSize, "Observation has wrong dimentions");
     //TODO deal with invertibility of observationEns.cov()
     int ensSize = jointEns.getSize();
-    std::cout << "\n\nobservationEns.cov() = \n" << observationEns.cov() << std::endl;
     Eigen::MatrixXd autoCovInverse = observationEns.cov().inverse();
     Eigen::MatrixXd crossCov = jointEns.crossCov(observationEns.getSamples());
-    std::cout << "\n\ncrossCov = \n" << crossCov << std::endl;
-    std::cout << "\n\njointEns = \n" << jointEns.getSamples() << std::endl;
 
     for(int i = 0; i < ensSize; i++)
     {
@@ -348,6 +345,7 @@ void Fang2017filter_wDF::run(int innerLoopMax, word outputFolder)
         if(timeStepI == 0)
         {
             setParameterPriorDensity(parameterPriorMean, parameterPriorCov);
+            std::cout << "debugInside: parameterPriorMean = " << parameterPriorMean << std::endl;
             sampleParameterDist();
         }
         else
