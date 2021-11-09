@@ -32,15 +32,15 @@ NmagicPoints        18;
 T0projectionTol     1e-12;
 SVDtol              1e-8;
 PODnorm             L2;
-noiseLevel          0.001;
+noiseLevel          0.01;
 
 linearTimeBasis     1;
 
 
 
 //Test to perform
-addNoise    0;
-parameterizedBC_unsteadyTest 1;
-parameterizedBC_unsteadyTestFULL 0;
+addNoise    1;
+parameterizedBC_unsteadyTest 0;
+parameterizedBC_unsteadyTestFULL 1;
 parameterizedBC_NoiseTest 0;
 
