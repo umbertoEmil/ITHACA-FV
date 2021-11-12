@@ -34,20 +34,9 @@ class inverseHeatTransfer_3D: public sequentialIHTP
         }
 
 
-        word directOutputFolder = "./ITHACAoutput/directProblem/";
-
         autoPtr<simpleControl> _simple;
 
         autoPtr<fv::options> _fvOptions;
-
-        /// Diffusivity
-        double k;
-
-        /// Density
-        double rho;
-
-        /// Heat capacity
-        double Cp;
 
         /// initialField
         scalar initialField = 0.0;
@@ -151,11 +140,15 @@ class inverseHeatTransfer_3D: public sequentialIHTP
 
                     scalar g1 = - k * (b * faceZ * faceZ  + c);
                     scalar g2 = - k * c / (1 + (faceX - 1) * (faceX - 1) + faceZ * faceZ);
-                    //gTrue[timeI][faceI] = g1  +
-                    //    g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
-                    //                timeSteps[timeI] * timeSteps[timeI] / endTime));
-                    //    //+ g2 * std::exp(- 0.1 * timeSteps[timeI]);
-                    gTrue[timeI][faceI] = g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    gTrue[timeI][faceI] = g1  +
+                        g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
+                                    timeSteps[timeI] * timeSteps[timeI] / endTime))
+                        + g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    
+                    //gTrue[timeI][faceI] = g1 * (std::sin ( 2 * M_PI * 0.1 *
+                    //            timeSteps[timeI] * timeSteps[timeI] / endTime));
+                    
+                    //gTrue[timeI][faceI] = g2 * std::exp(- 0.1 * timeSteps[timeI]);
                 }
             }
         }
@@ -415,13 +408,13 @@ class inverseHeatTransfer_3D: public sequentialIHTP
             simpleControl& simple = _simple();
             fv::options& fvOptions(_fvOptions());
             dimensionedScalar diffusivity("diffusivity", 
-                    dimensionSet(0, 2, -1, 0, 0, 0, 0), k / (rho * Cp));
+                    dimensionSet(0, 2, -1, 0, 0, 0, 0), k / (density * specificHeat));
             Info << "Thermal diffusivity = " << diffusivity << " m2/s" << endl;
 
 
             ITHACAutilities::assignBC(T, hotSide_ind,
                                       - updateHeatFlux(_heatFlux_weights) / k);
-            std::cout << "debug : _heatFlux_weights = " << _heatFlux_weights << std::endl;
+            std::cout << "debug : _heatFlux_weights = \n" << _heatFlux_weights << std::endl << std::endl;
 
             while (runTime.loop())
             {
@@ -442,9 +435,9 @@ class inverseHeatTransfer_3D: public sequentialIHTP
                 runTime.write();
             }
 
-            ITHACAstream::exportSolution(T, runTime.timeName(),
-                                         outputFolder,
-                                         outputFieldName);
+            //ITHACAstream::exportSolution(T, runTime.timeName(),
+            //                             outputFolder,
+            //                             outputFieldName);
         }
 
         //--------------------------------------------------------------------------
@@ -462,19 +455,19 @@ class inverseHeatTransfer_3D: public sequentialIHTP
             g = gTrue;
             assignDirectBC(timeI);
             ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
-                                         directOutputFolder,
+                                         outputFolder,
                                          "Ttrue");
             fvMesh& mesh = _mesh();
             volScalarField gTrueField = list2Field(gTrue[timeI]);
             ITHACAstream::exportSolution(gTrueField,
                                          std::to_string(timeSteps[timeI]), 
-                                         directOutputFolder, "gTrue");
+                                         outputFolder, "gTrue");
             Ttrue.resize(0);
             Ttrue.append(T.clone());
 
             Eigen::MatrixXd obsMat;
             dimensionedScalar diffusivity("diffusivity", 
-                    dimensionSet(0, 2, -1, 0, 0, 0, 0), k / (rho * Cp));
+                    dimensionSet(0, 2, -1, 0, 0, 0, 0), k / (density * specificHeat));
             Info << "Thermal diffusivity = " << diffusivity << " m2/s" << endl;
             sampleFlag = 0;
             timeI = 0;
@@ -488,12 +481,12 @@ class inverseHeatTransfer_3D: public sequentialIHTP
                 Info << "Time = " << runTime.timeName() << nl << endl;
                 timeI++;
                 ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
-                                             directOutputFolder,
+                                             outputFolder,
                                              "Ttrue");
                 gTrueField = list2Field(gTrue[timeI]);
                 ITHACAstream::exportSolution(gTrueField,
                                              std::to_string(timeSteps[timeI]), 
-                                             directOutputFolder, "gTrue");
+                                             outputFolder, "gTrue");
                 scalar time = runTime.value();
 
                 if (timeI == observationStartTimestep)

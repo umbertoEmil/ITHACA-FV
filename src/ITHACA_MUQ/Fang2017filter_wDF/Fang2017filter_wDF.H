@@ -103,6 +103,10 @@ class Fang2017filter_wDF
     /// Initial state density
     std::shared_ptr<muq::Modeling::Gaussian> initialStateDensity;
 
+    /// Set to 1 to use a univariate sampling for the initial state density 
+    /// (use with big states) 
+    bool univariateInitStateDensFlag = 0;
+
     /// Parameter prior density
     std::shared_ptr<muq::Modeling::Gaussian> parameterPriorDensity;
 
@@ -200,7 +204,8 @@ class Fang2017filter_wDF
 
         //--------------------------------------------------------------------------
         /// Create initial state ensemble 
-        void setInitialStateDensity(Eigen::VectorXd _mean, Eigen::MatrixXd _cov);
+        void setInitialStateDensity(Eigen::VectorXd _mean, Eigen::MatrixXd _cov, 
+                bool _univariateFlag = 0);
 
         //--------------------------------------------------------------------------
         /// Create initial state ensemble 

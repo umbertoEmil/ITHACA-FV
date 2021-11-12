@@ -571,6 +571,10 @@ void sequentialIHTP::parameterizedBC(word outputFolder, volScalarField initialFi
 
 void sequentialIHTP::set_valueFraction()
 {
+    M_Assert(k > 0, "Set thermal diffusivity [W/(m K)]");
+    M_Assert(H > 0, "Set Heat transfer coefficient [W/(m2 K)]");
+    M_Assert(density > 0, "Set density [kg /m3]");
+    M_Assert(specificHeat > 0, "Set specific heat capacity [J/kg/K]");
     fvMesh& mesh = _mesh();
     valueFraction.resize(mesh.boundaryMesh()["coldSide"].size());
     homogeneousBCcoldSide.resize(mesh.boundaryMesh()["coldSide"].size());
