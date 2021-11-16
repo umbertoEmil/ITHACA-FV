@@ -63,9 +63,6 @@ class TutorialUQ5 : public ITHACAmuq::Fang2017filter_wDF
             setStateSize(HTproblem.getStateSize());
             setObservationTime(HTproblem.observationStartTimestep,
                                HTproblem.observationDeltaTimesteps);
-            HTproblem.k = 3.0;
-            HTproblem.rho = 5.0;
-            HTproblem.Cp = 2.0;
             HTproblem.setProbe(1, Foam::vector(1.0, 0.02, 0.6));
         }
         inverseHeatTransfer_3D HTproblem;
@@ -216,6 +213,19 @@ int main(int argc, char* argv[])
     example.HTproblem.a = para->ITHACAdict->lookupOrDefault<scalar>("a", 0);
     example.HTproblem.b = para->ITHACAdict->lookupOrDefault<scalar>("b", 0);
     example.HTproblem.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
+    example.HTproblem.maxFrequency = 
+        para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
+    example.HTproblem.HTC = 
+        para->ITHACAdict->lookupOrDefault<scalar>("heatTranferCoeff", 0);
+    //example.HTproblem.thermalCond = 3.0;
+    //example.HTproblem.density = 5.0;
+    //example.HTproblem.specificHeat = 2.0;
+    example.HTproblem.thermalCond = 
+        para->ITHACAdict->lookupOrDefault<scalar>("thermalConductivity", 0.0);
+    example.HTproblem.density = 
+        para->ITHACAdict->lookupOrDefault<scalar>("density", 0.0);
+    example.HTproblem.specificHeat = 
+        para->ITHACAdict->lookupOrDefault<scalar>("specificHeat", 0.0);
 
     example.HTproblem.initialField = 
         para->ITHACAdict->lookupOrDefault<scalar>("initialField", 0);

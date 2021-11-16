@@ -187,11 +187,11 @@ class sequentialIHTP: public laplacianProblem
         /// List of cost funtions  [K^2]
         Eigen::VectorXd Jlist;
 
-        /// Thermal diffusivity [W/(m K)]
-        double k;
+        /// Thermal conductivity [W/(m K)]
+        double thermalCond;
 
         /// Heat transfer coefficient [W/(m2 K)]
-        double H;
+        double HTC;
 
         /// Density [kg /m3]
         double density;

@@ -578,7 +578,7 @@ void sequentialIHTP::set_valueFraction()
         ITHACAutilities::boudaryFaceToCellDistance(mesh, coldSide_ind);
     forAll (valueFraction, faceI)
     {
-        valueFraction[faceI] = 1 / (1 + (k / H / faceCellDist(faceI)));
+        valueFraction[faceI] = 1 / (1 + (thermalCond / HTC / faceCellDist(faceI)));
         homogeneousBCcoldSide[faceI] =  0;
     }
     refGrad = homogeneousBCcoldSide;
@@ -597,7 +597,7 @@ void sequentialIHTP::assignDirectBC(label timeI)
         }
         else if (patchI == mesh.boundaryMesh().findPatchID("hotSide"))
         {
-            ITHACAutilities::assignBC(T, patchI, - g[timeI] / k);
+            ITHACAutilities::assignBC(T, patchI, - g[timeI] / thermalCond);
         }
         else
         {

@@ -40,15 +40,6 @@ class inverseHeatTransfer_3D: public sequentialIHTP
 
         autoPtr<fv::options> _fvOptions;
 
-        /// Diffusivity
-        double k;
-
-        /// Density
-        double rho;
-
-        /// Heat capacity
-        double Cp;
-
         /// initialField
         scalar initialField = 0.0;
 
@@ -124,7 +115,8 @@ class inverseHeatTransfer_3D: public sequentialIHTP
                     mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
                 scalar faceZ =
                     mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                heatFlux_steady[faceI] = - k * (a * faceX * faceX + b * faceZ + c);
+                heatFlux_steady[faceI] = - thermalCond * (a * faceX * faceX + b * faceZ +
+                        c);
             }
         }
 
@@ -149,13 +141,13 @@ class inverseHeatTransfer_3D: public sequentialIHTP
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
 
-                    scalar g1 = - k * (b * faceZ * faceZ  + c);
-                    scalar g2 = - k * c / (1 + (faceX - 1) * (faceX - 1) + faceZ * faceZ);
-                    //gTrue[timeI][faceI] = g1  +
-                    //    g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
-                    //                timeSteps[timeI] * timeSteps[timeI] / endTime));
-                    //    //+ g2 * std::exp(- 0.1 * timeSteps[timeI]);
-                    gTrue[timeI][faceI] = g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
+                    scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) + 
+                            faceZ * faceZ);
+                    gTrue[timeI][faceI] = g1  +
+                        g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
+                                    timeSteps[timeI] * timeSteps[timeI] / endTime))
+                        + g2 * std::exp(- 0.1 * timeSteps[timeI]);
                 }
             }
         }
@@ -205,7 +197,7 @@ class inverseHeatTransfer_3D: public sequentialIHTP
                 }
                 else if (patchI == hotSide_ind)
                 {
-                    ITHACAutilities::assignBC(T, patchI, - g[timeI] / k);
+                    ITHACAutilities::assignBC(T, patchI, - g[timeI] / thermalCond);
                 }
                 else
                 {
@@ -415,12 +407,13 @@ class inverseHeatTransfer_3D: public sequentialIHTP
             simpleControl& simple = _simple();
             fv::options& fvOptions(_fvOptions());
             dimensionedScalar diffusivity("diffusivity", 
-                    dimensionSet(0, 2, -1, 0, 0, 0, 0), k / (rho * Cp));
+                    dimensionSet(0, 2, -1, 0, 0, 0, 0), thermalCond / (density * 
+                        specificHeat));
             Info << "Thermal diffusivity = " << diffusivity << " m2/s" << endl;
 
 
             ITHACAutilities::assignBC(T, hotSide_ind,
-                                      - updateHeatFlux(_heatFlux_weights) / k);
+                                      - updateHeatFlux(_heatFlux_weights) / thermalCond);
             std::cout << "debug : _heatFlux_weights = " << _heatFlux_weights << std::endl;
 
             while (runTime.loop())
@@ -474,7 +467,8 @@ class inverseHeatTransfer_3D: public sequentialIHTP
 
             Eigen::MatrixXd obsMat;
             dimensionedScalar diffusivity("diffusivity", 
-                    dimensionSet(0, 2, -1, 0, 0, 0, 0), k / (rho * Cp));
+                    dimensionSet(0, 2, -1, 0, 0, 0, 0), thermalCond / (density * 
+                        specificHeat));
             Info << "Thermal diffusivity = " << diffusivity << " m2/s" << endl;
             sampleFlag = 0;
             timeI = 0;
@@ -657,5 +651,20 @@ class inverseHeatTransfer_3D: public sequentialIHTP
                       );
         }
 };
+
+
+
+/// \brief Class where the 3D inverse heat transfer problem is implemented
+/// \details It is a child of the laplacianProblem class and some of its
+/// functions are overridden to be adapted to the specific case.
+class inverseHeatTransfer_3D_RED: public inverseHeatTransfer_3D
+{
+    public:
+        explicit inverseHeatTransfer_3D_RED(int argc, char* argv[])
+            :
+            inverseHeatTransfer_3D(argc, argv)
+        {}
+};
+
 
 #endif
