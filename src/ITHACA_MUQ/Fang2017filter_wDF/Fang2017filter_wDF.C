@@ -172,34 +172,65 @@ void Fang2017filter_wDF::setMeasNoise(double cov)
 }
 
 //--------------------------------------------------------------------------
-/// Create initial state ensemble 
-void Fang2017filter_wDF::setInitialStateDensity(Eigen::VectorXd _mean, Eigen::MatrixXd _cov)
+/// Create initial state ensemble
+void Fang2017filter_wDF::setInitialStateDensity(Eigen::VectorXd _mean,
+        Eigen::MatrixXd _cov, bool _univariateFlag)
 {
-    if(stateSize == 0)
+    M_Assert(!(stateSize == 0 && _univariateFlag),
+            "If stateSize is not set you cannot use univariate InitialStateDensity");
+    if(_univariateFlag == 0)
     {
-        stateSize = _mean.size();
+        if(stateSize == 0)
+        {
+            stateSize = _mean.size();
+        }
+        else
+        {
+            std::string message = "State has size = " + std::to_string(stateSize)
+                + " while input mean vector has size = "
+                + std::to_string(_mean.size());
+
+            M_Assert(stateSize == _mean.size(), message.c_str());
+        }
+        M_Assert(_cov.rows() == stateSize && _cov.cols() == stateSize,
+                "To initialize the state ensemble use mean and cov with same dimentions");
     }
     else
     {
-        std::string message = "State has size = " + std::to_string(stateSize)
-            + " while input mean vector has size = "
-            + std::to_string(_mean.size());
-
-        M_Assert(stateSize == _mean.size(), message.c_str());
+        univariateInitStateDensFlag = 1;
+        M_Assert(_mean.size() == 1, "If univariateInitStateDensFlag is 1 mean size is 1");
+        M_Assert(_cov.size() == 1, "If univariateInitStateDensFlag is 1 cov size is 1");
     }
-    M_Assert(_cov.rows() == stateSize && _cov.cols() == stateSize, "To initialize the state ensemble use mean and cov with same dimentions");
     initialStateDensity = std::make_shared<muq::Modeling::Gaussian>(_mean, _cov);
+
     initialStateFlag = 1;
 }
 
 //--------------------------------------------------------------------------
-/// Create initial state ensemble 
+/// Create initial state ensemble
 void Fang2017filter_wDF::sampleInitialState()
 {
     Info << "Setting initial state ensamble" << endl;
     M_Assert(initialStateFlag == 1, "Initialize the initial state density before sampling it");
-    stateEns.assignSamples(ensembleFromDensity(initialStateDensity));
-    Info << "Ensamble size = " << stateEns.getSize() << endl; 
+    if(univariateInitStateDensFlag)
+    {
+        M_Assert(stateSize > 0, "Set stateSize before sampleInitialState");
+        M_Assert(Nsamples > 0, "Set Nsamples before sampleInitialState");
+        Eigen::MatrixXd _stateEns(stateSize, Nsamples);
+        for (int i = 0; i < Nsamples; i++)
+        {
+            for (int j = 0; j < stateSize; j++)
+            {
+                _stateEns(j,i) = initialStateDensity->Sample()(0,0);
+            }
+        }
+        stateEns.assignSamples(_stateEns);
+    }
+    else
+    {
+        stateEns.assignSamples(ensembleFromDensity(initialStateDensity));
+    }
+    Info << "debug: State ensamble size = " << stateEns.getSize() << endl;
 }
 
 //--------------------------------------------------------------------------
@@ -247,6 +278,7 @@ Eigen::MatrixXd Fang2017filter_wDF::ensembleFromDensity(std::shared_ptr<muq::Mod
 
     return output;
 }
+
 
 //--------------------------------------------------------------------------
 /// Concatenate state and parameter ensambles to create the joint ensamble 
@@ -301,7 +333,7 @@ int Fang2017filter_wDF::getParameterSize()
 }
 
 //--------------------------------------------------------------------------
-/// 
+///
 void Fang2017filter_wDF::updateJointEns(Eigen::VectorXd _observation)
 {
     M_Assert(_observation.size() == observationSize, "Observation has wrong dimentions");
@@ -318,6 +350,7 @@ void Fang2017filter_wDF::updateJointEns(Eigen::VectorXd _observation)
     }
 
 }
+
 
 //--------------------------------------------------------------------------
 /// Run the filtering
@@ -361,11 +394,9 @@ void Fang2017filter_wDF::run(int innerLoopMax, word outputFolder)
             while(innerLoopI < innerLoopMax)
             {
                 Info << "Inner loop " << innerLoopI << endl;
-        std::cout << "debug 3 : param mean =\n" << parameterEns.mean() << std::endl;
+                std::cout << "debug: param mean =\n" << parameterEns.mean() << std::endl;
                 if(innerLoopI > 0)
                 {
-                    std::cout << "\ndebug : parameterMean before loop =\n" << 
-                        parameterMean.col(timeStepI) << std::endl;
                     setParameterPriorDensity(
                             parameterMean.col(timeStepI), parameterPriorCov);
                     sampleParameterDist();
@@ -373,10 +404,10 @@ void Fang2017filter_wDF::run(int innerLoopMax, word outputFolder)
                         parameterMean.col(timeStepI) << std::endl;
                 }
                 buildJointEns();
-                Eigen::MatrixXd measNoiseSamps = ensembleFromDensity(measNoiseDensity);
                 observeState();
                 updateJointEns(
-                        observations.col(observationBoolVec.head(timeStepI + 1).sum() - 1));
+                        observations.col(
+                            observationBoolVec.head(timeStepI + 1).sum() - 1));
                 parameterMean.col(timeStepI) = jointEns.mean().tail(parameterSize);
                 innerLoopI++;
             }
@@ -385,7 +416,6 @@ void Fang2017filter_wDF::run(int innerLoopMax, word outputFolder)
         {
             buildJointEns();
         }
-        std::cout << "debug 4 : param mean =\n" << parameterEns.mean() << std::endl;
         parameterMean.col(timeStepI) = jointEns.mean().tail(parameterSize);
         stateMean.col(timeStepI) = jointEns.mean().head(stateSize);
         state_maxConf.col(timeStepI) = muq2ithaca::quantile(stateEns.getSamples(),

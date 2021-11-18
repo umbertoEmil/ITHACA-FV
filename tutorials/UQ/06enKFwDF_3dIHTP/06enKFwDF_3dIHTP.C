@@ -215,24 +215,32 @@ int main(int argc, char* argv[])
     example.HTproblem.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
     example.HTproblem.maxFrequency = 
         para->ITHACAdict->lookupOrDefault<scalar>("maxFrequency", 0);
+
     example.HTproblem.HTC = 
         para->ITHACAdict->lookupOrDefault<scalar>("heatTranferCoeff", 0);
-    //example.HTproblem.thermalCond = 3.0;
-    //example.HTproblem.density = 5.0;
-    //example.HTproblem.specificHeat = 2.0;
     example.HTproblem.thermalCond = 
         para->ITHACAdict->lookupOrDefault<scalar>("thermalConductivity", 0.0);
     example.HTproblem.density = 
         para->ITHACAdict->lookupOrDefault<scalar>("density", 0.0);
     example.HTproblem.specificHeat = 
         para->ITHACAdict->lookupOrDefault<scalar>("specificHeat", 0.0);
-
     example.HTproblem.initialField = 
         para->ITHACAdict->lookupOrDefault<scalar>("initialField", 0);
+
+    scalar measNoiseCov = para->ITHACAdict->lookupOrDefault<scalar>(
+            "measNoiseCov", 0);
+    scalar modelErrorCov = para->ITHACAdict->lookupOrDefault<scalar>(
+            "modelErrorCov", 0);
+    scalar stateCov = para->ITHACAdict->lookupOrDefault<scalar>(
+            "stateInitialCov", 0);
+    scalar parameterCov = para->ITHACAdict->lookupOrDefault<scalar>(
+            "parameterPriorCov", 0);
 
     label NheatFluxPODbasis = 
         para->ITHACAdict->lookupOrDefault<label>("NheatFluxPODbasis", 0);
     label innerLoops = para->ITHACAdict->lookupOrDefault<label>("EnKF_innerLoop", 1);
+
+    word reconstructionFolder = "ITHACAoutput/reconstruction";
 
     scalar basisShapeParameter = 0.6;
     example.HTproblem.setSpaceBasis("pod", basisShapeParameter, NheatFluxPODbasis);
@@ -241,20 +249,36 @@ int main(int argc, char* argv[])
     const int stateSize = example.getStateSize();
     example.setParameterSize(NheatFluxPODbasis);
     const int parameterSize = example.getParameterSize();
-    Eigen::VectorXd stateInitialMean = Eigen::VectorXd::Ones(stateSize) * example.HTproblem.initialField;
-    Eigen::MatrixXd stateInitialCov = Eigen::MatrixXd::Identity(stateSize,
-                                      stateSize) * 10;
-    Eigen::VectorXd parameterPriorMean = example.setParameterPriorMean(); //Eigen::VectorXd::Zero(parameterSize);
+    Eigen::VectorXd stateInitialMean =
+        Eigen::VectorXd::Ones(1) * example.HTproblem.initialField;
+    Eigen::MatrixXd stateInitialCov = Eigen::MatrixXd::Identity(1,1) * stateCov;
+    Eigen::VectorXd parameterPriorMean = example.setParameterPriorMean();
     Eigen::MatrixXd parameterPriorCov = Eigen::MatrixXd::Identity(parameterSize,
-                                        parameterSize) * 1000;
-    example.setObservations(example.HTproblem.solveDirect());
-    example.setInitialStateDensity(stateInitialMean, stateInitialCov);
+                                        parameterSize) * parameterCov;
+    
+    // Add noise to measurements
+    Eigen::MatrixXd measurementsMat = example.HTproblem.solveDirect();
+    example.setMeasNoise(measNoiseCov * measurementsMat.mean());
+    ITHACAstream::exportMatrix(measurementsMat, "measurementsMat_noNoise", "eigen", 
+            reconstructionFolder);
+    for(int i = 0; i < measurementsMat.cols(); i++)
+    {
+        measurementsMat.col(i) = 
+            measurementsMat.col(i) + example.measNoiseDensity->Sample(); 
+    }
+    ITHACAstream::exportMatrix(measurementsMat, "measurementsMat_noise", "eigen", 
+            reconstructionFolder);
+    example.setObservations(measurementsMat);
+
+
+    bool univariateInitStateDensFlag = 1;
+    example.setInitialStateDensity(stateInitialMean, stateInitialCov,
+            univariateInitStateDensFlag);
     std::cout << "debug: parameterPriorMean = " << parameterPriorMean << std::endl;
     example.setParameterPriorDensity(parameterPriorMean, parameterPriorCov);
     bool univariateModelErrorDistribution = 1;
     example.setModelError(0.1, univariateModelErrorDistribution);
     example.setMeasNoise(0.1);
-    word reconstructionFolder = "ITHACAoutput/reconstruction";
     example.run(innerLoops, reconstructionFolder);
     example.postProcessing(reconstructionFolder);
     return 0;

@@ -109,6 +109,10 @@ class Fang2017filter_wDF
 
     int innerLoopI = 0;
 
+    /// Set to 1 to use a univariate sampling for the initial state density
+    /// (use with big states)
+    bool univariateInitStateDensFlag = 0;
+
 
     public:
         // Constructors
@@ -199,8 +203,9 @@ class Fang2017filter_wDF
         void setMeasNoise(double cov);
 
         //--------------------------------------------------------------------------
-        /// Create initial state ensemble 
-        void setInitialStateDensity(Eigen::VectorXd _mean, Eigen::MatrixXd _cov);
+        /// Create initial state ensemble
+        void setInitialStateDensity(Eigen::VectorXd _mean, Eigen::MatrixXd _cov,
+                bool _univariateFlag = 0);
 
         //--------------------------------------------------------------------------
         /// Create initial state ensemble 

@@ -414,7 +414,7 @@ class inverseHeatTransfer_3D: public sequentialIHTP
 
             ITHACAutilities::assignBC(T, hotSide_ind,
                                       - updateHeatFlux(_heatFlux_weights) / thermalCond);
-            std::cout << "debug : _heatFlux_weights = " << _heatFlux_weights << std::endl;
+            std::cout << "debug : _heatFlux_weights = \n" << _heatFlux_weights << std::endl;
 
             while (runTime.loop())
             {
