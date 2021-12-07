@@ -563,6 +563,66 @@ template void getModesSVD(
     word fieldName, bool podex, bool supex, bool sup, label nmodes,
     bool correctBC);
 
+void getModesSVD(
+    List<List<scalar>>& snapshots, List<scalar>& massVector, List<List<scalar>>& modes,
+    label nmodes, word debugFolder)
+{
+    ITHACAparameters* para(ITHACAparameters::getInstance());
+
+    M_Assert(snapshots.size() > 0, "Input snapshots list is empty");
+    M_Assert(snapshots[0].size() > 0, "Input snapshots have size 0");
+
+    List<List<scalar>> Bases;
+    if(nmodes == 0)
+    {
+        nmodes = snapshots.size();
+    }
+    modes.resize(nmodes);
+
+    Eigen::MatrixXd SnapMatrix(snapshots[0].size(), snapshots.size());
+    forAll(snapshots, sampI)
+    {
+        SnapMatrix.col(sampI) = Foam2Eigen::List2EigenMatrix(snapshots[sampI]);
+    }
+    Eigen::VectorXd V = Foam2Eigen::List2EigenMatrix(massVector);
+    Eigen::VectorXd V3dSqrt = V.array().sqrt();
+    Eigen::VectorXd V3dInv = V3dSqrt.array().cwiseInverse();
+    auto VMsqr = V3dSqrt.asDiagonal();
+    auto VMsqrInv = V3dInv.asDiagonal();
+    Eigen::MatrixXd SnapMatrix2 = VMsqr * SnapMatrix;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(SnapMatrix2,
+                                          Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::VectorXd eigenValueseig;
+    Eigen::MatrixXd eigenVectoreig;
+    eigenValueseig = svd.singularValues().real();
+    eigenVectoreig = svd.matrixU().real();
+    Eigen::MatrixXd modesEig = VMsqrInv * eigenVectoreig;
+
+    for (label i = 0; i < nmodes; i++)
+    {
+        Eigen::MatrixXd temp = modesEig.col(i);
+        modes[i] = Foam2Eigen::EigenMatrix2List(temp);
+    }
+
+    eigenValueseig = eigenValueseig / eigenValueseig.sum();
+    Eigen::VectorXd cumEigenValues(eigenValueseig);
+
+    for (label j = 1; j < cumEigenValues.size(); ++j)
+    {
+        cumEigenValues(j) += cumEigenValues(j - 1);
+    }
+
+    if(debugFolder != "None")
+    {
+        Eigen::saveMarketVector(eigenValueseig,
+                                debugFolder + "/Eigenvalues", para->precision,
+                                para->outytpe);
+        Eigen::saveMarketVector(cumEigenValues,
+                                debugFolder + "/CumEigenvalues", para->precision,
+                                para->outytpe);
+    }
+}
+
 /// Construct the Correlation Matrix for Scalar Field
 template<>
 Eigen::MatrixXd corMatrix(PtrList<volScalarField>& snapshots)

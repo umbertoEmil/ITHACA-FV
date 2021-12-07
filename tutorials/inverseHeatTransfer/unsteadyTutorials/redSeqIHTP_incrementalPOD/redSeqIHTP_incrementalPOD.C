@@ -101,8 +101,6 @@ int main(int argc, char* argv[])
     example.interpolationFlag =
         para->ITHACAdict->lookupOrDefault<bool>("linearTimeBasis", 0);
 
-
-
     unsigned parameterizedBC_steadyTest =
         para->ITHACAdict->lookupOrDefault<unsigned>("parameterizedBC_steadyTest", 0);
     unsigned parameterizedBC_unsteadyTest =
@@ -149,9 +147,6 @@ int main(int argc, char* argv[])
     
     //Set T0
     volScalarField initialField = example.Ttrue[0];
-    //volScalarField initialField = example._T();
-    //scalar T0 = 650;
-    //ITHACAutilities::assignIF(initialField, T0);
     
     if(addNoise)
     {
@@ -174,24 +169,6 @@ int main(int argc, char* argv[])
         example.inverseProblemPostProcess(outputFolderRED);
         example.inverseProblemPostProcess(outputFolderRED, outputFolderFULL);
     }
-
-    //// Noise test
-    //if(parameterizedBC_NoiseTest)
-    //{
-    //    word outputFolder = "./ITHACAoutput/noiseTest/";
-    //    Eigen::VectorXd TmeasOrig = example.Tmeas;
-    //    for (label i = 0; i < Ntests; i++)
-    //    {
-    //        Info << "Test " << i << endl;
-    //        example.T0field.resize(0);
-    //        example.Tmeas = TmeasOrig;
-    //        example.addNoise(noiseLevel);
-    //        example.parameterizedBC(outputFolder, initialField, NmagicPoints, 
-    //                SVDtol, PODnorm, linSysSolver, TSVDtruncation);
-    //        example.noisePostProcess(outputFolder, i);
-    //    }
-    //}
-
 
     return 0;
 }

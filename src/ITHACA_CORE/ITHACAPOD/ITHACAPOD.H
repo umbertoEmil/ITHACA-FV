@@ -115,6 +115,17 @@ void getModesSVD(
     word fieldName, bool podex, bool supex = 0, bool sup = 0,
     label nmodes = 0, bool correctBC = true);
 
+//------------------------------------------------------------------------------
+/// @brief      Gets the bases for a list of scalars using SVD
+///
+/// @param[in]  snapshots   List of snapshots.
+/// @param[out] modes       A PtrList where modes are stored (it must be passed
+///                         empty).
+/// @param[in]  fieldName   The file name
+///
+void getModesSVD(
+    List<List<scalar>>& snapshots, List<scalar>& massVector, List<List<scalar>>& modes,
+    label nmodes = 0, word debugFolder = "None");
 
 //------------------------------------------------------------------------------
 /// Nested-POD approach. Computes the nested snapshot matrix and weighted bases

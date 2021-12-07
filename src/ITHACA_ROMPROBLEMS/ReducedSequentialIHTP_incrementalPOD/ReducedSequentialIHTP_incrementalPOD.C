@@ -70,7 +70,7 @@ void reducedSequentialIHTP_incrementalPOD::parameterizedBC(word outputFolder,
         if(timeSampleI > 0)
         {
             /// Assign the new initialField
-            reconstrucT("./ITHACAoutput/debugReconstrucT/");
+            reconstrucT(initialField, "./ITHACAoutput/debugReconstrucT/");
             ITHACAutilities::assignIF(initialField, Ttime[NtimeStepsBetweenSamples -1]);
         }
 
@@ -159,7 +159,8 @@ void reducedSequentialIHTP_incrementalPOD::parameterizedBC(word outputFolder,
         else if (linSys_solver == "jacobiSvd")
         {                                                                                  
             Eigen::JacobiSVD<Eigen::MatrixXd> svd(linSys[0],
-                                                  Eigen::ComputeThinU | Eigen::ComputeThinV);           
+                                                  Eigen::ComputeThinU | Eigen::ComputeThinV
+                                                  );           
             weigths = svd.solve(linSys[1]);
         }
         else if (linSys_solver == "householderQr")                                         
@@ -189,16 +190,16 @@ void reducedSequentialIHTP_incrementalPOD::parameterizedBC(word outputFolder,
             exit(1);
         }
 
-        gWeightsOld = gWeights;
-        gWeights.resize(weigths.size());
-        forAll(gWeights, weightI)
+        heatFluxWeightsOld = heatFluxWeights;
+        heatFluxWeights.resize(weigths.size());
+        forAll(heatFluxWeights, weightI)
         {
-            gWeights[weightI] = weigths(weightI);
+            heatFluxWeights[weightI] = weigths(weightI);
         }
-        Info << "Weights = \n" << gWeights << endl;
-        update_gParametrized(gWeights);
+        Info << "Weights = \n" << heatFluxWeights << endl;
+        updateHeatFlux(heatFluxWeights);
         label verbose = 0;
-        parameterizedBC_postProcess(linSys, weigths, outputFolder, verbose);
+        parameterizedBC_postProcess(linSys, weigths, initialField, outputFolder, verbose);
         timeSampleI++;
     }
     ITHACAstream::exportMatrix(Jlist, "costFunction", "eigen", outputFolder);
@@ -229,7 +230,7 @@ void reducedSequentialIHTP_incrementalPOD::solveT0online(volScalarField initialF
 
     if(useReducedInitialField)
     {
-        Eigen::VectorXd gWeights_Eig = Foam2Eigen::List2EigenMatrix(gWeights);
+        Eigen::VectorXd heatFluxWeights_Eig = Foam2Eigen::List2EigenMatrix(heatFluxWeights);
 
         if(T0red.size() == 0 || !previousWasReduced)
         {
@@ -237,7 +238,7 @@ void reducedSequentialIHTP_incrementalPOD::solveT0online(volScalarField initialF
         }
         else
         {
-            T0red = Tbasis_projectionMat * gWeights_Eig - Tad_projected + T0red;
+            T0red = Tbasis_projectionMat * heatFluxWeights_Eig - Tad_projected + T0red;
         }
     }
     else
@@ -283,7 +284,7 @@ double reducedSequentialIHTP_incrementalPOD::T0projectionError(volScalarField& T
     {
         Info <<"Previous step was reduced" << endl;
         TprojAtPoints = pointTbasis_reconstructionMat * 
-            Foam2Eigen::List2EigenMatrix(gWeights) - pointTad_reconstructed 
+            Foam2Eigen::List2EigenMatrix(heatFluxWeights) - pointTad_reconstructed 
             + pointsReconstructMatrix * T0red; 
         forAll(magicPoints, cellI)
         {
@@ -325,7 +326,7 @@ volScalarField reducedSequentialIHTP_incrementalPOD::reconstrucT_lastTime()
     ITHACAutilities::assignIF(Tout, homogeneousBC);                                       
     forAll(Tbasis, baseI)                                                              
     {                                                                                  
-        Tout += gWeights[baseI] * (Tbasis[baseI][timeI] + Tad_time[timeI]);
+        Tout += heatFluxWeights[baseI] * (Tbasis[baseI][timeI] + Tad_time[timeI]);
     }                                                                                  
     Tout += - Tad_time[timeI] + T0_time[timeI];
     return Tout;

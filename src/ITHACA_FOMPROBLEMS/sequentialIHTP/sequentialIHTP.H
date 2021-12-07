@@ -77,6 +77,8 @@ class sequentialIHTP: public laplacianProblem
         autoPtr<volScalarField> _T;
         PtrList<volScalarField> Ttime;
         List<PtrList<volScalarField>> Tbasis;
+        List<PtrList<volScalarField>> Ttau;
+        PtrList<volScalarField> TF;
 
         /// Additional temperature field
         autoPtr<volScalarField> _Tad;
@@ -189,11 +191,11 @@ class sequentialIHTP: public laplacianProblem
         /// List of cost funtions  [K^2]
         Eigen::VectorXd Jlist;
 
-        /// Thermal diffusivity [W/(m K)]
-        double k;
+        /// Thermal conductivity [W/(m K)]
+        double thermalCond;
 
         /// Heat transfer coefficient [W/(m2 K)]
-        double H;
+        double HTC;
 
         /// Density [kg /m3]
         double density;
@@ -211,10 +213,13 @@ class sequentialIHTP: public laplacianProblem
         scalar offlineEndTime = 0.0;
 
         bool offlineFlag = 0;
+
+        /// Set to 1 to interpolate the constant weights in a linear way
         bool interpolationFlag = 0;
 
-        /// Number of timesteps considered in each acquisition sequence
-        label NtimestepsInSequence = 0;
+        /// Set to 1 for piecewise linear basis in time for the heat flux
+        bool linearBasis = 0;
+
 
         scalar homogeneousBC = 0.0;
         List<scalar> homogeneousBCcoldSide;
@@ -228,43 +233,37 @@ class sequentialIHTP: public laplacianProblem
         /// Index of the coldSide patch
         label coldSide_ind;
 
-        /// Heat flux at hotSide
-        List<List<scalar>> g;
+        /// Heat flux at hotSide, the first value is for t=0s
+        List<List<scalar>> heatFlux;
 
         /// Heat flux space basis
         List<List<scalar>> heatFluxSpaceBasis;
 
-        /// Bases of the heat flux
-        List<List<List<scalar>>> gBaseFunctions;
+        /// Time basis of the heat flux
+        List<List<scalar>> heatFluxTimeBasis;
 
         /// Number of basis
         label Nbasis = 0;
-
-        /// Number of basis in time
-        label NbasisInTime = 0;
-
-        /// Number of basis in space
-        label NbasisInSpace = 0;
 
         /// Number of samples considered in the offline phase
         label NsamplesWindow = 0;
 
         /// Weights of the parameterization
-        List<scalar> gWeights;
+        List<scalar> heatFluxWeights;
 
         /// Weights of the parameterization
-        List<scalar> gWeightsOld;
+        List<scalar> heatFluxWeightsOld;
 
         /// True heat flux at hotSide [W/m2]
-        List<List<scalar>> gTrue;
+        List<List<scalar>> trueHeatFlux;
 
         /// Parametrized BC
         Eigen::VectorXd residual;
         Eigen::VectorXd addSol;
         Eigen::VectorXd T0_vector;
         Eigen::VectorXd Tcomp;
+        Eigen::MatrixXd Theta_tau;
         Eigen::MatrixXd Theta;
-	word timeBasisType = "None";
 
         word linSys_solver;
         label TSVD_filter;
@@ -290,13 +289,13 @@ class sequentialIHTP: public laplacianProblem
         //--------------------------------------------------------------------------
 
         /// Define the base functions used for the parametrization of g
-        void setSpaceBasis(word type, scalar shapeParameter);
+        void setSpaceBasis(word type, scalar shapeParameter, label Npod = 0);
 
         //--------------------------------------------------------------------------
 
         /// Set parameterized heat flux defining the basis
         void set_gParametrized(word spaceBaseFuncType,
-            scalar shapeParameter_space);
+            scalar shapeParameter_space, label Npod = 0);
 
         //--------------------------------------------------------------------------
 
@@ -313,11 +312,19 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
-        /// Update the boundary condition g when g is parameterized
+        /// Update the boundary heat flux
         ///
         /// @param[in]  weigths  New values of the weights of the basis functions
         ///
-        void update_gParametrized(List<scalar> weights);
+        void updateHeatFlux(List<scalar> weights);
+
+        //--------------------------------------------------------------------------
+
+        /// Update the boundary heat flux time basis
+        ///
+        /// @param[in]  weigths  New values of the weights of the basis functions
+        ///
+        void updateTimeHeatFlux(List<scalar> weights);
 
         //--------------------------------------------------------------------------
 
@@ -337,6 +344,12 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
+        /// 
+        ///
+        void reconstructTF();
+
+        //--------------------------------------------------------------------------
+
         /// Reconstructs the temperature field using superposition of effects at 
         /// some points at the last timestep of the offline phase
         ///
@@ -348,7 +361,26 @@ class sequentialIHTP: public laplacianProblem
 
         ///
         ///
-        void parameterizedBC(word folder, volScalarField initialField);
+        void parameterizedBC(word folder, volScalarField initialField,
+                List<scalar> _initialWeights);
+        //--------------------------------------------------------------------------
+
+        ///
+        ///
+        Eigen::VectorXd solveLinSys(List<Eigen::MatrixXd> linSys); 
+
+        //--------------------------------------------------------------------------
+
+        ///
+        ///
+        void computeConstantHeatWeights(word folder, volScalarField initialField);
+
+        //--------------------------------------------------------------------------
+
+        ///
+        ///
+        void computeLinearHeatWeights(word folder, volScalarField initialFiel,
+                List<scalar> _initialWeights);
 
         //--------------------------------------------------------------------------
 
@@ -359,12 +391,6 @@ class sequentialIHTP: public laplacianProblem
 
         /// Set BC of the direct problem
         virtual void assignDirectBC(label timeI);
-
-        //--------------------------------------------------------------------------
-
-        /// Set IF of the T0 problem
-        ///
-        virtual void assignT0_IF(volScalarField& T0_init) = 0;
 
         //--------------------------------------------------------------------------
 
@@ -421,6 +447,12 @@ class sequentialIHTP: public laplacianProblem
         /// Solve direct problem
         ///
         void solveDirect();
+
+        //--------------------------------------------------------------------------
+
+        /// Solve Ttau problem
+        ///
+        void solveTtau(label _baseI);
 
         //--------------------------------------------------------------------------
 
@@ -491,7 +523,9 @@ class sequentialIHTP: public laplacianProblem
         ///
         ///
         void parameterizedBC_postProcess(List<Eigen::MatrixXd> linSys,
-                                         Eigen::VectorXd weigths, word outputFolder, label verbose = 0);
+                                         Eigen::VectorXd weigths, 
+                                         volScalarField initialField,
+                                         word outputFolder, label verbose = 0);
 
         //--------------------------------------------------------------------------
 
