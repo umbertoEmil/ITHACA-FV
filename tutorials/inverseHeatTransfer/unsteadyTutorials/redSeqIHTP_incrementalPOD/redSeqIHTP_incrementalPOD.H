@@ -141,14 +141,8 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-
                     scalar g1 = - k * (b * faceZ * faceZ  + c);
                     scalar g2 = - k * c / (1 + (faceX - 1) * (faceX - 1) + faceZ * faceZ);
-                    if(faceI == 1)
-                    {
-                        Info << "debug: g1 = " << g1 << endl;
-                        Info << "debug: g2 = " << g2 << endl;
-                    }
                     gTrue[timeI][faceI] = g1 + 
                         g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
                                     timeSteps[timeI] * timeSteps[timeI] / endTime)) +

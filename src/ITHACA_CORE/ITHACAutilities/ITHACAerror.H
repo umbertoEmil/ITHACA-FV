@@ -54,6 +54,16 @@ using namespace std::placeholders;
 
 namespace ITHACAutilities
 {
+//--------------------------------------------------------------------------
+/// @brief Computes the relative error between two Fields
+///
+/// @param      field1     The reference field 
+/// @param      field2     The field for which the error is computed
+///
+/// @return     The relative error field
+///
+volScalarField relativeErrorField(volScalarField& field1, volScalarField& field2,
+        scalar _EPS = 1e-16);
 
 //------------------------------------------------------------------------------
 /// @brief      Computes the relative error between two Fields in the Frobenius norm

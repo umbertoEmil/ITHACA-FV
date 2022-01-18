@@ -76,14 +76,17 @@ class sequentialIHTP: public laplacianProblem
         /// Temperature field
         autoPtr<volScalarField> _T;
         PtrList<volScalarField> Ttime;
-        List<PtrList<volScalarField>> Tbasis;
+        PtrList<volScalarField> Tbasis;
         List<PtrList<volScalarField>> Ttau;
-        PtrList<volScalarField> TF;
+
+        PtrList<volScalarField> TF_time;
 
         /// Additional temperature field
-        autoPtr<volScalarField> _Tad;
-        PtrList<volScalarField> Tad_time;
+        PtrList<volScalarField> Ttau_lastTime;
+
         PtrList<volScalarField> T0_time;
+
+        PtrList<volScalarField> TFI_time;
 
         /// Mesh
         mutable autoPtr<fvMesh> _mesh;
@@ -204,7 +207,10 @@ class sequentialIHTP: public laplacianProblem
         double specificHeat;
 
         /// Folder where the offline solutions are saved
-        word folderOffline = "./ITHACAoutput/offlineParamBC/";
+        word folderOffline = "./ITHACAoutput/offlineParamBC_unsteady/";
+
+        /// Folder where the offline solutions are saved
+        word basisFolderOffline = folderOffline + "Tbasis/";
 
         /// Number of timestep to solve for during offline phase
         label offlineTimestepsSize = 0;
@@ -217,12 +223,14 @@ class sequentialIHTP: public laplacianProblem
         /// Set to 1 to interpolate the constant weights in a linear way
         bool interpolationFlag = 0;
 
+        /// Set to 1 when the TF has been computed
+        bool TF_ready = 0;
+
         /// Set to 1 for piecewise linear basis in time for the heat flux
         bool linearBasis = 0;
 
 
         scalar homogeneousBC = 0.0;
-        List<scalar> homogeneousBCcoldSide;
         List<scalar> Tf; //temperature at coldSide [K]
         List<scalar> refGrad;
         List<scalar> valueFraction;
@@ -259,10 +267,15 @@ class sequentialIHTP: public laplacianProblem
 
         /// Parametrized BC
         Eigen::VectorXd residual;
-        Eigen::VectorXd addSol;
+
         Eigen::VectorXd T0_vector;
+        
+        Eigen::VectorXd TFI_vector;
+        
         Eigen::VectorXd Tcomp;
+        
         Eigen::MatrixXd Theta_tau;
+        
         Eigen::MatrixXd Theta;
 
         word linSys_solver;
@@ -271,12 +284,21 @@ class sequentialIHTP: public laplacianProblem
         label CG_Nsteps;
 
         List<vector> thermocouplesPos;
+        
         List<int> thermocouplesCellID;
+        
         List<int> thermocouplesCellProc;
+
         List<Foam::vector> thermocouplesCellC;
-        Eigen::VectorXd Tmeas;   //Temperature at the thermocouples locations [K]
-	Eigen::VectorXd TmeasShort; //Temperature at the thermocouples locations in only two sampling times [K]
+
+        //Temperature at the thermocouples locations [K]
+        Eigen::VectorXd Tmeas;   
+
+        //Temperature at the thermocouples locations in only two sampling times [K]
+	Eigen::VectorXd TmeasShort;
+
         Eigen::VectorXd Tdirect;
+
         Eigen::VectorXd Tdiff;
 
         // Functions
@@ -338,15 +360,58 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
+        /// 
+        ///
+        void reconstructTF();
+
+        //--------------------------------------------------------------------------
+
+        /// 
+        ///
+        void solveTF(word _outputFolder, volScalarField _initialField);
+
+        //--------------------------------------------------------------------------
+
         /// Reconstructs the temperature field using superposition of effects
         ///
         void reconstrucT(word outputFolder);
 
         //--------------------------------------------------------------------------
 
+        /// Reconstruct the field T at the input point and time
+        ///
+        /// @param[in]  _point  Point where the field is reconstructed
+        /// @param[in]  _timeI  Time index for the reconstruction
+        ///
+        /// @param[out]  Field value
+        ///
+        scalar reconstrucT(vector _point, label _timeI);
+
+        //--------------------------------------------------------------------------
+
+        /// Reconstruct the field T at the input point at the list time of the interval
+        ///
+        /// @param[in]  _point  Point where the field is reconstructed
+        ///
+        /// @param[out]  Field value
+        ///
+        scalar reconstrucT(vector _point);
+
+        //--------------------------------------------------------------------------
+
+        /// Reconstruct the field T at the input point at the list time of the interval
+        ///
+        /// @param[in]  _point  Point where the field is reconstructed
+        ///
+        /// @param[out]  Field value
+        ///
+        scalar reconstrucTatThermocouple(label _TCindex);
+
+        //--------------------------------------------------------------------------
+
         /// 
         ///
-        void reconstructTF();
+        void solveT(volScalarField _initialField, word outputFolder);
 
         //--------------------------------------------------------------------------
 
@@ -361,7 +426,7 @@ class sequentialIHTP: public laplacianProblem
 
         ///
         ///
-        void parameterizedBC(word folder, volScalarField initialField,
+        void parameterizedBC(word folder, volScalarField _initialField,
                 List<scalar> _initialWeights);
         //--------------------------------------------------------------------------
 
@@ -373,7 +438,7 @@ class sequentialIHTP: public laplacianProblem
 
         ///
         ///
-        void computeConstantHeatWeights(word folder, volScalarField initialField);
+        void computeConstantHeatWeights(word folder, volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -394,9 +459,15 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
+        /// Solve the TFI problem
+        ///
+        virtual void solveTFI(volScalarField _initialField);
+
+        //--------------------------------------------------------------------------
+
         /// Solve the T0 problem
         ///
-        virtual void solveT0(volScalarField initialField);
+        virtual void solveT0(volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -435,13 +506,6 @@ class sequentialIHTP: public laplacianProblem
         ///
         void T0offline(int NmagicPoints);
 
-
-        //--------------------------------------------------------------------------
-
-        /// Set BC and IF of the additional problem for the parameterized heat flux
-        ///
-        void solveAdditional();
-
         //--------------------------------------------------------------------------
 
         /// Solve direct problem
@@ -463,14 +527,24 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
-        /// Interpolates the field value at the thermocouples points
-        /// NOTE: do NOT call whe field is an element of a PtrList
+        /// Interpolates the field value at a point
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @param[out]  Vector of field values at thermocouples points
         ///
-        Eigen::VectorXd fieldValueAtThermocouples(volScalarField& field);
+        scalar fieldValueAtPoint(volScalarField& _field, vector _point);
+
+        //--------------------------------------------------------------------------
+
+        /// Interpolates the field value at the thermocouples points
+        /// NOTE: do NOT call when field is an element of a PtrList
+        ///
+        /// @param[in]  field    Field to read the values
+        ///
+        /// @param[out]  Vector of field values at thermocouples points
+        ///
+        Eigen::VectorXd fieldValueAtThermocouples(volScalarField field);
 
         //--------------------------------------------------------------------------
 
@@ -479,7 +553,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @param[out]  Vector of field values at thermocouples points
         ///
         Eigen::VectorXd fieldValueAtThermocouples(PtrList<volScalarField> fieldList,
                 label fieldI);
@@ -490,7 +564,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @param[out]  Vector of field values at thermocouples points
         ///
         Eigen::VectorXd fieldValueAtThermocouples(PtrList<volScalarField> fieldList);
 
@@ -510,6 +584,12 @@ class sequentialIHTP: public laplacianProblem
 
         /// Restart fields
         ///
+        void restartOfflineTau();
+
+        //--------------------------------------------------------------------------
+
+        /// Restart fields
+        ///
         void restartT0();
 
         //--------------------------------------------------------------------------
@@ -524,7 +604,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         void parameterizedBC_postProcess(List<Eigen::MatrixXd> linSys,
                                          Eigen::VectorXd weigths, 
-                                         volScalarField initialField,
+                                         volScalarField _initialField,
                                          word outputFolder, label verbose = 0);
 
         //--------------------------------------------------------------------------
