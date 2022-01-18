@@ -72,6 +72,26 @@ double LinfNorm(GeometricField<vector, fvPatchField, volMesh>& field)
     return a;
 }
 
+volScalarField relativeErrorField(volScalarField& field1, volScalarField& field2, 
+        scalar _EPS)
+{
+    volScalarField relErrorField(field1 - field2);
+    
+    for (label i = 0; i < relErrorField.internalField().size(); i++)
+    {
+        if (std::abs(field1.ref()[i]) < _EPS)
+        {
+            relErrorField.ref()[i] = (std::abs(relErrorField.ref()[i])) / _EPS;
+        }
+        else
+        {
+            relErrorField.ref()[i] = (std::abs(relErrorField.ref()[i])) /
+                                          std::abs(field1.ref()[i]);
+        }
+    }
+    return relErrorField;
+}
+
 template<typename T>
 double errorFrobRel(GeometricField<T, fvPatchField, volMesh>& field1,
                     GeometricField<T, fvPatchField, volMesh>& field2)

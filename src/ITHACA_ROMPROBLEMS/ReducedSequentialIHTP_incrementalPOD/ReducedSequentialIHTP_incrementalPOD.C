@@ -70,7 +70,7 @@ void reducedSequentialIHTP_incrementalPOD::parameterizedBC(word outputFolder,
         if(timeSampleI > 0)
         {
             /// Assign the new initialField
-            reconstrucT(initialField, "./ITHACAoutput/debugReconstrucT/");
+            reconstrucT("./ITHACAoutput/debugReconstrucT/");
             ITHACAutilities::assignIF(initialField, Ttime[NtimeStepsBetweenSamples -1]);
         }
 

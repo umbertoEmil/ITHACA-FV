@@ -1,14 +1,14 @@
-#ifndef redSeqIHTP_incrementalPOD_H
-#define redSeqIHTP_incrementalPOD_H
+#ifndef linBasisTest_H
+#define linBasisTest_H
 
 #include "ReducedSequentialIHTP_incrementalPOD.H"
 #include "MUQ/Modeling/Distributions/Gaussian.h"
 
 
-class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
+class linBasisTest: public reducedSequentialIHTP_incrementalPOD
 {
     public:
-        explicit redSeqIHTP_incrementalPOD(int argc, char* argv[])
+        explicit linBasisTest(int argc, char* argv[])
             :
             reducedSequentialIHTP_incrementalPOD(argc, argv),
             initialField(_T())
@@ -25,18 +25,19 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
         scalar c = 0;
         scalar d = 0;
         PtrList<volScalarField> Ttrue;
+        PtrList<volScalarField> recT;
         volScalarField initialField;
 
         Foam::vector probeCenter = Foam::vector(1, 0.0, 0.6);
         Foam::vector probeSide = Foam::vector(0.8, 0.0, 1.1);
         Foam::vector probe2 = Foam::vector(1.0, 0.02, 0.6);
 
-        Eigen::MatrixXd probeCenter_gTrue;
+        Eigen::MatrixXd probeCenter_trueHeatFlux;
         Eigen::MatrixXd probeCenter_gRec;
         Eigen::MatrixXd probeCenter_Ttrue;
         Eigen::MatrixXd probeCenter_Trec;
 
-        Eigen::MatrixXd probeSide_gTrue;
+        Eigen::MatrixXd probeSide_trueHeatFlux;
         Eigen::MatrixXd probeSide_gRec;
 
         List<scalar> heatFlux_steady;
@@ -118,59 +119,66 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                     mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
                 scalar faceZ =
                     mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
-                heatFlux_steady[faceI] = - k * (a * faceX * faceX + b * faceZ + c);
+                heatFlux_steady[faceI] = 
+                    - thermalCond * (a * faceX * faceX + b * faceZ + c);
             }
         }
 
-        void set_gTrue()
+        void set_trueHeatFlux(scalar timeGrad)
         {
             fvMesh& mesh(_mesh());
             volScalarField& T(_T());
             hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
             label hotSideSize = T.boundaryField()[hotSide_ind].size();
-            gTrue.resize(timeSteps.size());
+            trueHeatFlux.resize(timeSteps.size());
             set_steadyHeatFlux();
             forAll(timeSteps, timeI)
             {
-                // Setting gTrue
-                gTrue[timeI].resize(hotSideSize);
-                forAll(gTrue[timeI], faceI)
+                // Setting trueHeatFlux
+                trueHeatFlux[timeI].resize(hotSideSize);
+                forAll(trueHeatFlux[timeI], faceI)
                 {
                     scalar faceX =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-                    scalar g1 = - k * (b * faceZ * faceZ  + c);
-                    scalar g2 = - k * c / (1 + (faceX - 1) * (faceX - 1) + faceZ * faceZ);
-                    gTrue[timeI][faceI] = g1 + 
-                        g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
-                                    timeSteps[timeI] * timeSteps[timeI] / endTime)) +
-                        g2 * std::exp(- 0.1 * timeSteps[timeI]);
-
-
-                    //gTrue[timeI][faceI] = heatFlux_steady[faceI] + 
-                    //    0.1 * heatFlux_steady[faceI] * (
-                    //            std::sin ( 2 * M_PI * maxFrequency * timeSteps[timeI]));
-
-                    //scalar g1 = - k * (a * faceX  + b * faceZ * faceZ  + c);
-                    //gTrue[timeI][faceI] += g1 * (1 + 0.5 * (std::sin (
-                    //                          2 * M_PI * (maxFrequency / endTime * 
-                    //                              timeSteps[timeI]) * timeSteps[timeI])));
-
-                    //if(timeSteps[timeI] < 10.0)
-                    //{
-                    //    scalar g1 = - k * (a * faceX  + b * faceZ * faceZ  + c);
-                    //    gTrue[timeI][faceI] = g1 * (1 + 0.5 * (std::sin (
-                    //                              2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI])));
-                    //}
-                    
-                    //scalar g1 = - k * (a * faceX * faceX * std::sin (2 * M_PI * timeSteps[timeI]) + b * faceZ * std::sin (M_PI * timeSteps[timeI]) + c);
-                    //gTrue[timeI][faceI] = g1 * (1 + 0.5 * (std::sin (
-                    //                          2 * M_PI * (maxFrequency / endTime * timeSteps[timeI]) * timeSteps[timeI])));
+                    scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
+                    trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1;
                 }
             }
         }
+
+        //void set_trueHeatFlux()
+        //{
+        //    fvMesh& mesh(_mesh());
+        //    volScalarField& T(_T());
+        //    hotSide_ind = mesh.boundaryMesh().findPatchID("hotSide");
+        //    label hotSideSize = T.boundaryField()[hotSide_ind].size();
+        //    trueHeatFlux.resize(timeSteps.size());
+        //    set_steadyHeatFlux();
+        //    forAll(timeSteps, timeI)
+        //    {
+        //        // Setting trueHeatFlux
+        //        trueHeatFlux[timeI].resize(hotSideSize);
+        //        forAll(trueHeatFlux[timeI], faceI)
+        //        {
+        //            scalar faceX =
+        //                mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].x();
+        //            scalar faceZ =
+        //                mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
+
+        //            scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
+        //            scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) + 
+        //                    faceZ * faceZ);
+        //            trueHeatFlux[timeI][faceI] = g1 + 
+        //                g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
+        //                            timeSteps[timeI] * timeSteps[timeI] / endTime)) +
+        //                g2 * std::exp(- 0.1 * timeSteps[timeI]);
+
+        //        }
+        //    }
+        //}
 
         void set_Tf(label timeI)
         {
@@ -200,7 +208,7 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                 }
                 else if (patchI == mesh.boundaryMesh().findPatchID("hotSide"))
                 {
-                    ITHACAutilities::assignBC(T, patchI, - g[timeI] / k);
+                    ITHACAutilities::assignBC(T, patchI, - heatFlux[timeI] / thermalCond);
                 }
                 else
                 {
@@ -220,15 +228,16 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
             fv::options& fvOptions(_fvOptions());
             label timeI = 0;
             assignTrueIF();
-            g = gTrue;
+            heatFlux = trueHeatFlux;
             assignDirectBC(timeI);
             ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
                                          directOutputFolder,
                                          "Ttrue");
-            volScalarField gTrueField = list2Field(gTrue[timeI]);
-            ITHACAstream::exportSolution(gTrueField,
-                                         std::to_string(timeSteps[timeI]), directOutputFolder,
-                                         "gTrue");
+            volScalarField trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
+            ITHACAstream::exportSolution(trueHeatFluxField,
+                                         std::to_string(timeSteps[timeI]), 
+                                         directOutputFolder,
+                                         "trueHeatFlux");
             Ttrue.resize(0);
             Ttrue.append(T.clone());
 
@@ -252,11 +261,11 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                 ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI]),
                                              directOutputFolder,
                                              "Ttrue");
-                gTrueField = list2Field(gTrue[timeI]);
-                ITHACAstream::exportSolution(gTrueField,
+                trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
+                ITHACAstream::exportSolution(trueHeatFluxField,
                                              std::to_string(timeSteps[timeI]), 
                                              directOutputFolder,
-                                             "gTrue");
+                                             "trueHeatFlux");
                 Ttrue.append(T.clone());
                 Info << endl;
                 runTime.printExecutionTime(Info);
@@ -294,20 +303,20 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
             Eigen::VectorXd trueHeatFluxLinfNorm(timeSteps.size());
             Eigen::VectorXd avgRelErrL2norm(timeSteps.size());
             Eigen::VectorXd avgRelErrLinfNorm(timeSteps.size());
-            Info << "debug : g.size() = " << g.size() << endl;
-            Info << "debug : gTrue.size() = " << gTrue.size() << endl;
+            Info << "debug : g.size() = " << heatFlux.size() << endl;
+            Info << "debug : trueHeatFlux.size() = " << trueHeatFlux.size() << endl;
             Info << "debug : Ttrue.size() = " << Ttrue.size() << endl;
             Info << "debug : timeSteps.size() = " << timeSteps.size() << endl;
 
             label cellprobeCenter = mesh.findCell(probeCenter);
-            Eigen::VectorXd probeCenter_gTrue(timeSteps.size());
-            Eigen::VectorXd probeCenter_gRec = probeCenter_gTrue;
-            Eigen::VectorXd probeCenter_Ttrue = probeCenter_gTrue;
-            Eigen::VectorXd probeCenter_Trec = probeCenter_gTrue;
+            Eigen::VectorXd probeCenter_trueHeatFlux(timeSteps.size());
+            Eigen::VectorXd probeCenter_gRec = probeCenter_trueHeatFlux;
+            Eigen::VectorXd probeCenter_Ttrue = probeCenter_trueHeatFlux;
+            Eigen::VectorXd probeCenter_Trec = probeCenter_trueHeatFlux;
 
             label cellprobeSide = mesh.findCell(probeSide);
-            Eigen::VectorXd probeSide_gTrue(timeSteps.size());
-            Eigen::VectorXd probeSide_gRec = probeSide_gTrue;
+            Eigen::VectorXd probeSide_trueHeatFlux(timeSteps.size());
+            Eigen::VectorXd probeSide_gRec = probeSide_trueHeatFlux;
 
             label cellProbe2 = mesh.findCell(probe2);
             Eigen::VectorXd probe2_Ttrue(timeSteps.size());
@@ -323,77 +332,44 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
              endl;
             forAll(timeSteps, timeI)
             {
-                volScalarField gTrueField = list2Field(gTrue[timeI]);
-                volScalarField gParametrizedField = list2Field(g[timeI]);
-                volScalarField gDiffField = gParametrizedField - gTrueField;
-                ITHACAstream::exportSolution(gTrueField,
-                                             std::to_string(timeSteps[timeI]), outputFolder,
-                                             "gTrue");
+                volScalarField trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
+                volScalarField gParametrizedField = list2Field(heatFlux[timeI]);
+                volScalarField relErrField = ITHACAutilities::relativeErrorField(
+                        trueHeatFluxField, gParametrizedField);
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "heatFluxRelErrField");
+                ITHACAstream::exportSolution(trueHeatFluxField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             outputFolder, "trueHeatFlux");
                 ITHACAstream::exportSolution(Ttrue[timeI],
-                                             std::to_string(timeSteps[timeI]), outputFolder,
-                                             "Ttrue");
-                ITHACAstream::exportSolution(gDiffField,
-                                             std::to_string(timeSteps[timeI]), outputFolder,
-                                             "gDiffField");
-                probeCenter_gTrue(timeI) = gTrueField[cellprobeCenter];
+                        std::to_string(timeSteps[timeI]), outputFolder, "Ttrue");
+                relErrField = ITHACAutilities::relativeErrorField(Ttrue[timeI], 
+                        Trec[timeI]);
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "tempRelErrField");
+                probeCenter_trueHeatFlux(timeI) = trueHeatFluxField[cellprobeCenter];
                 probeCenter_gRec(timeI) = gParametrizedField[cellprobeCenter];
                 probeCenter_Ttrue(timeI) = Ttrue[timeI][cellprobeCenter];
                 probeCenter_Trec(timeI) = Trec[timeI][cellprobeCenter];
-                probeSide_gTrue(timeI) = gTrueField[cellprobeSide];
+                probeSide_trueHeatFlux(timeI) = trueHeatFluxField[cellprobeSide];
                 probeSide_gRec(timeI) = gParametrizedField[cellprobeSide];
                 probe2_Ttrue(timeI) = Ttrue[timeI][cellProbe2];
                 probe2_Trec(timeI) = Trec[timeI][cellProbe2];
                 scalar EPS = 1e-6;
-                //volScalarField relativeErrorField(gDiffField);
-
-                //for (label i = 0; i < relativeErrorField.internalField().size(); i++)
-                //{
-                //    if (std::abs(gTrueField.ref()[i]) < EPS)
-                //    {
-                //        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) / EPS;
-                //    }
-                //    else
-                //    {
-                //        relativeErrorField.ref()[i] = (std::abs(gDiffField.ref()[i])) /
-                //                                      std::abs(gTrueField.ref()[i]);
-                //    }
-                //}
-
-                //ITHACAstream::exportSolution(relativeErrorField,
-                //                             std::to_string(timeSteps[timeI]), outputFolder,
-                //                             "relativeErrorField");
-                heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, gParametrizedField,
-                                        "hotSide");
+                heatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, 
+                        gParametrizedField, "hotSide");
                 heatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh,
                                           gParametrizedField,
                                           "hotSide");
-                trueHeatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, gTrueField,
-                                       "hotSide");
+                trueHeatFluxL2norm(timeI) = ITHACAutilities::L2normOnPatch(mesh, 
+                        trueHeatFluxField, "hotSide");
                 trueHeatFluxLinfNorm(timeI) = ITHACAutilities::LinfNormOnPatch(mesh,
-                                          gTrueField,
+                                          trueHeatFluxField,
                                           "hotSide");
                 ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
             }
-            //for(int sI = 0; sI < timeSamplesNum; sI++)
-            //{
-            //    double avgL2 = 0;
-            //    double avgLinf = 0;
-            //    for(int i = 0; i < NtimeStepsBetweenSamples; i++)
-            //    {
-            //        int timeI = sI * NtimeStepsBetweenSamples + i;
-            //        avgL2 += heatFluxL2norm(timeI);
-            //        avgLinf += heatFluxLinfNorm(timeI);
-            //    }
-            //    avgL2 = avgL2 / NtimeStepsBetweenSamples;
-            //    avgLinf = avgLinf / NtimeStepsBetweenSamples;
-            //    for(int i = 0; i < NtimeStepsBetweenSamples; i++)
-            //    {
-            //        int timeI = sI * NtimeStepsBetweenSamples + i;
-            //        avgRelErrL2norm(timeI) = avgL2;
-            //        avgRelErrLinfNorm(timeI) = avgLinf;
-            //    }
-            //    ITHACAstream::printProgress(double(sI + 1) / timeSamplesNum);
-            //}
             Info << "\nExporting" << endl;
             ITHACAstream::exportMatrix(heatFluxL2norm, "heatFluxL2norm", "eigen",
                                        outputFolder);
@@ -401,16 +377,8 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                                        outputFolder);
             ITHACAstream::exportMatrix(trueHeatFluxL2norm, "trueHeatFluxL2norm", "eigen",
                                        outputFolder);
-            ITHACAstream::exportMatrix(trueHeatFluxLinfNorm, "trueHeatFluxLinfNorm", "eigen",
-                                       outputFolder);
-            //ITHACAstream::exportMatrix(heatFluxL2norm, "relErrL2norm", "eigen",
-            //                           outputFolder);
-            //ITHACAstream::exportMatrix(heatFluxLinfNorm, "relErrLinfNorm", "eigen",
-            //                           outputFolder);
-            //ITHACAstream::exportMatrix(avgRelErrL2norm, "avgRelErrL2norm", "eigen",
-            //                           outputFolder);
-            //ITHACAstream::exportMatrix(avgRelErrLinfNorm, "avgRelErrLinfNorm", "eigen",
-            //                           outputFolder);
+            ITHACAstream::exportMatrix(trueHeatFluxLinfNorm, "trueHeatFluxLinfNorm", 
+                    "eigen", outputFolder);
             Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
             Eigen::VectorXd samplingTime_eigen = 
                 Foam2Eigen::List2EigenMatrix(samplingTime);
@@ -418,21 +386,23 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                     timeSteps_eigen, "timeSteps", "eigen", outputFolder);
             ITHACAstream::exportMatrix(samplingTime_eigen, "samplingTime", "eigen",
                                        outputFolder);
-            ITHACAstream::exportMatrix(probeCenter_gTrue, "probeCenter_gTrue", "eigen", 
+            ITHACAstream::exportMatrix(probeCenter_trueHeatFlux, 
+                    "probeCenter_trueHeatFlux", "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probeCenter_gRec, "probeCenter_gRec", "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probeCenter_Ttrue, "probeCenter_Ttrue", "eigen", 
                     outputFolder);
-            ITHACAstream::exportMatrix(probeCenter_Trec, "probeCenter_Trec", "eigen", outputFolder);
-            ITHACAstream::exportMatrix(probeSide_gTrue, "probeSide_gTrue", "eigen", 
+            ITHACAstream::exportMatrix(probeCenter_Trec, "probeCenter_Trec", "eigen", 
                     outputFolder);
+            ITHACAstream::exportMatrix(probeSide_trueHeatFlux, "probeSide_trueHeatFlux", 
+                    "eigen", outputFolder);
             ITHACAstream::exportMatrix(probeSide_gRec, "probeSide_gRec", "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probe2_Ttrue, "probe2_Ttrue", "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probe2_Trec, "probe2_Trec", "eigen", outputFolder);
-            Info << "\n Ended Exporting" << endl;
+            Info << "Ended Exporting" << endl;
         }
 
         void inverseProblemPostProcess(word outputFolder, word outputFolderFULL)
@@ -443,7 +413,7 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
 
             forAll(timeSteps, timeI)
             {
-                volScalarField gParametrizedField = list2Field(g[timeI]);
+                volScalarField gParametrizedField = list2Field(heatFlux[timeI]);
 
                 ITHACAstream::exportSolution(gParametrizedField,
                                              std::to_string(timeSteps[timeI]), 
@@ -468,12 +438,12 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
 
             label cellprobeCenter = mesh.findCell(probeCenter);
             label cellprobeSide = mesh.findCell(probeSide);
-            probeCenter_gTrue.conservativeResize(timeSteps.size(), testI + 1);
+            probeCenter_trueHeatFlux.conservativeResize(timeSteps.size(), testI + 1);
             probeCenter_gRec.conservativeResize(timeSteps.size(), testI + 1);
             probeCenter_Ttrue.conservativeResize(timeSteps.size(), testI + 1);
             probeCenter_Trec.conservativeResize(timeSteps.size(), testI + 1);
 
-            probeSide_gTrue.conservativeResize(timeSteps.size(), testI + 1);
+            probeSide_trueHeatFlux.conservativeResize(timeSteps.size(), testI + 1);
             probeSide_gRec.conservativeResize(timeSteps.size(), testI + 1);
 
             PtrList<volScalarField> Trec;
@@ -486,14 +456,14 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
              endl;
             forAll(timeSteps, timeI)
             {
-                volScalarField gTrueField = list2Field(gTrue[timeI]);
-                volScalarField gParametrizedField = list2Field(g[timeI]);
-                volScalarField gDiffField = gParametrizedField - gTrueField;
-                probeCenter_gTrue(timeI, testI) = gTrueField[cellprobeCenter];
+                volScalarField trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
+                volScalarField gParametrizedField = list2Field(heatFlux[timeI]);
+                volScalarField gDiffField = gParametrizedField - trueHeatFluxField;
+                probeCenter_trueHeatFlux(timeI, testI) = trueHeatFluxField[cellprobeCenter];
                 probeCenter_gRec(timeI, testI) = gParametrizedField[cellprobeCenter];
                 probeCenter_Ttrue(timeI, testI) = Ttrue[timeI][cellprobeCenter];
                 probeCenter_Trec(timeI, testI) = Trec[timeI][cellprobeCenter];
-                probeSide_gTrue(timeI, testI) = gTrueField[cellprobeSide];
+                probeSide_trueHeatFlux(timeI, testI) = trueHeatFluxField[cellprobeSide];
                 probeSide_gRec(timeI, testI) = gParametrizedField[cellprobeSide];
 
                 ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
@@ -505,18 +475,117 @@ class redSeqIHTP_incrementalPOD: public reducedSequentialIHTP_incrementalPOD
                     timeSteps_eigen, "timeSteps", "eigen", outputFolder);
             ITHACAstream::exportMatrix(samplingTime_eigen, "samplingTime", "eigen",
                                        outputFolder);
-            ITHACAstream::exportMatrix(probeCenter_gTrue, "probeCenter_gTrue", "eigen", 
-                    outputFolder);
+            ITHACAstream::exportMatrix(probeCenter_trueHeatFlux, 
+                    "probeCenter_trueHeatFlux", "eigen", outputFolder);
             ITHACAstream::exportMatrix(probeCenter_gRec, "probeCenter_gRec", "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probeCenter_Ttrue, "probeCenter_Ttrue", "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probeCenter_Trec, "probeCenter_Trec", "eigen", 
                     outputFolder);
-            ITHACAstream::exportMatrix(probeSide_gTrue, "probeSide_gTrue", "eigen", 
+            ITHACAstream::exportMatrix(probeSide_trueHeatFlux, "probeSide_trueHeatFlux", 
+                    "eigen", 
                     outputFolder);
             ITHACAstream::exportMatrix(probeSide_gRec, "probeSide_gRec", "eigen", 
                     outputFolder);
+        }
+
+        //--------------------------------------------------------------------------
+        /// Set parameter prior projecting initial gTrue on the parameterized space
+        List<scalar> projectHeatFlux(List<scalar> _heatFlux)
+        {
+            Eigen::MatrixXd Temp(heatFluxSpaceBasis[0].size(),
+                    heatFluxSpaceBasis.size());
+            forAll(heatFluxSpaceBasis, baseI)
+            {
+                Temp.col(baseI) = Foam2Eigen::List2EigenMatrix(heatFluxSpaceBasis[baseI]);
+            }
+
+            Eigen::MatrixXd Btemp = Foam2Eigen::List2EigenMatrix(_heatFlux);
+            Eigen::MatrixXd B = Temp.transpose() * Btemp;
+            Temp = Temp.transpose() * Temp;
+            Eigen::MatrixXd out = Temp.fullPivLu().solve(B);
+            return Foam2Eigen::EigenMatrix2List(out);
+        };
+
+        void reconstructionTest(volScalarField _initialField, word _outputFolder)
+        {
+            Info << endl << endl << 
+                "############ Testing T recostruction" << endl << endl;
+            timeSampleI = 0;
+            heatFluxWeightsOld = projectHeatFlux(trueHeatFlux[0]);
+            recT.resize(0);
+            recT.append(_initialField.clone());
+
+
+            while(timeSampleI < timeSamplesNum)
+            {
+                Info << "\nTime sample " << timeSampleI + 1 << endl;
+
+                if(timeSampleI > 0)
+                {
+                     ITHACAutilities::assignIF(_initialField, 
+                             Ttime[NtimeStepsBetweenSamples -1]);
+                     heatFluxWeightsOld = heatFluxWeights;
+                }
+
+                //Project true heat flux
+                heatFluxWeights = 
+                    projectHeatFlux(trueHeatFlux[samplingSteps[timeSampleI]]);
+                Info << "Weights = \n" << heatFluxWeights << endl;
+                updateHeatFlux(heatFluxWeights);
+
+                //Solve T0
+                solveT0(_initialField);
+                
+                //ReconstructT
+                reconstrucT(_outputFolder);
+                forAll(Ttime, tI)
+                {
+                     recT.append(Ttime[tI].clone());
+                }
+
+                timeSampleI++;
+            }
+
+            //Compute relative error
+            Info << "######### Postprocessing #########" <<
+             endl;
+            std::string message = "The recT.size() = " + std::to_string(recT.size())
+                          + " while Ttrue.size is "
+                          + std::to_string(Ttrue.size());
+
+            M_Assert(recT.size() == Ttrue.size(), "Wrong size");
+            forAll(timeSteps, timeI)
+            {
+                volScalarField trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
+                volScalarField gParametrizedField = list2Field(heatFlux[timeI]);
+                volScalarField relErrField = ITHACAutilities::relativeErrorField(
+                        trueHeatFluxField, gParametrizedField);
+                ITHACAstream::exportSolution(trueHeatFluxField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "trueHeatFlux");
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "heatFluxRelErrField");
+                ITHACAstream::exportSolution(Ttrue[timeI],
+                        std::to_string(timeSteps[timeI]), _outputFolder, "Ttrue");
+                relErrField = ITHACAutilities::relativeErrorField(Ttrue[timeI], 
+                        recT[timeI]);
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "tempRelErrField");
+                ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
+            }
+            Info << "\nExporting" << endl;
+            Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
+            Eigen::VectorXd samplingTime_eigen = 
+                Foam2Eigen::List2EigenMatrix(samplingTime);
+            ITHACAstream::exportMatrix(
+                    timeSteps_eigen, "timeSteps", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(samplingTime_eigen, "samplingTime", "eigen",
+                                       _outputFolder);
+            Info << "Ended Exporting" << endl;
         }
 };
 

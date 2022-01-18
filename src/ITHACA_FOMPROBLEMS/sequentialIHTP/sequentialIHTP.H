@@ -82,6 +82,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// Additional temperature field
         autoPtr<volScalarField> _Tad;
+        PtrList<volScalarField> Ttau_lastTime;
         PtrList<volScalarField> Tad_time;
         PtrList<volScalarField> T0_time;
 
@@ -222,7 +223,6 @@ class sequentialIHTP: public laplacianProblem
 
 
         scalar homogeneousBC = 0.0;
-        List<scalar> homogeneousBCcoldSide;
         List<scalar> Tf; //temperature at coldSide [K]
         List<scalar> refGrad;
         List<scalar> valueFraction;
@@ -338,15 +338,58 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
+        /// 
+        ///
+        void reconstructTF();
+
+        //--------------------------------------------------------------------------
+
+        /// 
+        ///
+        void solveTF(word _outputFolder);
+
+        //--------------------------------------------------------------------------
+
         /// Reconstructs the temperature field using superposition of effects
         ///
         void reconstrucT(word outputFolder);
 
         //--------------------------------------------------------------------------
 
+        /// Reconstruct the field T at the input point and time
+        ///
+        /// @param[in]  _point  Point where the field is reconstructed
+        /// @param[in]  _timeI  Time index for the reconstruction
+        ///
+        /// @param[out]  Field value
+        ///
+        scalar reconstrucT(vector _point, label _timeI);
+
+        //--------------------------------------------------------------------------
+
+        /// Reconstruct the field T at the input point at the list time of the interval
+        ///
+        /// @param[in]  _point  Point where the field is reconstructed
+        ///
+        /// @param[out]  Field value
+        ///
+        scalar reconstrucT(vector _point);
+
+        //--------------------------------------------------------------------------
+
+        /// Reconstruct the field T at the input point at the list time of the interval
+        ///
+        /// @param[in]  _point  Point where the field is reconstructed
+        ///
+        /// @param[out]  Field value
+        ///
+        scalar reconstrucTatThermocouple(label _TCindex);
+
+        //--------------------------------------------------------------------------
+
         /// 
         ///
-        void reconstructTF();
+        void solveT(volScalarField _initialField, word outputFolder);
 
         //--------------------------------------------------------------------------
 
@@ -361,7 +404,7 @@ class sequentialIHTP: public laplacianProblem
 
         ///
         ///
-        void parameterizedBC(word folder, volScalarField initialField,
+        void parameterizedBC(word folder, volScalarField _initialField,
                 List<scalar> _initialWeights);
         //--------------------------------------------------------------------------
 
@@ -373,7 +416,7 @@ class sequentialIHTP: public laplacianProblem
 
         ///
         ///
-        void computeConstantHeatWeights(word folder, volScalarField initialField);
+        void computeConstantHeatWeights(word folder, volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -396,7 +439,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// Solve the T0 problem
         ///
-        virtual void solveT0(volScalarField initialField);
+        virtual void solveT0(volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -463,12 +506,22 @@ class sequentialIHTP: public laplacianProblem
 
         //--------------------------------------------------------------------------
 
-        /// Interpolates the field value at the thermocouples points
-        /// NOTE: do NOT call whe field is an element of a PtrList
+        /// Interpolates the field value at a point
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @param[out]  Vector of field values at thermocouples points
+        ///
+        scalar fieldValueAtPoint(volScalarField& _field, vector _point);
+
+        //--------------------------------------------------------------------------
+
+        /// Interpolates the field value at the thermocouples points
+        /// NOTE: do NOT call when field is an element of a PtrList
+        ///
+        /// @param[in]  field    Field to read the values
+        ///
+        /// @param[out]  Vector of field values at thermocouples points
         ///
         Eigen::VectorXd fieldValueAtThermocouples(volScalarField& field);
 
@@ -479,7 +532,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @param[out]  Vector of field values at thermocouples points
         ///
         Eigen::VectorXd fieldValueAtThermocouples(PtrList<volScalarField> fieldList,
                 label fieldI);
@@ -490,7 +543,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         /// @param[in]  field    Field to read the values
         ///
-        /// @param[in]  Vector of field values at thermocouples points
+        /// @param[out]  Vector of field values at thermocouples points
         ///
         Eigen::VectorXd fieldValueAtThermocouples(PtrList<volScalarField> fieldList);
 
@@ -510,6 +563,12 @@ class sequentialIHTP: public laplacianProblem
 
         /// Restart fields
         ///
+        void restartOfflineTau();
+
+        //--------------------------------------------------------------------------
+
+        /// Restart fields
+        ///
         void restartT0();
 
         //--------------------------------------------------------------------------
@@ -524,7 +583,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         void parameterizedBC_postProcess(List<Eigen::MatrixXd> linSys,
                                          Eigen::VectorXd weigths, 
-                                         volScalarField initialField,
+                                         volScalarField _initialField,
                                          word outputFolder, label verbose = 0);
 
         //--------------------------------------------------------------------------
