@@ -340,7 +340,7 @@ volScalarField sequentialIHTP::list2Field(List<scalar> list,
 void sequentialIHTP::parameterizedBCoffline(bool force)
 {
     fvMesh& mesh = _mesh();
-    Tbasis.resize(0);
+    Tbasis.resize(Nbasis);
     Ttau.resize(0);
     T0field.resize(0);
     M_Assert(diffusivity > 0.0, "Call setDiffusivity to set up the diffusivity");
@@ -356,16 +356,15 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
              << endl;
         Theta = ITHACAstream::readMatrix(folderOffline + "Theta_mat.txt");
         Theta_tau = ITHACAstream::readMatrix(folderOffline + "Theta_tau_mat.txt");
-        addSol = ITHACAstream::readMatrix(folderOffline + "addSol_mat.txt");
-        ITHACAstream::read_fields(Tad_time, "Tad", folderOffline);
+        PtrList<volScalarField> Ttemp;
+        ITHACAstream::read_fields(Ttemp, "T", basisFolderOffline);
+        M_Assert(Ttemp.size() == Nbasis, 
+                "The Tbasis read from file has not the right size");
 
-        for (label baseI = 0; baseI < Theta.cols(); baseI++)
+        M_Assert(Theta.cols() == Nbasis, "Reading wrong offline computations");
+        for (label baseI = 0; baseI < Nbasis; baseI++)
         {
-            Ttime.resize(0);
-            ITHACAstream::read_fields(Ttime, "T" + std::to_string(baseI + 1),
-                                      folderOffline);
-            Tbasis.append(Ttime.clone());
-
+            Tbasis.set(baseI, Ttemp[baseI].clone());
             Ttime.resize(0);
             ITHACAstream::read_fields(Ttime, "Ttau" + std::to_string(baseI + 1),
                                       folderOffline);
@@ -379,7 +378,6 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
         Theta_tau = Theta;
 	offlineFlag = 1;
         Info << "Theta size = " << Theta.rows() << ", " << Theta.cols() << endl;
-        solveAdditional();
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
         {
@@ -387,35 +385,22 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             Info << "Base " << baseI + 1 << " of " << Theta.cols() << endl;
             Info << "\n--------------------------------------\n" << endl;
             restart();
-            Ttime.resize(0);
             heatFluxWeights = Foam::zero();
             heatFluxWeights[baseI] =  1;
 	    timeSampleI = 0;
             updateHeatFlux(heatFluxWeights);
             solveDirect();
-
-            for(int timeI = 0; timeI < offlineTimestepsSize; timeI++)
-            {
-                volScalarField& T = Ttime[timeI];
-                /// Saving basis
-                volScalarField gParametrizedField = list2Field(heatFlux[timeI + 1]);
-                ITHACAstream::exportSolution(gParametrizedField,
-                                             std::to_string(timeSteps[timeI + 1]),
-                                             folderOffline,
-                                             "g" + std::to_string(baseI + 1));
-                ITHACAstream::exportSolution(T, std::to_string(timeSteps[timeI + 1]),
-                                             folderOffline,
-                                             "T" + std::to_string(baseI + 1));
-            }
-            Tbasis.append(Ttime.clone());
-            Info << "debug: Tbasis.size() = " << Tbasis.size() << endl;
-            Tcomp = fieldValueAtThermocouples(Ttime);
-            M_Assert(Tcomp.size() == addSol.size(), 
-                    "Something wrong in reading values at the observations points");
-            for(int i = 0; i < Tcomp.size(); i++)
-            {
-                Theta(i, baseI) = Tcomp(i) + addSol(i);
-            }
+            
+            volScalarField& T = _T();
+            Tbasis.set(baseI, T.clone());
+            volScalarField gParametrizedField = list2Field(heatFlux[1]);
+            ITHACAstream::exportSolution(gParametrizedField,
+                                         std::to_string(baseI + 1),
+                                         basisFolderOffline,
+                                         "g");
+            ITHACAstream::exportSolution(T, std::to_string(baseI + 1),
+                                         basisFolderOffline,
+                                         "T");
         }
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
@@ -441,16 +426,18 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             }
             Ttau.append(Ttime.clone());
             Tcomp = fieldValueAtThermocouples(Ttime[offlineTimestepsSize - 1]);
-            M_Assert(Tcomp.size() == addSol.size(), 
-                    "Something wrong in reading values at the observations points");
             for(int i = 0; i < Tcomp.size(); i++)
             {
-                Theta_tau(i, baseI) = Tcomp(i);
+                Theta_tau(i, baseI) = 1.0 / timeSamplesDeltaT * Tcomp(i);
+            }
+            Tcomp = fieldValueAtThermocouples(Tbasis[baseI]);
+            for(int i = 0; i < Tcomp.size(); i++)
+            {
+                Theta(i, baseI) = Tcomp(i) + Theta_tau(i, baseI);
             }
         }
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
-        ITHACAstream::exportMatrix(addSol, "addSol", "eigen", folderOffline);
         ITHACAstream::exportMatrix(Theta_tau, "Theta_tau", "eigen", folderOffline);
         Eigen::MatrixXd ThetaTheta_tau = Theta + Theta_tau;
         ITHACAstream::exportMatrix(ThetaTheta_tau, "ThetaTheta_tau", "eigen", 
@@ -486,17 +473,26 @@ void sequentialIHTP::reconstructTF()
     }
 }
 
-void sequentialIHTP::solveTF(word _outputFolder)
+void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
 {
     Info << "Solving TF" << endl;
+    Info << "debug: timeSampleI = " << timeSampleI << endl;
+    volScalarField TFold = _initialField;
+
+    // Set the first element because it will export it in reconstructT
+    T0_time.append(_initialField.clone());
     
+    if(timeSampleI > 0)
+    {
+        TFold = TF[TF.size() - 1]; 
+    }
     TF.resize(0);
     restartOffline();
     M_Assert(diffusivity > 1e-36, "Set the diffusivity value");
     volScalarField& T = _T();
     fvMesh& mesh = _mesh();
     dimensionedScalar dt("dt", dimensionSet(0, 0, -1, 0, 0, 0, 0), 1.0);
-    List<scalar> RobinBC = Tf * 0.0;
+    List<scalar> RobinBC = Tf;
 
     forAll(mesh.boundaryMesh(), patchI)
     {
@@ -510,7 +506,18 @@ void sequentialIHTP::solveTF(word _outputFolder)
             ITHACAutilities::assignBC(T, patchI, homogeneousBC);
         }
     }
-    ITHACAutilities::assignIF(T, homogeneousBC);
+    if(timeSampleI == 0)
+    {
+        forAll(Tbasis, baseI)
+        {
+            _initialField -= heatFluxTimeBasis[0][baseI] * Tbasis[baseI];
+        }
+        ITHACAutilities::assignIF(T, _initialField);
+    }
+    else
+    {
+        ITHACAutilities::assignIF(T, TFold);
+    }
 
     simpleControl& simple = _simple();
     Foam::Time& runTime = _runTime();
@@ -528,8 +535,7 @@ void sequentialIHTP::solveTF(word _outputFolder)
             {
                 scalar coeff = heatFluxWeights[baseI] - heatFluxWeightsOld[baseI];
                 coeff = coeff / timeSamplesDeltaT; 
-                source = source + coeff * dt * 
-                    (Tbasis[baseI][timeI-1] + Tad_time[timeI-1]);
+                source = source + coeff * dt * Tbasis[baseI];
             }
         }
 
@@ -555,7 +561,8 @@ void sequentialIHTP::solveTF(word _outputFolder)
         runTime.write();
         timeI++;
     }
-    Info << "TF computation ENDED" << endl;
+    TF_ready = 1;
+    Info << "TF computation ENDED" << endl << endl;
 }
 
 void sequentialIHTP::reconstrucT(word outputFolder)
@@ -579,35 +586,27 @@ void sequentialIHTP::reconstrucT(word outputFolder)
                                      outputFolder,
                                      "gReconstructed");
     }
-    if(linearBasis == 1)
-    {
-        reconstructTF();
-        //solveTF(outputFolder);
-    }
+    M_Assert(TF_ready == 1, 
+            "The TF field has not be computed or reconstructed for this iteration");
 
     for(int timeI = 0; timeI < NtimeStepsBetweenSamples; timeI++)
     {
         volScalarField T(_T);
         ITHACAutilities::assignIF(T, homogeneousBC);
-        if(linearBasis == 0)
-        {
-            Info << "CONSTANT recontruction of T" << endl;
-            forAll(Tbasis, baseI)
-            {
-                T += heatFluxTimeBasis[timeI][baseI] * 
-                    (Tbasis[baseI][timeI] + Tad_time[timeI]);
-            }
-            T += - Tad_time[timeI] + T0_time[timeI];
-        }
-        else if(linearBasis == 1)
+        if(linearBasis == 1)
         {
             Info << "LINEAR recontruction of T" << endl;
             forAll(Tbasis, baseI)
             {
-                T += heatFluxTimeBasis[timeI][baseI] * (Tbasis[baseI][timeI] + 
-                        Tad_time[timeI]);
+                T += heatFluxTimeBasis[timeI][baseI] * Tbasis[baseI]; 
             }
-            T += - Tad_time[timeI] + T0_time[timeI] + TF[timeI];
+            T += TF[timeI];
+        }
+        else
+        {
+            Info << "CONSTANT basis not yet implemented, exiting" << endl;
+            exit(78);
+            
         }
 
         label realTimeStep = timeI + NtimeStepsBetweenSamples * timeSampleI + 1;
@@ -621,6 +620,7 @@ void sequentialIHTP::reconstrucT(word outputFolder)
                                      "gReconstructed");
         Ttime.append(T.clone());
     }
+    TF_ready = 0;
 }
 
 scalar sequentialIHTP::reconstrucT(vector _point, label _timeI)
@@ -631,31 +631,21 @@ scalar sequentialIHTP::reconstrucT(vector _point, label _timeI)
     M_Assert(offlineFlag == 0, "Call during online phase");
 
     scalar out = 0;
-    scalar Tad_point = fieldValueAtPoint(Tad_time[_timeI], _point);
-    scalar T0_point = fieldValueAtPoint(T0_time[_timeI], _point);
     scalar TF_point = fieldValueAtPoint(TF[_timeI], _point);
-    if(linearBasis == 0)
-    {
-        Info << "CONSTANT recontruction of T" << endl;
-        forAll(Tbasis, baseI)
-        {
-            scalar Tbasis_point = fieldValueAtPoint(Tbasis[baseI][_timeI], _point);
-            out += heatFluxTimeBasis[_timeI][baseI] * 
-                (Tbasis_point + Tad_point);
-        }
-        out += - Tad_point + T0_point;
-    }
-    else if(linearBasis == 1)
+    if(linearBasis == 1)
     {
         Info << "LINEAR recontruction of T" << endl;
         forAll(Tbasis, baseI)
         {
-            scalar Tbasis_point = fieldValueAtPoint(Tbasis[baseI][_timeI], _point);
-            out += heatFluxTimeBasis[_timeI][baseI] * 
-                (Tbasis_point + Tad_point);
+            scalar Tbasis_point = fieldValueAtPoint(Tbasis[baseI], _point);
+            out += heatFluxTimeBasis[_timeI][baseI] * Tbasis_point;
         }
-        out += - Tad_point + T0_point + TF_point;
-
+        out += TF_point;
+    }
+    else
+    {
+        Info << "CONSTANT basis not yet implemented, exiting" << endl;
+        exit(78);
     }
     Info << "DONE" << endl;
     return out;
@@ -670,8 +660,6 @@ scalar sequentialIHTP::reconstrucT(vector _point)
     M_Assert(offlineFlag == 0, "Call during online phase");
 
     scalar out = 0;
-    scalar Tad_point = fieldValueAtPoint(Tad_time[_timeI], _point);
-    scalar T0_point = fieldValueAtPoint(T0_time[_timeI], _point);
     Eigen::VectorXd ThetaPrime(Nbasis);
     Eigen::VectorXd ThetaTauPrime(Nbasis);
     Eigen::VectorXd ThetaTildePrime(Nbasis);
@@ -679,29 +667,23 @@ scalar sequentialIHTP::reconstrucT(vector _point)
     Eigen::VectorXd oldWeights = Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
     forAll(Tbasis, baseI)
     {
-        ThetaPrime(baseI) = fieldValueAtPoint(Tbasis[baseI][_timeI], _point) + Tad_point;
+        ThetaPrime(baseI) = fieldValueAtPoint(Tbasis[baseI], _point);
         ThetaTauPrime(baseI) = fieldValueAtPoint(Ttau[baseI][_timeI], _point);
         ThetaTildePrime(baseI) = ThetaPrime(baseI) + 
             (1.0 / timeSamplesDeltaT) * ThetaTauPrime(baseI);
     }
-    if(linearBasis == 0)
-    {
-        Info << "CONSTANT recontruction of T" << endl;
-        forAll(Tbasis, baseI)
-        {
-            scalar Tbasis_point = fieldValueAtPoint(Tbasis[baseI][_timeI], _point);
-            out += heatFluxTimeBasis[_timeI][baseI] * 
-                (Tbasis_point + Tad_point);
-        }
-        out += - Tad_point + T0_point;
-    }
-    else if(linearBasis == 1)
+    if(linearBasis == 1)
     {
         Info << "LINEAR recontruction of T" << endl;
         scalar temp = (1.0 / timeSamplesDeltaT);
         scalar a = ThetaTildePrime.dot(weights);
         scalar b = ThetaTauPrime.dot(oldWeights);
-        out = a - Tad_point + T0_point - temp * b;
+        out = a - temp * b;
+    }
+    else
+    {
+        Info << "CONSTANT basis not yet implemented, exiting" << endl;
+        exit(78);
     }
     Info << "DONE" << endl;
     return out;
@@ -714,19 +696,19 @@ scalar sequentialIHTP::reconstrucTatThermocouple(label _TCindex)
     Eigen::VectorXd weights = Foam2Eigen::List2EigenMatrix(heatFluxWeights);
     Eigen::VectorXd oldWeights = Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
     scalar out;
-    if(linearBasis == 0)
-    {
-        Info << "CONSTANT recontruction of T" << endl;
-        exit(10);
-    }
-    else if(linearBasis == 1)
+    if(linearBasis == 1)
     {
         Info << "LINEAR recontruction of T" << endl;
         Eigen::MatrixXd Temp = (1.0 / timeSamplesDeltaT) * Theta_tau;
         Eigen::MatrixXd ThetaTilde = Theta + Temp;
-        Eigen::VectorXd Tvec = ThetaTilde * weights - addSol + T0_vector - 
+        Eigen::VectorXd Tvec = ThetaTilde * weights + T0_vector - 
         Temp * oldWeights;
         out = Tvec(_TCindex);
+    }
+    else
+    {
+        Info << "CONSTANT basis not yet implemented, exiting" << endl;
+        exit(78);
     }
     Info << "DONE" << endl;
     return out;
@@ -799,11 +781,9 @@ Eigen::VectorXd sequentialIHTP::reconstrucT(Eigen::VectorXi cells)
         forAll(Tbasis, baseI)
         {
             Tout(cellI) += heatFluxWeights[baseI] * 
-                (Tbasis[baseI][timeI].internalField()[cellI] 
-                    + Tad_time[timeI].internalField()[cellI]);
+                Tbasis[baseI].internalField()[cellI];
         }
-        Tout(cellI) += - Tad_time[timeI].internalField()[cellI] + 
-            T0_time[timeI].internalField()[cellI];
+        Tout(cellI) += TF[timeI].internalField()[cellI];
     }
 
     return Tout;
@@ -922,7 +902,7 @@ void sequentialIHTP::computeConstantHeatWeights(word outputFolder,
 
 	TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, thermocouplesNum * 
                 NsamplesWindow);
-        linSys[1] = Theta.transpose() * (TmeasShort + addSol - T0_vector);
+        linSys[1] = Theta.transpose() * (TmeasShort - T0_vector);
 
         ITHACAstream::exportMatrix(linSys[0], "linSys0." + std::to_string(timeSampleI), 
                 "eigen", outputFolder);
@@ -984,11 +964,8 @@ void sequentialIHTP::computeLinearHeatWeights(word outputFolder,
         Eigen::VectorXd heatFluxWeightsOld_Eig = 
             Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
         linSys[0] = M.transpose() * M;
-        linSys[1] = M.transpose() * (TmeasShort + addSol + 
+        linSys[1] = M.transpose() * (TmeasShort + 
                 Temp * heatFluxWeightsOld_Eig - T0_vector);
-        //linSys[0] = M;
-        //linSys[1] = (TmeasShort + addSol + 
-        //        Temp * heatFluxWeightsOld_Eig - T0_vector);
         ITHACAstream::exportMatrix(linSys[0], "linSys0." + std::to_string(timeSampleI), 
                 "eigen", outputFolder);
         ITHACAstream::exportMatrix(linSys[1], "linSys1." + std::to_string(timeSampleI), 
@@ -1040,11 +1017,12 @@ void sequentialIHTP::assignDirectBC(label timeI)
     fvMesh& mesh = _mesh();
     volScalarField& T = _T();
     set_valueFraction();
+    List<scalar> RobinBC = Tf * 0.0;
     forAll(mesh.boundaryMesh(), patchI)
     {
         if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
         {
-            ITHACAutilities::assignMixedBC(T, patchI, Tf, refGrad, valueFraction);
+            ITHACAutilities::assignMixedBC(T, patchI, RobinBC, refGrad, valueFraction);
         }
         else if (patchI == mesh.boundaryMesh().findPatchID("hotSide"))
         {
@@ -1180,10 +1158,8 @@ void sequentialIHTP::projectDirectOntoT0()
     /// Creation of the matrices to project direct solution at the last timestep
     /// onto the T0 reduced space
     Info << "Computing direct problem projection matrices" << endl;
-    int internalFieldSize = Tbasis[0][0].internalField().size();
+    int internalFieldSize = Tbasis[0].internalField().size();
     Eigen::MatrixXd Tbasis_Eigen(internalFieldSize, Nbasis);
-    Eigen::VectorXd Tad_Eigen = 
-        Foam2Eigen::field2Eigen(Tad_time[NtimeStepsBetweenSamples - 1]);
 
     PtrList<volScalarField> Tbasis_lastTime;
     M_Assert(Tbasis[0].size() == NtimeStepsBetweenSamples, 
@@ -1191,13 +1167,11 @@ void sequentialIHTP::projectDirectOntoT0()
 
     forAll(Tbasis, baseI)
     {
-        volScalarField temp = Tbasis[baseI][NtimeStepsBetweenSamples - 1] 
-            + Tad_time[NtimeStepsBetweenSamples - 1];
+        volScalarField temp = Tbasis[baseI]; 
         Tbasis_lastTime.append(temp.clone());
     }
 
     Tbasis_projectionMat = T0modes.project(Tbasis_lastTime); 
-    Tad_projected = T0modes.project(Tad_time[NtimeStepsBetweenSamples - 1]);
 }
 
 void sequentialIHTP::pointProjectionOffline()
@@ -1231,7 +1205,7 @@ void sequentialIHTP::projectionErrorOffline()
 
     forAll(Tbasis, baseI)
     {
-        volScalarField base = Tbasis[baseI][lastTimestepID];
+        volScalarField base = Tbasis[baseI];
         volScalarField baseProj(base);
         T0modes.projectSnapshot(base, baseProj, NmodesT0, "L2");
         volScalarField temp = base - baseProj;
@@ -1240,12 +1214,7 @@ void sequentialIHTP::projectionErrorOffline()
                 outputFolder, "projectionErrorTbasis");
     }
     projectionErrorTad.resize(0);
-    volScalarField TadProj(Tbasis[0][lastTimestepID]);
-    T0modes.projectSnapshot(Tad_time[lastTimestepID], TadProj, NmodesT0, "L2");
-    volScalarField temp(Tad_time[lastTimestepID] - TadProj);
-    projectionErrorTad.append(temp.clone());
-    ITHACAstream::exportSolution(projectionErrorTad[0], std::to_string(1),
-            outputFolder, "projectionErrorTad");
+    volScalarField TadProj(Tbasis[0]);
 }
 
 void sequentialIHTP::T0offline(int NmagicPoints)
@@ -1258,118 +1227,32 @@ void sequentialIHTP::T0offline(int NmagicPoints)
     pointProjectionOffline();
 }
 
-void sequentialIHTP::solveAdditional()
-{
-    Info << "Solving additional problem" << endl;
-    restartOffline();
-    fvMesh& mesh = _mesh();
-    simpleControl& simple = _simple();
-    fv::options& fvOptions(_fvOptions());
-    volScalarField Tad(_T);
-    Foam::Time& runTime = _runTime();
-    set_valueFraction();
-    Tad_time.resize(0);
-    ITHACAutilities::assignIF(Tad, homogeneousBC);
-    label timeI = 0;
-    assignDirectBC(timeI);
-    List<scalar> RobinBC = - Tf;
-    forAll(mesh.boundaryMesh(), patchI)
-    {
-        if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
-        {
-            ITHACAutilities::assignMixedBC(Tad, patchI, RobinBC, refGrad, valueFraction);
-        }
-        else
-        {
-            ITHACAutilities::assignBC(Tad, patchI, homogeneousBC);
-        }
-    }
-
-    while (runTime.loop())
-    {
-        Info << "Time = " << runTime.timeName() << nl << endl;
-        timeI++;
-        RobinBC = - Tf;
-        forAll(mesh.boundaryMesh(), patchI)
-        {
-            if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
-            {
-                ITHACAutilities::assignMixedBC(Tad, patchI, RobinBC, refGrad, 
-                        valueFraction);
-            }
-            else
-            {
-                ITHACAutilities::assignBC(Tad, patchI, homogeneousBC);
-            }
-        }
-
-        while (simple.correctNonOrthogonal())
-        {
-            fvScalarMatrix TEqn
-            (
-                fvm::ddt(Tad) - fvm::laplacian(DT * diffusivity, Tad)
-            );
-            fvOptions.constrain(TEqn);
-            TEqn.solve();
-            fvOptions.correct(Tad);
-        }
-        Tad_time.append(Tad.clone());
-        ITHACAstream::exportSolution(Tad, std::to_string(timeSteps[timeI]),
-                                     folderOffline,
-                                     "Tad");
-        runTime.printExecutionTime(Info);
-        runTime.write();
-    }
-
-    Info << "Tad_time.size = " << Tad_time.size() << endl;
-    Info << "Ntime = " << Ntimes << endl;
-    addSol = fieldValueAtThermocouples(Tad_time);
-    Info << "END \n" << endl;
-}
-
 void sequentialIHTP::solveDirect()
 {
-    if(offlineFlag)
-    {
-        restartOffline();
-    }
-    else
-    {
-        restart();
-    }
+    M_Assert(offlineFlag, "Callable only during offline");
     M_Assert(diffusivity>1e-36, "Set the diffusivity value");
+
+    restartOffline();
     volScalarField& T = _T();
-    assignDirectBC(0);
-    if(offlineFlag)
-    {
-        ITHACAutilities::assignIF(T, homogeneousBC);
-    }
     simpleControl& simple = _simple();
     Foam::Time& runTime = _runTime();
     fv::options& fvOptions(_fvOptions());
-    label timeI = 0;
-    Ttime.resize(0);
 
-    while (runTime.loop())
+    assignDirectBC(1); //TODO better
+    ITHACAutilities::assignIF(T, homogeneousBC);
+
+    dimensionedScalar Cond("Cond", dimensionSet(1, 1, -3, -1, 0, 0, 0), thermalCond);
+
+    while (simple.loop())
     {
-        Info << "Time = " << runTime.timeName() << nl << endl;
-        timeI++;
-        assignDirectBC(timeI);
-
         while (simple.correctNonOrthogonal())
         {
             fvScalarMatrix TEqn
             (
-                fvm::ddt(T) - fvm::laplacian(DT * diffusivity, T)
+                fvm::laplacian(Cond, T)
             );
-            fvOptions.constrain(TEqn);
             TEqn.solve();
-            fvOptions.correct(T);
         }
-        Ttime.append(T.clone());
-
-        runTime.printExecutionTime(Info);
-        runTime.write();
     }
     Info << "Direct computation ENDED" << endl;
     
@@ -1416,9 +1299,8 @@ void sequentialIHTP::solveTtau(label _baseI)
         ITHACAutilities::assignIF(source, homogeneousBC);
         if(timeI > 0)
         {
-            source = dt * (Tbasis[_baseI][timeI-1] + Tad_time[timeI-1]);
+            source = dt * Tbasis[_baseI];
         }
-        //volScalarField source = - dt * (Tbasis[_baseI][timeI] + Tad_time[timeI]);
 
         while (simple.correctNonOrthogonal())
         {
@@ -1711,8 +1593,6 @@ void sequentialIHTP::parameterizedBC_postProcess(
         //std::cout << residual << std::endl;
         std::cout << "Residual 2-norm = " << std::endl;
         std::cout << residual.squaredNorm() << std::endl;
-        std::cout << "\n addSol = " << std::endl;
-        std::cout << addSol << std::endl;
         std::cout << "T0_vector = " << std::endl;
         std::cout << T0_vector << std::endl;
         std::cout << "Tmeas = " << std::endl;

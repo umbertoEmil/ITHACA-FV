@@ -76,14 +76,13 @@ class sequentialIHTP: public laplacianProblem
         /// Temperature field
         autoPtr<volScalarField> _T;
         PtrList<volScalarField> Ttime;
-        List<PtrList<volScalarField>> Tbasis;
+        PtrList<volScalarField> Tbasis;
         List<PtrList<volScalarField>> Ttau;
+
         PtrList<volScalarField> TF;
 
         /// Additional temperature field
-        autoPtr<volScalarField> _Tad;
         PtrList<volScalarField> Ttau_lastTime;
-        PtrList<volScalarField> Tad_time;
         PtrList<volScalarField> T0_time;
 
         /// Mesh
@@ -205,7 +204,10 @@ class sequentialIHTP: public laplacianProblem
         double specificHeat;
 
         /// Folder where the offline solutions are saved
-        word folderOffline = "./ITHACAoutput/offlineParamBC/";
+        word folderOffline = "./ITHACAoutput/offlineParamBC_unsteady/";
+
+        /// Folder where the offline solutions are saved
+        word basisFolderOffline = folderOffline + "Tbasis/";
 
         /// Number of timestep to solve for during offline phase
         label offlineTimestepsSize = 0;
@@ -217,6 +219,9 @@ class sequentialIHTP: public laplacianProblem
 
         /// Set to 1 to interpolate the constant weights in a linear way
         bool interpolationFlag = 0;
+
+        /// Set to 1 when the TF has been computed
+        bool TF_ready = 0;
 
         /// Set to 1 for piecewise linear basis in time for the heat flux
         bool linearBasis = 0;
@@ -259,7 +264,6 @@ class sequentialIHTP: public laplacianProblem
 
         /// Parametrized BC
         Eigen::VectorXd residual;
-        Eigen::VectorXd addSol;
         Eigen::VectorXd T0_vector;
         Eigen::VectorXd Tcomp;
         Eigen::MatrixXd Theta_tau;
@@ -271,12 +275,21 @@ class sequentialIHTP: public laplacianProblem
         label CG_Nsteps;
 
         List<vector> thermocouplesPos;
+        
         List<int> thermocouplesCellID;
+        
         List<int> thermocouplesCellProc;
+
         List<Foam::vector> thermocouplesCellC;
-        Eigen::VectorXd Tmeas;   //Temperature at the thermocouples locations [K]
-	Eigen::VectorXd TmeasShort; //Temperature at the thermocouples locations in only two sampling times [K]
+
+        //Temperature at the thermocouples locations [K]
+        Eigen::VectorXd Tmeas;   
+
+        //Temperature at the thermocouples locations in only two sampling times [K]
+	Eigen::VectorXd TmeasShort;
+
         Eigen::VectorXd Tdirect;
+
         Eigen::VectorXd Tdiff;
 
         // Functions
@@ -346,7 +359,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// 
         ///
-        void solveTF(word _outputFolder);
+        void solveTF(word _outputFolder, volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -477,13 +490,6 @@ class sequentialIHTP: public laplacianProblem
         /// Assemble all the matrices required in the online phase
         ///
         void T0offline(int NmagicPoints);
-
-
-        //--------------------------------------------------------------------------
-
-        /// Set BC and IF of the additional problem for the parameterized heat flux
-        ///
-        void solveAdditional();
 
         //--------------------------------------------------------------------------
 
