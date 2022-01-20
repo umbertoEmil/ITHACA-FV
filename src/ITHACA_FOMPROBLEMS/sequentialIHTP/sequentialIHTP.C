@@ -419,8 +419,6 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             
             // Compute Ttau
             solveTtau(baseI);
-            M_Assert(Ttime.size() == offlineTimestepsSize, "Wrong restert time for Ttau");
-            M_Assert(Ttau_lastTime.size() == 1, "Wrong restert time for Ttau");
             for(int timeI = 0; timeI < offlineTimestepsSize; timeI++)
             {
                 volScalarField& T = Ttime[timeI];
@@ -460,22 +458,22 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
     Info << "\nOffline ENDED" << endl;
 }
 
-void sequentialIHTP::reconstructTF()
-{
-    TF.resize(0);
-    for(int timeI = 0; timeI < NtimeStepsBetweenSamples; timeI++)
-    {
-        volScalarField T(_T);
-        ITHACAutilities::assignIF(T, homogeneousBC);
-        forAll(heatFluxWeights, baseI)
-        {
-            scalar coeff = heatFluxWeights[baseI] - heatFluxWeightsOld[baseI];
-            coeff = coeff / timeSamplesDeltaT; 
-            T += coeff * Ttau[baseI][timeI];
-        }
-        TF.append(T.clone());
-    }
-}
+//void sequentialIHTP::reconstructTF()
+//{
+//    TF.resize(0);
+//    for(int timeI = 0; timeI < NtimeStepsBetweenSamples; timeI++)
+//    {
+//        volScalarField T(_T);
+//        ITHACAutilities::assignIF(T, homogeneousBC);
+//        forAll(heatFluxWeights, baseI)
+//        {
+//            scalar coeff = heatFluxWeights[baseI] - heatFluxWeightsOld[baseI];
+//            coeff = coeff / timeSamplesDeltaT; 
+//            T += coeff * Ttau[baseI][timeI];
+//        }
+//        TF.append(T.clone());
+//    }
+//}
 
 void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
 {
@@ -569,6 +567,59 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
     }
     TF_ready = 1;
     Info << "TF computation ENDED" << endl << endl;
+}
+
+void sequentialIHTP::reconstructTF(word outputFolder, volScalarField _initialField)
+{
+    Info << "Reconstructing field TF" << endl;
+    M_Assert(offlineFlag == 0, "Call during online phase");
+
+    volScalarField TF_old = _initialField;
+
+    // Set the first element because it will export it in reconstructT
+    T0_time.append(_initialField.clone());
+    
+    if(timeSampleI > 0)
+    {
+        TF_old = TF[TF.size() - 1]; 
+    }
+    else
+    {
+        forAll(Tbasis, baseI)
+        {
+            TF_old -= heatFluxWeightsOld[baseI] * Tbasis[baseI];
+        }
+    }
+
+    solveTFI(TF_old);
+
+    TF.resize(0);
+
+    restart();
+
+    for(int timeI = 0; timeI < NtimeStepsBetweenSamples; timeI++)
+    {
+        volScalarField T(_T);
+        ITHACAutilities::assignIF(T, homogeneousBC);
+        if(linearBasis == 1)
+        {
+            forAll(Tbasis, baseI)
+            {
+                scalar coeff = heatFluxWeights[baseI] - heatFluxWeightsOld[baseI];
+                coeff = coeff / timeSamplesDeltaT; 
+                T += coeff * Ttau[baseI][timeI];
+            }
+            T += TFI_time[timeI];
+        }
+        else
+        {
+            Info << "CONSTANT basis not yet implemented, exiting" << endl;
+            exit(78);
+            
+        }
+        TF.append(T.clone());
+    }
+    TF_ready = 1;
 }
 
 void sequentialIHTP::reconstrucT(word outputFolder)
@@ -1041,6 +1092,63 @@ void sequentialIHTP::assignDirectBC(label timeI)
     }
 }
 
+void sequentialIHTP::solveTFI(volScalarField _initialField)
+{
+    Info << "\nSolving FULL TFI problem" << endl;
+    restartOffline();
+    fvMesh& mesh = _mesh();
+    simpleControl& simple = _simple();
+    fv::options& fvOptions(_fvOptions());
+    volScalarField TFI(_T);
+    Foam::Time& runTime = _runTime();
+    set_valueFraction();
+    word outputFolder = "./ITHACAoutput/debugTFI/";
+
+    ITHACAutilities::assignIF(TFI, _initialField);
+
+    TFI_time.resize(0);
+    label timeI = 0;
+    forAll(mesh.boundaryMesh(), patchI)
+    {
+        if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
+        {
+            ITHACAutilities::assignMixedBC(TFI, patchI, Tf, refGrad,
+                                           valueFraction);
+        }
+        else
+        {
+            ITHACAutilities::assignBC(TFI, patchI, homogeneousBC);
+        }
+    }
+
+    while (runTime.loop())
+    {
+        Info << "Time = " << runTime.timeName() << nl << endl;
+        timeI++;
+
+        while (simple.correctNonOrthogonal())
+        {
+            fvScalarMatrix TEqn
+            (
+                fvm::ddt(TFI) - fvm::laplacian(DT * diffusivity, TFI)
+            );
+            fvOptions.constrain(TEqn);
+            TEqn.solve();
+            fvOptions.correct(TFI);
+        }
+
+        TFI_time.append(TFI.clone());
+        runTime.printExecutionTime(Info);
+        runTime.write();
+        ITHACAstream::exportSolution(TFI, std::to_string(
+                    timeSteps[samplingSteps[timeSampleI] - NtimeStepsBetweenSamples + 
+                    timeI]), outputFolder, "TFI");
+    }
+
+    //TFI_vector = fieldValueAtThermocouples(TFI_time);
+    Info << "SolveTFI ENDED\n" << endl;
+}
+
 void sequentialIHTP::solveT0(volScalarField _initialField)
 {
     Info << "\nSolving FULL T0 problem" << endl;
@@ -1286,8 +1394,8 @@ void sequentialIHTP::solveTtau(label _baseI)
     Info << "Solving Ttau" << endl;
     M_Assert(offlineFlag, "solveTtau should be called only during offline phase");
     
-    //restartOffline();
-    restartOfflineTau();
+    restartOffline();
+    //restartOfflineTau();
     M_Assert(diffusivity > 1e-36, "Set the diffusivity value");
     volScalarField& T = _T();
     fvMesh& mesh = _mesh();
@@ -1313,17 +1421,13 @@ void sequentialIHTP::solveTtau(label _baseI)
     fv::options& fvOptions(_fvOptions());
     label timeI = 0;
     Ttime.resize(0);
-    Ttau_lastTime.resize(0);
 
     while (runTime.loop())
     {
         Info << "Time = " << runTime.timeName() << nl << endl;
         volScalarField source = dt * T;
         ITHACAutilities::assignIF(source, homogeneousBC);
-        if(timeI > 0)
-        {
-            source = dt * Tbasis[_baseI];
-        }
+        source = dt * Tbasis[_baseI];
 
         while (simple.correctNonOrthogonal())
         {
@@ -1337,19 +1441,7 @@ void sequentialIHTP::solveTtau(label _baseI)
             TEqn.solve();
             fvOptions.correct(T);
         }
-        if(timeI <= offlineTimestepsSize - 1)
-        {
-            Ttime.append(T.clone());
-        }
-        else if(timeI == offlineTimestepsSize)
-        {
-            Ttau_lastTime.append(T.clone());
-        }
-        else
-        {
-            Info << "Wrong restart of Ttau, EXITING" << endl;
-            exit(10);
-        }
+        Ttime.append(T.clone());
 
         runTime.printExecutionTime(Info);
         runTime.write();

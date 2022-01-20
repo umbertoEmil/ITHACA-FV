@@ -396,7 +396,8 @@ class steadyBasisTest: public reducedSequentialIHTP_incrementalPOD
                 Info << "Weights = \n" << heatFluxWeights << endl;
                 updateHeatFlux(heatFluxWeights);
 
-                solveTF(_outputFolder, _initialField);
+                //solveTF(_outputFolder, _initialField);
+                reconstructTF(_outputFolder, _initialField);
                 
                 //ReconstructT
                 reconstrucT(_outputFolder);

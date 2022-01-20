@@ -83,7 +83,10 @@ class sequentialIHTP: public laplacianProblem
 
         /// Additional temperature field
         PtrList<volScalarField> Ttau_lastTime;
+
         PtrList<volScalarField> T0_time;
+
+        PtrList<volScalarField> TFI_time;
 
         /// Mesh
         mutable autoPtr<fvMesh> _mesh;
@@ -353,7 +356,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// 
         ///
-        void reconstructTF();
+        void reconstructTF(word outputFolder, volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -447,6 +450,12 @@ class sequentialIHTP: public laplacianProblem
 
         /// Set BC of the direct problem
         virtual void assignDirectBC(label timeI);
+
+        //--------------------------------------------------------------------------
+
+        /// Solve the TFI problem
+        ///
+        virtual void solveTFI(volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
