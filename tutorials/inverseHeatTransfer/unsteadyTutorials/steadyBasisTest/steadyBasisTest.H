@@ -114,16 +114,8 @@ class steadyBasisTest: public reducedSequentialIHTP_incrementalPOD
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-                    //scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
-                    //trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1; 
-
                     scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
-                    scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) + 
-                            faceZ * faceZ);
-                    trueHeatFlux[timeI][faceI] = g1 + 
-                        g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency * 
-                                    timeSteps[timeI] * timeSteps[timeI] / endTime)) +
-                        g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1; 
                 }
             }
         }
@@ -432,12 +424,43 @@ class steadyBasisTest: public reducedSequentialIHTP_incrementalPOD
 
             M_Assert(recT.size() == Ttrue.size(), "Wrong size");
             M_Assert(solT.size() == Ttrue.size(), "Wrong size");
+            
+            Eigen::VectorXd heatFluxRelErr_L2(Ntimes);
+            Eigen::VectorXd heatFluxRelErr_Linf(Ntimes);
+            Eigen::VectorXd TsolRelErr_L2(Ntimes);
+            Eigen::VectorXd TsolRelErr_Linf(Ntimes);
+            Eigen::VectorXd TrecRelErr_L2(Ntimes);
+            Eigen::VectorXd TrecRelErr_Linf(Ntimes);
+            Eigen::VectorXd TrecTsolRelErr_L2(Ntimes);
+            Eigen::VectorXd TrecTsolRelErr_Linf(Ntimes);
+            Eigen::VectorXd timeVec(Ntimes);
             forAll(timeSteps, timeI)
             {
                 volScalarField trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
                 volScalarField gParametrizedField = list2Field(heatFlux[timeI]);
                 volScalarField relErrField = ITHACAutilities::relativeErrorField(
                         trueHeatFluxField, gParametrizedField);
+                if(timeI > 0)
+                {
+                    heatFluxRelErr_L2(timeI-1) = 
+                        ITHACAutilities::errorL2Rel(trueHeatFluxField, gParametrizedField);
+                    heatFluxRelErr_Linf(timeI-1) = 
+                        ITHACAutilities::errorLinfRel(trueHeatFluxField, 
+                                gParametrizedField);
+                    TsolRelErr_L2(timeI-1) = 
+                        ITHACAutilities::errorL2Rel(Ttrue[timeI], solT[timeI]);
+                    TsolRelErr_Linf(timeI-1) = 
+                        ITHACAutilities::errorLinfRel(Ttrue[timeI], solT[timeI]);  
+                    TrecRelErr_L2(timeI-1) = 
+                        ITHACAutilities::errorL2Rel(Ttrue[timeI], recT[timeI]);
+                    TrecRelErr_Linf(timeI-1) = 
+                        ITHACAutilities::errorLinfRel(Ttrue[timeI], recT[timeI]);  
+                    TrecTsolRelErr_L2(timeI-1) = 
+                        ITHACAutilities::errorL2Rel(solT[timeI], recT[timeI]);
+                    TrecTsolRelErr_Linf(timeI-1) = 
+                        ITHACAutilities::errorLinfRel(solT[timeI], recT[timeI]);  
+                    timeVec(timeI-1) = timeSteps[timeI];
+                }
                 ITHACAstream::exportSolution(trueHeatFluxField,
                                              std::to_string(timeSteps[timeI]), 
                                              _outputFolder, "trueHeatFlux");
@@ -464,6 +487,24 @@ class steadyBasisTest: public reducedSequentialIHTP_incrementalPOD
                 ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
             }
             Info << "\nExporting" << endl;
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2, "heatFluxRelErr_L2", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf, "heatFluxRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    TsolRelErr_L2, "TsolRelErr_L2", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    TsolRelErr_Linf, "TsolRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    TrecRelErr_L2, "TrecRelErr_L2", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    TrecRelErr_Linf, "TrecRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    TrecTsolRelErr_L2, "TrecTsolRelErr_L2", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    TrecTsolRelErr_Linf, "TrecTsolRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    timeVec, "timeVec", "eigen", _outputFolder);
             Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
             Eigen::VectorXd samplingTime_eigen = 
                 Foam2Eigen::List2EigenMatrix(samplingTime);

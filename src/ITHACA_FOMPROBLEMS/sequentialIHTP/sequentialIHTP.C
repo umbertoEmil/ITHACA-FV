@@ -143,7 +143,7 @@ void sequentialIHTP::setSpaceBasis(word type,
             scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - 
                     thermocoupleX) / maxX / maxX + (faceZ - thermocoupleZ) * 
                     (faceZ - thermocoupleZ) / maxZ / maxZ);
-            heatFluxSpaceBasis[funcI][faceI] = Foam::sqrt(1 + (shapeParameter *
+            heatFluxSpaceBasis[funcI][faceI] = 1e6 * Foam::sqrt(1 + (shapeParameter *
                         radius) * (shapeParameter * radius));
 
         }
@@ -173,6 +173,10 @@ void sequentialIHTP::setSpaceBasis(word type,
         }
         forAll(tempBasis, baseI)
         {
+            forAll(tempBasis[baseI], cellI)
+            {
+                tempBasis[baseI][cellI] *= 1e6;
+            }
             volScalarField base = list2Field(tempBasis[baseI], 0.0);
             ITHACAstream::exportSolution(base,
                                          std::to_string(1),
@@ -377,6 +381,8 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
         Theta.resize(thermocouplesNum, Nbasis);
         Theta_tau = Theta;
 	offlineFlag = 1;
+	timeSampleI = 0;
+
         Info << "Theta size = " << Theta.rows() << ", " << Theta.cols() << endl;
 
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
@@ -387,7 +393,6 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             restart();
             heatFluxWeights = Foam::zero();
             heatFluxWeights[baseI] =  1;
-	    timeSampleI = 0;
             updateHeatFlux(heatFluxWeights);
             solveDirect();
             
@@ -411,7 +416,6 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             restart();
             Ttime.resize(0);
             heatFluxWeights = Foam::zero();
-	    timeSampleI = 0;
             
             // Compute Ttau
             solveTtau(baseI);
@@ -476,15 +480,14 @@ void sequentialIHTP::reconstructTF()
 void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
 {
     Info << "Solving TF" << endl;
-    Info << "debug: timeSampleI = " << timeSampleI << endl;
-    volScalarField TFold = _initialField;
+    volScalarField TF_old = _initialField;
 
     // Set the first element because it will export it in reconstructT
     T0_time.append(_initialField.clone());
     
     if(timeSampleI > 0)
     {
-        TFold = TF[TF.size() - 1]; 
+        TF_old = TF[TF.size() - 1]; 
     }
     TF.resize(0);
     restartOffline();
@@ -492,13 +495,12 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
     volScalarField& T = _T();
     fvMesh& mesh = _mesh();
     dimensionedScalar dt("dt", dimensionSet(0, 0, -1, 0, 0, 0, 0), 1.0);
-    List<scalar> RobinBC = Tf;
 
     forAll(mesh.boundaryMesh(), patchI)
     {
         if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
         {
-            ITHACAutilities::assignMixedBC(T, patchI, RobinBC, refGrad,
+            ITHACAutilities::assignMixedBC(T, patchI, Tf, refGrad,
                                            valueFraction);
         }
         else
@@ -510,13 +512,13 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
     {
         forAll(Tbasis, baseI)
         {
-            _initialField -= heatFluxTimeBasis[0][baseI] * Tbasis[baseI];
+            _initialField -= heatFluxWeightsOld[baseI] * Tbasis[baseI];
         }
         ITHACAutilities::assignIF(T, _initialField);
     }
     else
     {
-        ITHACAutilities::assignIF(T, TFold);
+        ITHACAutilities::assignIF(T, TF_old);
     }
 
     simpleControl& simple = _simple();
@@ -524,20 +526,18 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
     fv::options& fvOptions(_fvOptions());
     label timeI = 0;
 
+    volScalarField source = dt * T;
+    ITHACAutilities::assignIF(source, homogeneousBC);
+    forAll(Tbasis, baseI)
+    {
+        scalar coeff = heatFluxWeights[baseI] - heatFluxWeightsOld[baseI];
+        coeff = coeff / timeSamplesDeltaT; 
+        source += coeff * dt * Tbasis[baseI];
+    }
+
     while (runTime.loop())
     {
         Info << "\nTime = " << runTime.timeName() << nl << endl;
-        volScalarField source = dt * T;
-        ITHACAutilities::assignIF(source, homogeneousBC);
-        if(timeI > 0)
-        {
-            forAll(Tbasis, baseI)
-            {
-                scalar coeff = heatFluxWeights[baseI] - heatFluxWeightsOld[baseI];
-                coeff = coeff / timeSamplesDeltaT; 
-                source = source + coeff * dt * Tbasis[baseI];
-            }
-        }
 
         while (simple.correctNonOrthogonal())
         {
@@ -555,6 +555,12 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
         ITHACAstream::exportSolution(T, std::to_string(timeSteps[realTimeStep]),
                                      _outputFolder,
                                      "TF");
+        ITHACAstream::exportSolution(source, std::to_string(timeSteps[realTimeStep]),
+                                     _outputFolder,
+                                     "TFsource");
+        ITHACAstream::exportSolution(_initialField, std::to_string(timeSteps[realTimeStep]),
+                                     _outputFolder,
+                                     "initialField");
         TF.append(T.clone());
 
         runTime.printExecutionTime(Info);
@@ -1238,7 +1244,24 @@ void sequentialIHTP::solveDirect()
     Foam::Time& runTime = _runTime();
     fv::options& fvOptions(_fvOptions());
 
-    assignDirectBC(1); //TODO better
+    fvMesh& mesh = _mesh();
+    set_valueFraction();
+    List<scalar> RobinBC = Tf * 0.0;
+    forAll(mesh.boundaryMesh(), patchI)
+    {
+        if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
+        {
+            ITHACAutilities::assignMixedBC(T, patchI, RobinBC, refGrad, valueFraction);
+        }
+        else if (patchI == mesh.boundaryMesh().findPatchID("hotSide"))
+        {
+            ITHACAutilities::assignBC(T, patchI, - heatFlux[1] / thermalCond);
+        }
+        else
+        {
+            ITHACAutilities::assignBC(T, patchI, homogeneousBC);
+        }
+    }
     ITHACAutilities::assignIF(T, homogeneousBC);
 
     dimensionedScalar Cond("Cond", dimensionSet(1, 1, -3, -1, 0, 0, 0), thermalCond);

@@ -37,7 +37,7 @@ SVDtol              1e-8;
 PODnorm             L2;
 noiseLevel          0.05;
 
-spaceBasisType      rbf;
+spaceBasisType      pod;
 NpodBasis           20;
 Nimplicit           10;
 
