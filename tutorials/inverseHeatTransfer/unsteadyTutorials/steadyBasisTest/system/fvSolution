@@ -28,6 +28,26 @@ solvers
 interpolationSchemes
 {
     T               cellPoint;
+    Ttau1           cellPoint;
+    Ttau2           cellPoint;
+    Ttau3           cellPoint;
+    Ttau4           cellPoint;
+    Ttau5           cellPoint;
+    Ttau6           cellPoint;
+    Ttau7           cellPoint;
+    Ttau8           cellPoint;
+    Ttau9           cellPoint;
+    Ttau10           cellPoint;
+    Ttau11           cellPoint;
+    Ttau12           cellPoint;
+    Ttau13           cellPoint;
+    Ttau14           cellPoint;
+    Ttau15           cellPoint;
+    Ttau16           cellPoint;
+    Ttau17           cellPoint;
+    Ttau18           cellPoint;
+    Ttau19           cellPoint;
+    Ttau20           cellPoint;
 }
 
 SIMPLE

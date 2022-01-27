@@ -79,7 +79,7 @@ class sequentialIHTP: public laplacianProblem
         PtrList<volScalarField> Tbasis;
         List<PtrList<volScalarField>> Ttau;
 
-        PtrList<volScalarField> TF;
+        PtrList<volScalarField> TF_time;
 
         /// Additional temperature field
         PtrList<volScalarField> Ttau_lastTime;
@@ -267,9 +267,15 @@ class sequentialIHTP: public laplacianProblem
 
         /// Parametrized BC
         Eigen::VectorXd residual;
+
         Eigen::VectorXd T0_vector;
+        
+        Eigen::VectorXd TFI_vector;
+        
         Eigen::VectorXd Tcomp;
+        
         Eigen::MatrixXd Theta_tau;
+        
         Eigen::MatrixXd Theta;
 
         word linSys_solver;
@@ -356,7 +362,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// 
         ///
-        void reconstructTF(word outputFolder, volScalarField _initialField);
+        void reconstructTF();
 
         //--------------------------------------------------------------------------
 
@@ -538,7 +544,7 @@ class sequentialIHTP: public laplacianProblem
         ///
         /// @param[out]  Vector of field values at thermocouples points
         ///
-        Eigen::VectorXd fieldValueAtThermocouples(volScalarField& field);
+        Eigen::VectorXd fieldValueAtThermocouples(volScalarField field);
 
         //--------------------------------------------------------------------------
 

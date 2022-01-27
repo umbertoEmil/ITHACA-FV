@@ -49,9 +49,9 @@ weightsInterpolation     0;
 
 
 //Test to perform
-reconstructionTest      1;
+reconstructionTest      0;
 pointReconstructionTest 0;
 thermocoupleReconstructionTest 0;
-linearSystemTest        0;
+linearSystemTest        1;
 inverseTest             0;
 

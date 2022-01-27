@@ -150,9 +150,7 @@ int main(int argc, char* argv[])
     example.parameterizedBCoffline();
     
     //Set T0
-    Info << "debug 1" << endl;
     volScalarField initialField = example.Ttrue[0];
-    Info << "debug 2" << endl;
 
     if(reconstructionTest)
     {

@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-regularizationTechnique     TSVD;
+regularizationTechnique     fullPivLU;
 TSVD_filter                 13;
 Tikhonov_filter             2.6206694271137595853e-10;
 CG_Nsteps                   9;

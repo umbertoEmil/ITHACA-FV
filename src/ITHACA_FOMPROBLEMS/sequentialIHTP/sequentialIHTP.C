@@ -428,6 +428,7 @@ void sequentialIHTP::parameterizedBCoffline(bool force)
             }
             Ttau.append(Ttime.clone());
             Tcomp = fieldValueAtThermocouples(Ttime[offlineTimestepsSize - 1]);
+            //Tcomp = fieldValueAtThermocouples(Ttime[0]);
             for(int i = 0; i < Tcomp.size(); i++)
             {
                 Theta_tau(i, baseI) = 1.0 / timeSamplesDeltaT * Tcomp(i);
@@ -485,9 +486,9 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
     
     if(timeSampleI > 0)
     {
-        TF_old = TF[TF.size() - 1]; 
+        TF_old = TF_time[TF_time.size() - 1]; 
     }
-    TF.resize(0);
+    TF_time.resize(0);
     restartOffline();
     M_Assert(diffusivity > 1e-36, "Set the diffusivity value");
     volScalarField& T = _T();
@@ -559,7 +560,7 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
         ITHACAstream::exportSolution(_initialField, std::to_string(timeSteps[realTimeStep]),
                                      _outputFolder,
                                      "initialField");
-        TF.append(T.clone());
+        TF_time.append(T.clone());
 
         runTime.printExecutionTime(Info);
         runTime.write();
@@ -569,31 +570,12 @@ void sequentialIHTP::solveTF(word _outputFolder, volScalarField _initialField)
     Info << "TF computation ENDED" << endl << endl;
 }
 
-void sequentialIHTP::reconstructTF(word outputFolder, volScalarField _initialField)
+void sequentialIHTP::reconstructTF()
 {
     Info << "Reconstructing field TF" << endl;
     M_Assert(offlineFlag == 0, "Call during online phase");
 
-    volScalarField TF_old = _initialField;
-
-    // Set the first element because it will export it in reconstructT
-    T0_time.append(_initialField.clone());
-    
-    if(timeSampleI > 0)
-    {
-        TF_old = TF[TF.size() - 1]; 
-    }
-    else
-    {
-        forAll(Tbasis, baseI)
-        {
-            TF_old -= heatFluxWeightsOld[baseI] * Tbasis[baseI];
-        }
-    }
-
-    solveTFI(TF_old);
-
-    TF.resize(0);
+    TF_time.resize(0);
 
     restart();
 
@@ -617,7 +599,7 @@ void sequentialIHTP::reconstructTF(word outputFolder, volScalarField _initialFie
             exit(78);
             
         }
-        TF.append(T.clone());
+        TF_time.append(T.clone());
     }
     TF_ready = 1;
 }
@@ -657,7 +639,7 @@ void sequentialIHTP::reconstrucT(word outputFolder)
             {
                 T += heatFluxTimeBasis[timeI][baseI] * Tbasis[baseI]; 
             }
-            T += TF[timeI];
+            T += TF_time[timeI];
         }
         else
         {
@@ -688,7 +670,7 @@ scalar sequentialIHTP::reconstrucT(vector _point, label _timeI)
     M_Assert(offlineFlag == 0, "Call during online phase");
 
     scalar out = 0;
-    scalar TF_point = fieldValueAtPoint(TF[_timeI], _point);
+    scalar TF_point = fieldValueAtPoint(TF_time[_timeI], _point);
     if(linearBasis == 1)
     {
         Info << "LINEAR recontruction of T" << endl;
@@ -756,10 +738,11 @@ scalar sequentialIHTP::reconstrucTatThermocouple(label _TCindex)
     if(linearBasis == 1)
     {
         Info << "LINEAR recontruction of T" << endl;
-        Eigen::MatrixXd Temp = (1.0 / timeSamplesDeltaT) * Theta_tau;
-        Eigen::MatrixXd ThetaTilde = Theta + Temp;
-        Eigen::VectorXd Tvec = ThetaTilde * weights + T0_vector - 
-        Temp * oldWeights;
+        Eigen::VectorXd TFIatTC = 
+            fieldValueAtThermocouples(TFI_time[NtimeStepsBetweenSamples - 1]); 
+        Eigen::VectorXd Tvec = Theta * weights + TFIatTC - 
+            Theta_tau * oldWeights;
+
         out = Tvec(_TCindex);
     }
     else
@@ -840,7 +823,7 @@ Eigen::VectorXd sequentialIHTP::reconstrucT(Eigen::VectorXi cells)
             Tout(cellI) += heatFluxWeights[baseI] * 
                 Tbasis[baseI].internalField()[cellI];
         }
-        Tout(cellI) += TF[timeI].internalField()[cellI];
+        Tout(cellI) += TF_time[timeI].internalField()[cellI];
     }
 
     return Tout;
@@ -1104,7 +1087,33 @@ void sequentialIHTP::solveTFI(volScalarField _initialField)
     set_valueFraction();
     word outputFolder = "./ITHACAoutput/debugTFI/";
 
-    ITHACAutilities::assignIF(TFI, _initialField);
+    volScalarField TF_old = _initialField;
+
+    // Set the first element because it will export it in reconstructT
+    T0_time.append(_initialField.clone());
+
+    ITHACAstream::exportSolution(TF_old, std::to_string(
+                timeSteps[samplingSteps[timeSampleI] - NtimeStepsBetweenSamples]), 
+                outputFolder, "TFI_before");
+    
+    if(timeSampleI > 0)
+    {
+        TF_old = TF_time[TF_time.size() - 1]; 
+    }
+    else
+    {
+        forAll(Tbasis, baseI)
+        {
+            TF_old -= heatFluxWeightsOld[baseI] * Tbasis[baseI];
+            ITHACAstream::exportSolution(TF_old, std::to_string(
+                        timeSteps[0]), outputFolder, "TFI");
+        }
+    }
+    ITHACAstream::exportSolution(TF_old, std::to_string(
+                timeSteps[samplingSteps[timeSampleI] - NtimeStepsBetweenSamples]), 
+                outputFolder, "TFI_after");
+
+    ITHACAutilities::assignIF(TFI, TF_old);
 
     TFI_time.resize(0);
     label timeI = 0;
@@ -1145,7 +1154,7 @@ void sequentialIHTP::solveTFI(volScalarField _initialField)
                     timeI]), outputFolder, "TFI");
     }
 
-    //TFI_vector = fieldValueAtThermocouples(TFI_time);
+    TFI_vector = fieldValueAtThermocouples(TFI_time);
     Info << "SolveTFI ENDED\n" << endl;
 }
 
@@ -1523,7 +1532,7 @@ scalar sequentialIHTP::fieldValueAtPoint(
 }
 
 Eigen::VectorXd sequentialIHTP::fieldValueAtThermocouples(
-    volScalarField& field)
+    volScalarField field)
 {
     if (!thermocouplesRead)
     {
