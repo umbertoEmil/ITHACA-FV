@@ -1,15 +1,15 @@
-#ifndef steadyBasisTest_H
-#define steadyBasisTest_H
+#ifndef linearBasisTest_H
+#define linearBasisTest_H
 
-#include "ReducedSequentialIHTP_incrementalPOD.H"
+//#include "ReducedSequentialIHTP_incrementalPOD.H"
 #include "MUQ/Modeling/Distributions/Gaussian.h"
 
-class steadyBasisTest: public sequentialIHTP
+class linearBasisTest: public sequentialIHTP_linear
 {
     public:
-        explicit steadyBasisTest(int argc, char* argv[])
+        explicit linearBasisTest(int argc, char* argv[])
             :
-            sequentialIHTP(argc, argv),
+            sequentialIHTP_linear(argc, argv),
             initialField(_T())
         {
             fvMesh& mesh = _mesh();
@@ -42,6 +42,8 @@ class steadyBasisTest: public sequentialIHTP
         List<scalar> heatFlux_steady;
         scalar maxFrequency; // Hz
 
+        //--------------------------------------------------------------------------
+        /// 
         Eigen::MatrixXi List2EigenMatrix ( List<int> list )
         {
             Eigen::MatrixXi matrix(list.size(), 1);
@@ -54,6 +56,8 @@ class steadyBasisTest: public sequentialIHTP
             return matrix;
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         Eigen::MatrixXd List2EigenMatrix ( List<scalar> list )
         {
             Eigen::MatrixXd matrix(list.size(), 1);
@@ -66,6 +70,8 @@ class steadyBasisTest: public sequentialIHTP
             return matrix;
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void assignTrueIF()
         {
             volScalarField& T(_T());
@@ -76,7 +82,9 @@ class steadyBasisTest: public sequentialIHTP
             }
         }
 
-        /// Sets steady component of heat flux, g
+        //--------------------------------------------------------------------------
+        /// 
+        /// Set steady component of heat flux, g
         void set_steadyHeatFlux()
         {
             fvMesh& mesh(_mesh());
@@ -95,6 +103,8 @@ class steadyBasisTest: public sequentialIHTP
             }
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void set_trueHeatFlux(scalar timeGrad)
         {
             fvMesh& mesh(_mesh());
@@ -114,21 +124,23 @@ class steadyBasisTest: public sequentialIHTP
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-                    //scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
-                    //trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1; 
-
                     scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
-                    scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) +
-                            faceZ * faceZ);
-                    trueHeatFlux[timeI][faceI] = g1 +
-                        g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency *
-                                    timeSteps[timeI] * timeSteps[timeI] / endTime)) +
-                        g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1; 
+
+                    //scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
+                    //scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) +
+                    //        faceZ * faceZ);
+                    //trueHeatFlux[timeI][faceI] = g1 +
+                    //    g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency *
+                    //                timeSteps[timeI] * timeSteps[timeI] / endTime)) +
+                    //    g2 * std::exp(- 0.1 * timeSteps[timeI]);
 
                 }
             }
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void set_Tf(label timeI)
         {
             fvMesh& mesh = _mesh();
@@ -144,6 +156,8 @@ class steadyBasisTest: public sequentialIHTP
             set_valueFraction();
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void assignDirectBC(label timeI)
         {
             fvMesh& mesh = _mesh();
@@ -166,6 +180,8 @@ class steadyBasisTest: public sequentialIHTP
             }
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void solveTrue()
         {
             Info << "Performing true computation" << endl;
@@ -226,6 +242,8 @@ class steadyBasisTest: public sequentialIHTP
             Info << "End\n" << endl;
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void addNoise(double noiseStdDev_)
         {
             double variance = Tmeas.mean() * noiseStdDev_ * noiseStdDev_;
@@ -243,6 +261,8 @@ class steadyBasisTest: public sequentialIHTP
             }
         }
 
+        //--------------------------------------------------------------------------
+        /// 
         void inverseProblemPostProcess(word outputFolder)
         {
             fvMesh& mesh(_mesh());
@@ -272,7 +292,7 @@ class steadyBasisTest: public sequentialIHTP
             Eigen::VectorXd probe2_Trec = probe2_Ttrue;
 
             PtrList<volScalarField> Trec;
-            ITHACAstream::read_fields(Trec, "Treconstructed",
+            ITHACAstream::read_fields(Trec, reconstructedTemperatureName,
                                       outputFolder);
             Info << "debug: Trec.size() = " << Trec.size() << endl;
             
@@ -376,6 +396,8 @@ class steadyBasisTest: public sequentialIHTP
             return Foam2Eigen::EigenMatrix2List(out);
         };
 
+        //--------------------------------------------------------------------------
+        /// 
         void reconstructionTest(volScalarField _initialField, word _outputFolder)
         {
             Info << endl << endl << 
@@ -406,17 +428,10 @@ class steadyBasisTest: public sequentialIHTP
 
                 if(timeSampleI == 0)
                 {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeights * 0.0;
                     heatFluxWeightsGrad_old = heatFluxWeights * 0.0;
-                }
-                else if(timeSampleI == 1)
-                {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeights * 0.0;
-                    heatFluxWeightsGrad_old = heatFluxWeightsGrad;
                 }
                 else
                 {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeightsGrad_old;
                     heatFluxWeightsGrad_old = heatFluxWeightsGrad;
                 }
                 heatFluxWeightsGrad = (heatFluxWeights - heatFluxWeightsOld) / 
@@ -424,10 +439,11 @@ class steadyBasisTest: public sequentialIHTP
 
                 updateHeatFlux(heatFluxWeights);
 
-                solveTb("./ITHACAoutput/debugTb", _initialField);
+                solveT_ic(_initialField);
                 
                 //ReconstructT
-                reconstrucT(_outputFolder);
+                reconstructT(_outputFolder);
+
                 forAll(Ttime, tI)
                 {
                      recT.append(Ttime[tI].clone());
@@ -435,6 +451,7 @@ class steadyBasisTest: public sequentialIHTP
 
                 //Solve T
                 solveT(_initialField, _outputFolder);
+
                 forAll(Ttime, tI)
                 {
                      solT.append(Ttime[tI].clone());
@@ -543,90 +560,8 @@ class steadyBasisTest: public sequentialIHTP
             Info << "Ended Exporting" << endl;
         }
 
-        void pointsReconstructionTest(vector _point, volScalarField _initialField, 
-                word _outputFolder)
-        {
-            Info << endl << endl << 
-                "############ Testing poitwise T recostruction" << endl << endl;
-            timeSampleI = 0;
-            heatFluxWeightsOld = projectHeatFlux(trueHeatFlux[0]);
-            recT.resize(0);
-            recT.append(_initialField.clone());
-            Eigen::VectorXd recT_vec(timeSamplesNum);
-            Eigen::VectorXd toCheckT_vec(timeSamplesNum);
-            Eigen::VectorXd Ttrue_vec(timeSamplesNum);
-            Eigen::VectorXd recT_relErr_vec(timeSamplesNum);
-            Eigen::VectorXd toCheckT_relErr_vec(timeSamplesNum);
-            Eigen::VectorXd toCheckTrecT_relErr_vec(timeSamplesNum);
-            Eigen::VectorXd thetaT_vec(timeSamplesNum);
-
-            Eigen::MatrixXd Temp = (1.0 / timeSamplesDeltaT) * Theta_old;
-            Eigen::MatrixXd ThetaTilde = Theta + Temp;
-            while(timeSampleI < timeSamplesNum)
-            {
-                Info << "\nTime sample " << timeSampleI + 1 << endl;
-
-                if(timeSampleI > 0)
-                {
-                     ITHACAutilities::assignIF(_initialField, 
-                             Ttime[NtimeStepsBetweenSamples -1]);
-                     heatFluxWeightsOld = heatFluxWeights;
-                }
-
-                //Project true heat flux
-                heatFluxWeights = 
-                    projectHeatFlux(trueHeatFlux[samplingSteps[timeSampleI]]);
-                Info << "Weights = \n" << heatFluxWeights << endl;
-                updateHeatFlux(heatFluxWeights);
-
-                solveTFI(_initialField);
-                
-                //ReconstructT
-                reconstrucT(_outputFolder);
-                
-                Ttrue_vec(timeSampleI) = 
-                    fieldValueAtPoint(Ttrue[samplingSteps[timeSampleI]], _point);
-                recT_vec(timeSampleI) = 
-                    fieldValueAtPoint(Ttime[NtimeStepsBetweenSamples - 1], _point);
-                toCheckT_vec(timeSampleI) = reconstrucT(_point);
-
-                timeSampleI++;
-            }
-
-            //Compute relative error
-            Info << "######### Postprocessing #########" <<
-             endl;
-            std::string message = "The recT.size() = " + std::to_string(recT.size())
-                          + " while Ttrue.size is "
-                          + std::to_string(Ttrue.size());
-
-            for(int timeI = 0; timeI < timeSamplesNum; timeI++)
-            {
-                recT_relErr_vec(timeI) = std::abs(Ttrue_vec(timeI) - recT_vec(timeI)) / 
-                    Ttrue_vec(timeI);
-                toCheckT_relErr_vec(timeI) = std::abs(Ttrue_vec(timeI) - 
-                        toCheckT_vec(timeI)) / Ttrue_vec(timeI);
-                toCheckTrecT_relErr_vec(timeI) = std::abs(recT_vec(timeI) - 
-                        toCheckT_vec(timeI)) /  recT_vec(timeI);
-                ITHACAstream::printProgress(double(timeI) / Ntimes);
-            }
-            Info << "\nExporting" << endl;
-            ITHACAstream::exportMatrix(
-                    recT_vec, "recT_vec", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    Ttrue_vec, "Ttrue_vec", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    toCheckT_vec, "toCheckT_vec", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    recT_relErr_vec, "recT_relErr_vec", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    toCheckT_relErr_vec, "toCheckT_relErr_vec", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    toCheckTrecT_relErr_vec, "toCheckTrecT_relErr_vec", "eigen", 
-                    _outputFolder);
-            Info << "Ended Exporting" << endl;
-        }
-
+        //--------------------------------------------------------------------------
+        /// 
         void thermocoupleReconstructionTest(label _TCindex, volScalarField _initialField, 
                 word _outputFolder)
         {
@@ -634,7 +569,6 @@ class steadyBasisTest: public sequentialIHTP
                 "############ Testing poitwise T recostruction" << endl << endl;
             timeSampleI = 0;
             heatFluxWeightsOld = projectHeatFlux(trueHeatFlux[0]);
-            heatFluxWeightsOldOld = heatFluxWeightsOld;
             recT.resize(0);
             recT.append(_initialField.clone());
             Eigen::VectorXd recT_vec(timeSamplesNum);
@@ -654,7 +588,6 @@ class steadyBasisTest: public sequentialIHTP
                 {
                      ITHACAutilities::assignIF(_initialField, 
                              Ttime[NtimeStepsBetweenSamples -1]);
-                     heatFluxWeightsOldOld = heatFluxWeightsOld;
                      heatFluxWeightsOld = heatFluxWeights;
                 }
 
@@ -665,17 +598,10 @@ class steadyBasisTest: public sequentialIHTP
 
                 if(timeSampleI == 0)
                 {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeights * 0.0;
                     heatFluxWeightsGrad_old = heatFluxWeights * 0.0;
-                }
-                else if(timeSampleI == 1)
-                {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeights * 0.0;
-                    heatFluxWeightsGrad_old = heatFluxWeightsGrad;
                 }
                 else
                 {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeightsGrad_old;
                     heatFluxWeightsGrad_old = heatFluxWeightsGrad;
                 }
                 heatFluxWeightsGrad = (heatFluxWeights - heatFluxWeightsOld) / 
@@ -683,12 +609,14 @@ class steadyBasisTest: public sequentialIHTP
 
                 updateHeatFlux(heatFluxWeights);
 
-                solveTb("./ITHACAoutput/debugTb", _initialField);
+                solveT_ic(_initialField);
                 
                 //ReconstructT
-                reconstrucT(_outputFolder);
+                reconstructT(_outputFolder);
 
-                toCheckT_vec(timeSampleI) = reconstrucTatThermocouple(_TCindex);
+                T_ic_ready = 1;
+
+                toCheckT_vec(timeSampleI) = reconstructTatThermocouple(_TCindex);
                 
                 Ttrue_vec(timeSampleI) = 
                     fieldValueAtPoint(Ttrue[samplingSteps[timeSampleI]], _point);
@@ -732,166 +660,46 @@ class steadyBasisTest: public sequentialIHTP
             Info << "Ended Exporting" << endl;
         }
 
-
-        void linearSystemTest(volScalarField _initialField, label _Nimplicit, 
+        //--------------------------------------------------------------------------
+        /// 
+        void inverseProblemTest(volScalarField _initialField, List<scalar> _initialWeights,
                 word _outputFolder)
         {
             Info << endl << endl << 
-                "############ Testing weights linear system" << endl << endl;
-            timeSampleI = 0;
+                "############ Inverse problem test ############" << endl << endl;
 
-            Eigen::MatrixXd residual(Nbasis, timeSamplesNum);
-            Eigen::VectorXd residualNorm(timeSamplesNum);
-            Eigen::VectorXd weightsError(timeSamplesNum);
-            List<scalar> trueWeights = 
-                projectHeatFlux(trueHeatFlux[0]);
-            heatFluxWeights = trueWeights;
-            heatFluxWeightsOldOld = heatFluxWeights;
-            while(timeSampleI < timeSamplesNum)
-            {
-                Info << "\nTime sample " << timeSampleI + 1 << endl;
-                if(timeSampleI > 0)
-                {
-                    heatFluxWeightsOldOld = heatFluxWeightsOld;
-                }
-                heatFluxWeightsOld = heatFluxWeights;
-
-                //Project true heat flux
-                trueWeights = 
-                    projectHeatFlux(trueHeatFlux[samplingSteps[timeSampleI]]);
-                Info << "True weights = \n" << trueWeights << endl; 
-                Eigen::VectorXd trueWeights_Eig =
-                    Foam2Eigen::List2EigenMatrix(trueWeights);
-
-                if(timeSampleI == 0)
-                {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeights * 0.0;
-                    heatFluxWeightsGrad_old = heatFluxWeights * 0.0;
-                }
-                else if(timeSampleI == 1)
-                {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeights * 0.0;
-                    heatFluxWeightsGrad_old = heatFluxWeightsGrad;
-                }
-                else
-                {
-                    heatFluxWeightsGrad_oldOld = heatFluxWeightsGrad_old;
-                    heatFluxWeightsGrad_old = heatFluxWeightsGrad;
-                }
-
-                solveTb("./ITHACAoutput/debugTb", _initialField);
-
-                Eigen::VectorXd heatFluxWeightsOld_Eig =
-                    Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
-
-                Eigen::VectorXd heatFluxWeightsOldOld_Eig =
-                    Foam2Eigen::List2EigenMatrix(heatFluxWeightsOldOld);
-                TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, 
-                        thermocouplesNum *
-                        NsamplesWindow);
-
-                List<Eigen::MatrixXd> linSys;
-                linSys.resize(2);
-        
-                Eigen::VectorXd weigths;
-                Eigen::VectorXd TbatTC =
-                    fieldValueAtThermocouples(Tb_time[NtimeStepsBetweenSamples - 1]);
-                if(linearBasis)
-                {
-                    linSys[0] = Theta;
-                    linSys[1] = (TmeasShort -
-                            Theta_old * heatFluxWeightsOld_Eig - 
-                            Theta_oldOld * heatFluxWeightsOldOld_Eig - TbatTC);
-                    weigths = solveLinSys(linSys);
-                }
-                else
-                {
-                    Info << "Constant not implemented, exiting" << endl;
-                    exit(89);
-                }
-
-                Eigen::VectorXd tempError = (trueWeights_Eig - weigths).cwiseAbs();
-                scalar EPS = 1e-36;
-                for(int i = 0; i < tempError.size(); i++)
-                {
-                    scalar absTrue = std::abs(trueWeights_Eig(i));
-                    if(absTrue < EPS)
-                    {
-                        tempError(i) =  tempError(i) / EPS;
-                    }
-                    else
-                    {
-                        tempError(i) =  tempError(i) / absTrue;
-                    }
-                }
-                weightsError(timeSampleI) = tempError.norm();
-
-                heatFluxWeights.resize(weigths.size());
-                forAll(heatFluxWeights, weightI)
-                {
-                    heatFluxWeights[weightI] = weigths(weightI);
-                }
-
-                Info << "Computed weights = \n" << heatFluxWeights << endl; 
-                Eigen::VectorXd R = Theta.transpose() * (Theta * weigths + 
-                    TbatTC + Theta_old * heatFluxWeightsOld_Eig + 
-                    Theta_oldOld * heatFluxWeightsOldOld_Eig - TmeasShort);
-                residual.col(timeSampleI) = R;
-                residualNorm(timeSampleI) = R.norm();
-
-                updateHeatFlux(heatFluxWeights);
-                heatFluxWeightsGrad = (heatFluxWeights - heatFluxWeightsOld) / 
-                    timeSamplesDeltaT;
-                
-                //ReconstructT
-                reconstrucT(_outputFolder);
-
-                timeSampleI++;
-            }
-            ITHACAstream::exportMatrix(
-                    residual, "residual", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    residualNorm, "residualNorm", "eigen", _outputFolder);
+            computeHeatFluxWeights(_initialField, _initialWeights, _outputFolder);
 
             //Compute relative error
             Info << "######### Postprocessing #########" << endl;
 
             PtrList<volScalarField> gRec;
-            ITHACAstream::read_fields(gRec, "gReconstructed",
+            ITHACAstream::read_fields(gRec, reconstructedHeatFluxName,
                                       _outputFolder);
 
             PtrList<volScalarField> Trec;
-            ITHACAstream::read_fields(Trec, "Treconstructed",
+            ITHACAstream::read_fields(Trec, reconstructedTemperatureName,
                                       _outputFolder);
 
             Info << "\n*********************************************************" << endl;
             Info << "\nStart ONLY PROJECTION" << endl;
             timeSampleI = 0;
 
-            trueWeights = 
-                projectHeatFlux(trueHeatFlux[0]);
             ITHACAutilities::assignIF(_initialField, 
                     Ttrue[0]);
-            heatFluxWeights = trueWeights;
-            heatFluxWeightsOldOld = heatFluxWeights;
+            heatFluxWeights = _initialWeights;
+            List<scalar> trueWeights = _initialWeights;
             while(timeSampleI < timeSamplesNum)
             {
                 Info << "\nTime sample " << timeSampleI + 1 << endl;
 
-                Eigen::VectorXd oldWeights_Eig =
-                    Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
                 if(timeSampleI > 0)
                 {
                      ITHACAutilities::assignIF(_initialField, 
                              Ttrue[samplingSteps[timeSampleI - 1]]);
-                    heatFluxWeightsOldOld = heatFluxWeightsOld;
                 }
-                heatFluxWeightsOld = trueWeights;
 
-                Eigen::VectorXd heatFluxWeightsOld_Eig =
-                    Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
-                Eigen::VectorXd heatFluxWeightsOldOld_Eig =
-                    Foam2Eigen::List2EigenMatrix(heatFluxWeightsOldOld);
+                heatFluxWeightsOld = trueWeights;
 
                 //Project true heat flux
                 trueWeights = 
@@ -899,38 +707,23 @@ class steadyBasisTest: public sequentialIHTP
                 Eigen::VectorXd trueWeights_Eig =
                     Foam2Eigen::List2EigenMatrix(trueWeights);
 
-                solveTb("./ITHACAoutput/debugTb", _initialField);
-                Eigen::VectorXd TbatTC =
-                    fieldValueAtThermocouples(Tb_time[NtimeStepsBetweenSamples - 1]);
+                solveT_ic(_initialField);
+
                 heatFluxWeights = trueWeights;
                 updateHeatFlux(heatFluxWeights);
 
                 //ReconstructT
-                reconstrucT(_outputFolder);
-
-                //Eigen::VectorXd R = Theta.transpose() * Theta * trueWeights_Eig -
-                //    Theta.transpose() * (TmeasShort + Theta_old * oldWeights_Eig - TFIatTC);
-                //Eigen::VectorXd TFIatTC_desired = - Theta * trueWeights_Eig +
-                //    TmeasShort + Theta_old * oldWeights_Eig;
-
-                //std::cout << "debug: des: TFIatTC[" << timeSampleI << "] = \n" << 
-                //    TFIatTC_desired << std::endl;
-
-                Eigen::VectorXd R = Theta.transpose() * (Theta * trueWeights_Eig + 
-                    TbatTC + Theta_old * heatFluxWeightsOld_Eig + 
-                    Theta_oldOld * heatFluxWeightsOldOld_Eig - TmeasShort);
-                residual.col(timeSampleI) = R;
-                residualNorm(timeSampleI) = R.norm();
+                reconstructT(_outputFolder);
 
                 timeSampleI++;
             }
 
             PtrList<volScalarField> gProj;
-            ITHACAstream::read_fields(gProj, "gReconstructed",
+            ITHACAstream::read_fields(gProj, reconstructedHeatFluxName,
                                       _outputFolder);
 
             PtrList<volScalarField> Tproj;
-            ITHACAstream::read_fields(Tproj, "Treconstructed",
+            ITHACAstream::read_fields(Tproj, reconstructedTemperatureName,
                                       _outputFolder);
             Info << "\nEnd ONLY PROJECTION" << endl;
             Info << "\n*********************************************************" << endl;
@@ -938,6 +731,8 @@ class steadyBasisTest: public sequentialIHTP
 
             Eigen::VectorXd heatFluxRelErr_L2(Ntimes);
             Eigen::VectorXd heatFluxRelErr_Linf(Ntimes);
+            Eigen::VectorXd projHeatFluxRelErr_L2(Ntimes);
+            Eigen::VectorXd projHeatFluxRelErr_Linf(Ntimes);
             Eigen::VectorXd projRecHeatFluxRelErr_L2(Ntimes);
             Eigen::VectorXd projRecHeatFluxRelErr_Linf(Ntimes);
             Eigen::VectorXd timeVec(Ntimes);
@@ -967,6 +762,10 @@ class steadyBasisTest: public sequentialIHTP
                         ITHACAutilities::errorL2Rel(trueHeatFluxField, gRec[timeI]);
                     heatFluxRelErr_Linf(timeI-1) = 
                         ITHACAutilities::errorLinfRel(trueHeatFluxField, gRec[timeI]);
+                    projHeatFluxRelErr_L2(timeI-1) = 
+                        ITHACAutilities::errorL2Rel(trueHeatFluxField, gProj[timeI]);
+                    projHeatFluxRelErr_Linf(timeI-1) = 
+                        ITHACAutilities::errorLinfRel(trueHeatFluxField, gProj[timeI]);
                     projRecHeatFluxRelErr_L2(timeI-1) = 
                         ITHACAutilities::errorL2Rel(gProj[timeI], gRec[timeI]);
                     projRecHeatFluxRelErr_Linf(timeI-1) = 
@@ -975,10 +774,10 @@ class steadyBasisTest: public sequentialIHTP
                 }
                 ITHACAstream::exportSolution(gRec[timeI],
                                              std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "recHeatFlux");
+                                             _outputFolder, reconstructedHeatFluxName);
                 ITHACAstream::exportSolution(Trec[timeI],
                                              std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "recTemp");
+                                             _outputFolder, reconstructedTemperatureName);
                 ITHACAstream::exportSolution(gProj[timeI],
                                              std::to_string(timeSteps[timeI]), 
                                              _outputFolder, "projHeatFlux");
@@ -1011,15 +810,13 @@ class steadyBasisTest: public sequentialIHTP
 
             Info << "\nExporting" << endl;
             ITHACAstream::exportMatrix(
-                    residual, "projResidual", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    residualNorm, "projResidualNorm", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
-                    weightsError, "weightsError", "eigen", _outputFolder);
-            ITHACAstream::exportMatrix(
                     heatFluxRelErr_L2, "heatFluxRelErr_L2", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(
                     heatFluxRelErr_Linf, "heatFluxRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(projHeatFluxRelErr_L2, "projHeatFluxRelErr_L2", 
+                    "eigen", _outputFolder);
+            ITHACAstream::exportMatrix( projHeatFluxRelErr_Linf, 
+                    "projHeatFluxRelErr_Linf", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(
                     timeVec, "timeVec", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(
@@ -1034,134 +831,7 @@ class steadyBasisTest: public sequentialIHTP
             ITHACAstream::exportMatrix(
                     projRecHeatFluxRelErr_Linf, "projRecHeatFluxRelErr_Linf", "eigen", 
                     _outputFolder);
-            //ITHACAstream::exportMatrix(
-            //        relErr, "relErr", "eigen", _outputFolder);
-            //ITHACAstream::exportMatrix(
-            //        compWeights, "compWeigths", "eigen", _outputFolder);
-            //ITHACAstream::exportMatrix(
-            //        projWeights, "projWeigths", "eigen", _outputFolder);
             Info << "Ended Exporting" << endl;
-        }
-
-        void updateHeatFlux2(Eigen::VectorXd _weights, word _outputFolder)
-        {
-
-            List<scalar> weights(_weights.size());
-            forAll(weights, i)
-            {
-                weights[i] = _weights(i);
-            }
-            M_Assert(weights.size() == Nbasis,                                          
-                     "weigths size different from basis functions size");                 
-            volScalarField& T = _T();
-            label firstTimeI = timeSampleI * NtimeStepsBetweenSamples;
-            int lastTimeStep = firstTimeI + NtimeStepsBetweenSamples;                     
-            updateTimeHeatFlux(weights);
-            if(timeSampleI == 0)
-            {
-                volScalarField gParametrizedField = list2Field(heatFlux[0]);
-                ITHACAstream::exportSolution(gParametrizedField,
-                                             std::to_string(timeSteps[0]),
-                                             _outputFolder,
-                                             "gLinSys");
-            }
-
-            for(int timeI = firstTimeI; timeI < lastTimeStep; timeI++)                    
-            {                                                                             
-                forAll (T.boundaryField()[hotSide_ind], faceI)                            
-                {
-                    heatFlux[timeI + 1][faceI] = 0.0;                               
-                    forAll (weights, weightI)
-                    {
-                        heatFlux[timeI + 1][faceI] +=                                     
-                            heatFluxTimeBasis[timeI - firstTimeI][weightI] *              
-                            heatFluxSpaceBasis[weightI][faceI];                          
-                    }
-                }                                                                      
-                volScalarField gParametrizedField = list2Field(heatFlux[timeI+1]);
-                ITHACAstream::exportSolution(gParametrizedField,
-                                             std::to_string(timeSteps[timeI+1]),
-                                             _outputFolder,
-                                             "gLinSys");
-            }   
-        }
-
-        void parameterizedBC(word outputFolder, volScalarField _initialField,
-                List<scalar> _initialWeights)
-        {
-            Info << endl << "OVERWRITTEN Using quasilinearity of direct problem :" << endl;
-            Info << "Using " << linSys_solver << " to solve the linear system" << endl;
-            if(linearBasis == 0)
-            {
-                Info << "\nCONSTANT time basis\n" << endl;
-                computeConstantHeatWeights(outputFolder, _initialField);
-            }
-            else
-            {
-                Info << "\nLINEAR time basis\n" << endl;
-                computeLinearHeatWeights(outputFolder, _initialField, _initialWeights);
-            }
-        }    
-
-        void computeLinearHeatWeights(word outputFolder,
-                volScalarField _initialField, List<scalar> _initialWeights)
-        {
-            M_Assert(linearBasis == 1, "Wrong call of function computeLinearHeatWeights");
-            M_Assert(_initialWeights.size() == Nbasis, "Wrong input weights");
-            timeSampleI = 0;
-        
-            List<Eigen::MatrixXd> linSys;
-            linSys.resize(2);
-            heatFluxWeightsOld = _initialWeights;
-        
-            while(timeSampleI < timeSamplesNum)
-            {
-                Info << "\nTime sample " << timeSampleI + 1 << endl;
-                auto t_start = std::chrono::high_resolution_clock::now();
-        
-                if(timeSampleI > 0)
-                {
-                     ITHACAutilities::assignIF(_initialField, 
-                             Ttime[NtimeStepsBetweenSamples -1]);
-                     heatFluxWeightsOld = heatFluxWeights;
-                     //heatFluxWeightsOld = 
-                     //    projectHeatFlux(trueHeatFlux[samplingSteps[timeSampleI - 1]]);
-                }
-                solveT0(_initialField);
-        
-                TmeasShort = Tmeas.segment(thermocouplesNum * timeSampleI, 
-                        thermocouplesNum *
-                        NsamplesWindow);
-                Eigen::MatrixXd Temp = (1.0 / timeSamplesDeltaT) * Theta_old;
-                Eigen::MatrixXd M = Theta + Temp;
-                Eigen::VectorXd heatFluxWeightsOld_Eig =
-                    Foam2Eigen::List2EigenMatrix(heatFluxWeightsOld);
-                linSys[0] = M.transpose() * M;
-                linSys[1] = M.transpose() * (TmeasShort +
-                        Temp * heatFluxWeightsOld_Eig - T0_vector);
-        
-                Eigen::VectorXd weigths = solveLinSys(linSys);
-        
-        
-                heatFluxWeights.resize(weigths.size());
-                forAll(heatFluxWeights, weightI)
-                {
-                    heatFluxWeights[weightI] = weigths(weightI);
-                }
-                Info << "Weights = \n" << heatFluxWeights << endl;
-                updateHeatFlux(heatFluxWeights);
-                label verbose = 0;
-                parameterizedBC_postProcess(linSys, weigths, _initialField, outputFolder, 
-                        verbose);
-                timeSampleI++;
-                auto t_end = std::chrono::high_resolution_clock::now();
-                double elapsed_time_ms =
-                    std::chrono::duration<double, std::milli>(t_end-t_start).count();
-                Info << "CPU time = " << elapsed_time_ms << " milliseconds" << endl << endl;
-            }
-            ITHACAstream::exportMatrix(Jlist, "costFunction", "eigen", outputFolder);
-            Info << "End" << endl;
-            Info << endl;
         }
 
 };

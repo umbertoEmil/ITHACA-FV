@@ -37,11 +37,11 @@ SVDtol              1e-8;
 PODnorm             L2;
 noiseLevel          0.05;
 
-spaceBasisType      rbf;
-NpodBasis           20;
+spaceBasisType      pod;
+NpodBasis           10;
 Nimplicit           10;
 
-timeGrad            0.5;
+timeGrad            0.;
 
 linearTimeBasis     1;
 weightsInterpolation     0;
@@ -49,9 +49,7 @@ weightsInterpolation     0;
 
 
 //Test to perform
-reconstructionTest      0;
-pointReconstructionTest 0;
-thermocoupleReconstructionTest 0;
-linearSystemTest        1;
-inverseTest             0;
+reconstructionTest      1;
+thermocoupleReconstructionTest 1;
+inverseTest             1;
 

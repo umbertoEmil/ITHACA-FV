@@ -43,15 +43,8 @@ Nimplicit           10;
 
 timeGrad            0.5;
 
-linearTimeBasis     1;
-weightsInterpolation     0;
-
-
-
 //Test to perform
-reconstructionTest      0;
-pointReconstructionTest 0;
-thermocoupleReconstructionTest 0;
-linearSystemTest        1;
-inverseTest             0;
+reconstructionTest      1;
+thermocoupleReconstructionTest 1;
+inverseTest             1;
 

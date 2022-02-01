@@ -24,7 +24,7 @@ License
 Description
     Example of a heat transfer Reduction Problem
 SourceFiles
-    steadyBasisTest.C
+    linearBasisTest.C
 \*---------------------------------------------------------------------------*/
 
 #include <iostream>
@@ -45,9 +45,9 @@ SourceFiles
 #include "Foam2Eigen.H"
 #include "mixedFvPatchFields.H"
 #include "cellDistFuncs.H"
-#include "ReducedSequentialIHTP_incrementalPOD.H"
-#include "sequentialIHTP.H"
-#include "steadyBasisTest.H"
+//#include "ReducedSequentialIHTP_incrementalPOD.H"
+#include "sequentialIHTP_linear.H"
+#include "linearBasisTest.H"
 #include "sequentialAcquisitionTest_steady.H"
 
 
@@ -57,7 +57,7 @@ using namespace SPLINTER;
 int main(int argc, char* argv[])
 {
     solverPerformance::debug = 1; //No verbose output
-    steadyBasisTest example(argc, argv);
+    linearBasisTest example(argc, argv);
     sequentialAcquisitionTest_steady exampleSteady(argc, argv);
 
 
@@ -85,7 +85,10 @@ int main(int argc, char* argv[])
     example.b = para->ITHACAdict->lookupOrDefault<scalar>("b", 0);
     example.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
     example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
-    example.NmodesT0 = para->ITHACAdict->lookupOrDefault<int>("NmodesT0", 0);
+    scalar timeGrad =
+        para->ITHACAdict->lookupOrDefault<scalar>("timeGrad", 0);
+
+    example.NmodesT_ic = para->ITHACAdict->lookupOrDefault<int>("NmodesT_ic", 0);
     int NmagicPoints =
         para->ITHACAdict->lookupOrDefault<int>("NmagicPoints", 0);
     scalar shapeParameter =
@@ -96,10 +99,6 @@ int main(int argc, char* argv[])
         para->ITHACAdict->lookupOrDefault<double>("SVDtol", 0);
     word PODnorm =
         para->ITHACAdict->lookupOrDefault<word>("PODnorm", "L2");
-    example.interpolationFlag =
-        para->ITHACAdict->lookupOrDefault<bool>("weightsInterpolation", 0);
-    example.linearBasis =
-        para->ITHACAdict->lookupOrDefault<bool>("linearTimeBasis", 0);
     label NpodBasis =
         para->ITHACAdict->lookupOrDefault<label>("NpodBasis", 0);
     word spaceBasisType =
@@ -109,16 +108,10 @@ int main(int argc, char* argv[])
 
     unsigned reconstructionTest =
         para->ITHACAdict->lookupOrDefault<unsigned>("reconstructionTest", 0);
-    unsigned pointReconstructionTest =
-        para->ITHACAdict->lookupOrDefault<unsigned>("pointReconstructionTest", 0);
     unsigned thermocoupleReconstructionTest =
         para->ITHACAdict->lookupOrDefault<unsigned>("thermocoupleReconstructionTest", 0);
-    unsigned linearSystemTest =
-        para->ITHACAdict->lookupOrDefault<unsigned>("linearSystemTest", 0);
     unsigned inverseTest =
         para->ITHACAdict->lookupOrDefault<unsigned>("inverseTest", 0);
-    scalar timeGrad =
-        para->ITHACAdict->lookupOrDefault<scalar>("timeGrad", 0);
     Info << "\n ************************************************************ \n";
     Info << "Conducting chirp test to compare performance of steady and unsteady inverse solvers\n";
     Info << "We assume the heat flux to estimate has the shape:\n";
@@ -148,8 +141,8 @@ int main(int argc, char* argv[])
     example.solveTrue();
 
     example.assignTrueIF();
-    example.set_gParametrized(spaceBasisType, shapeParameter, NpodBasis);
-    example.parameterizedBCoffline();
+    example.setParametrizedHeatFlux(spaceBasisType, shapeParameter, NpodBasis);
+    example.offlinePhase();
     
     //Set T0
     volScalarField initialField = example.Ttrue[0];
@@ -160,13 +153,6 @@ int main(int argc, char* argv[])
         example.reconstructionTest(initialField, outputFolderReconstructionTest);
     }
 
-    if(pointReconstructionTest)
-    {
-        word outputFolder = "./ITHACAoutput/pointsReconstruction/";
-        vector point(1.0, 0.05, 0.65);
-        example.pointsReconstructionTest(point, initialField, outputFolder);
-    }
-
     if(thermocoupleReconstructionTest)
     {
         word outputFolder = "./ITHACAoutput/thermocoupleReconstructionTest/";
@@ -174,23 +160,13 @@ int main(int argc, char* argv[])
         example.thermocoupleReconstructionTest(TCindex, initialField, outputFolder);
     }
 
-    if(linearSystemTest)
-    {
-        word outputFolder = "./ITHACAoutput/linearSystemTest/";
-        example.linearSystemTest(initialField, Nimplicit, outputFolder);
-    }
-
     if(inverseTest)
     {
         word outputFolderFULL = "./ITHACAoutput/testInverse/";
-        example.parameterizedBC(outputFolderFULL, initialField,
-                example.projectHeatFlux(example.trueHeatFlux[0]));
-        example.inverseProblemPostProcess(outputFolderFULL);
+        example.inverseProblemTest(initialField,
+                example.projectHeatFlux(example.trueHeatFlux[0]), outputFolderFULL);
+        //example.inverseProblemPostProcess(outputFolderFULL);
     }
-    
-//    example.sequentialIHTP::parameterizedBC(outputFolderFULL, initialField, 
-//            example.projectHeatFlux(example.trueHeatFlux[0])); 
-//    example.inverseProblemPostProcess(outputFolderFULL);
 
     return 0;
 }

@@ -37,11 +37,12 @@ Eigen::VectorXd  TSVD(Eigen::MatrixXd A,
                       Eigen::MatrixXd b, int filter)
 {
     M_Assert(b.cols() == 1, "The b input in TSVD must have only one column");
+    M_Assert(filter <= A.cols(), "Filter values too high");
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A,
                                           Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = svd.matrixU();
     Eigen::MatrixXd V = svd.matrixV();
-    Eigen::VectorXd x = Eigen::VectorXd::Zero(b.size());
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(V.rows());
 
     for (label i = 0; i < filter; i++)
     {
@@ -574,7 +575,7 @@ Eigen::VectorXd lsolve(Eigen::MatrixXd L, Eigen::VectorXd y, Eigen::MatrixXd W, 
     return x;
 }
 
-List<Eigen::MatrixXd> precondition(List<Eigen::MatrixXd> linSys, word method)
+List<Eigen::MatrixXd> precondition(List<Eigen::MatrixXd> linSys, word method, int nSVD)
 {
     M_Assert(linSys.size() == 2, "The linear system has wrong size");
     M_Assert(method != "None", "Specify the preconditioner to use");
@@ -596,10 +597,10 @@ List<Eigen::MatrixXd> precondition(List<Eigen::MatrixXd> linSys, word method)
                                               Eigen::ComputeThinU | Eigen::ComputeThinV);
 
         Eigen::VectorXd singVal = svd.singularValues();
-        int K = 19;
+        M_Assert(nSVD > 0, "Wrong input value to SVD preconditioning method");
         for(int i = 0; i < singVal.size(); i++)
         {
-            if(i >= K)
+            if(i >= nSVD)
             {
                 singVal(i) = 1;
             }

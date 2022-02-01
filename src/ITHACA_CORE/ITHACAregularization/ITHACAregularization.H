@@ -311,7 +311,8 @@ Eigen::VectorXd lsolve(Eigen::MatrixXd L, Eigen::VectorXd y,
 ///
 /// @return    Preconditioned linear system
 ///
-List<Eigen::MatrixXd> precondition(List<Eigen::MatrixXd> linSys, word method = "None");
+List<Eigen::MatrixXd> precondition(List<Eigen::MatrixXd> linSys, word method = "None", 
+        int nSVD = 0);
 
 };
 

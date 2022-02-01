@@ -21,21 +21,21 @@ License
     You should have received a copy of the GNU Lesser General Public License
     along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
 Class
-    sequentialIHTP_linear
+    sequentialIHTP_constant
 Description
     A general full order implementation of an inverse problem
 SourceFiles
-    sequentialIHTP_linear.C
+    sequentialIHTP_constant.C
 \*---------------------------------------------------------------------------*/
 
 /// \file
-/// Header file of the sequentialIHTP_linear class.
+/// Header file of the sequentialIHTP_constant class.
 /// \dir
-/// Directory containing the header and source files for the sequentialIHTP_linear class.
+/// Directory containing the header and source files for the sequentialIHTP_constant class.
 
 
-#ifndef sequentialIHTP_linear_H
-#define sequentialIHTP_linear_H
+#ifndef sequentialIHTP_constant_H
+#define sequentialIHTP_constant_H
 #include <iostream>
 #include "fvCFD.H"
 #include "interpolation.H"
@@ -58,22 +58,16 @@ SourceFiles
 using namespace SPLINTER;
 
 /// Class to implement a full order inverse parameterized laplacian problem
-class sequentialIHTP_linear: public sequentialIHTP
+class sequentialIHTP_constant: public sequentialIHTP
 {
 
     public:
         // Constructors
-        sequentialIHTP_linear();
+        sequentialIHTP_constant();
         /// Construct with argc and argv
-        sequentialIHTP_linear(int argc, char* argv[]);
-        //sequentialIHTP_linear(int argc, char* argv[], scalar _diffusivity);
-        virtual ~sequentialIHTP_linear() {};
-
-        /// Solutions of the T_d problem
-        List<PtrList<volScalarField>> T_d;
-
-        /// Matrix for the inverse problem linear system
-        Eigen::MatrixXd Theta_d;
+        sequentialIHTP_constant(int argc, char* argv[]);
+        //sequentialIHTP_constant(int argc, char* argv[], scalar _diffusivity);
+        virtual ~sequentialIHTP_constant() {};
 
         word reconstructedTemperatureName = "recTemperature";
         word reconstructedHeatFluxName = "recHeatFluc";
@@ -87,12 +81,6 @@ class sequentialIHTP_linear: public sequentialIHTP
         /// @param[in]  weigths  New values of the weights of the basis functions
         ///
         void updateTimeHeatFlux(List<scalar> weights);
-
-        //--------------------------------------------------------------------------
-
-        /// Solve the T_d problem
-        ///
-        void solveT_d(label _baseI);
 
         //--------------------------------------------------------------------------
 
