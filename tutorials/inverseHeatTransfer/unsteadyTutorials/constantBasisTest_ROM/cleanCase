@@ -1,0 +1,3 @@
+rm -r thermocouplesCellsID_mat.txt ITHACAoutput heatFluxRelErr_L2_mat.txt heatFluxRelErr_Linf_mat.txt \
+&& echo "constantBasisTest is clean and ready for a new run" \
+|| echo "constantBasisTest was already clean"

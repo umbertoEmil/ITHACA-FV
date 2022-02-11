@@ -26,6 +26,7 @@ class constantBasisTest: public sequentialIHTP_constant
         PtrList<volScalarField> recT;
         PtrList<volScalarField> solT;
         volScalarField initialField;
+        bool linearTrueHeatFlux = 0;
 
         Foam::vector probeCenter = Foam::vector(1, 0.0, 0.6);
         Foam::vector probeSide = Foam::vector(0.8, 0.0, 1.1);
@@ -124,17 +125,22 @@ class constantBasisTest: public sequentialIHTP_constant
                     scalar faceZ =
                         mesh.boundaryMesh()[hotSide_ind].faceCentres()[faceI].z();
 
-                    scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
-                    trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1; 
 
-                    //scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
-                    //scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) +
-                    //        faceZ * faceZ);
-                    //trueHeatFlux[timeI][faceI] = g1 +
-                    //    g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency *
-                    //                timeSteps[timeI] * timeSteps[timeI] / endTime)) +
-                    //    g2 * std::exp(- 0.1 * timeSteps[timeI]);
-
+                    if(linearTrueHeatFlux)
+                    {
+                        scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
+                        trueHeatFlux[timeI][faceI] = timeGrad * timeSteps[timeI] * g1 + g1;
+                    }
+                    else
+                    {
+                        scalar g1 = - thermalCond * (b * faceZ * faceZ  + c);
+                        scalar g2 = - thermalCond * c / (1 + (faceX - 1) * (faceX - 1) +
+                                faceZ * faceZ);
+                        trueHeatFlux[timeI][faceI] = g1 +
+                            g1 / 2 * (std::sin ( 2 * M_PI * maxFrequency *
+                                        timeSteps[timeI] * timeSteps[timeI] / endTime)) +
+                            g2 * std::exp(- 0.1 * timeSteps[timeI]);
+                    }
                 }
             }
         }
@@ -670,6 +676,8 @@ class constantBasisTest: public sequentialIHTP_constant
 
             computeHeatFluxWeights(_initialField, _initialWeights, _outputFolder);
 
+            T_basis.resize(0);
+
             //Compute relative error
             Info << "######### Postprocessing #########" << endl;
 
@@ -677,56 +685,55 @@ class constantBasisTest: public sequentialIHTP_constant
             ITHACAstream::read_fields(gRec, reconstructedHeatFluxName,
                                       _outputFolder);
 
-            PtrList<volScalarField> Trec;
-            ITHACAstream::read_fields(Trec, reconstructedTemperatureName,
-                                      _outputFolder);
+            //PtrList<volScalarField> Trec;
+            //ITHACAstream::read_fields(Trec, reconstructedTemperatureName,
+            //                          _outputFolder);
+            //Info << "\n*********************************************************" << endl;
+            //Info << "\nStart ONLY PROJECTION" << endl;
+            //timeSampleI = 0;
 
-            Info << "\n*********************************************************" << endl;
-            Info << "\nStart ONLY PROJECTION" << endl;
-            timeSampleI = 0;
+            //ITHACAutilities::assignIF(_initialField, 
+            //        Ttrue[0]);
+            //heatFluxWeights = _initialWeights;
+            //List<scalar> trueWeights = _initialWeights;
+            //while(timeSampleI < timeSamplesNum)
+            //{
+            //    Info << "\nTime sample " << timeSampleI + 1 << endl;
 
-            ITHACAutilities::assignIF(_initialField, 
-                    Ttrue[0]);
-            heatFluxWeights = _initialWeights;
-            List<scalar> trueWeights = _initialWeights;
-            while(timeSampleI < timeSamplesNum)
-            {
-                Info << "\nTime sample " << timeSampleI + 1 << endl;
+            //    if(timeSampleI > 0)
+            //    {
+            //         ITHACAutilities::assignIF(_initialField, 
+            //                 Ttrue[samplingSteps[timeSampleI - 1]]);
+            //    }
 
-                if(timeSampleI > 0)
-                {
-                     ITHACAutilities::assignIF(_initialField, 
-                             Ttrue[samplingSteps[timeSampleI - 1]]);
-                }
+            //    heatFluxWeightsOld = trueWeights;
 
-                heatFluxWeightsOld = trueWeights;
+            //    //Project true heat flux
+            //    trueWeights = 
+            //        projectHeatFlux(trueHeatFlux[samplingSteps[timeSampleI]]);
+            //    Eigen::VectorXd trueWeights_Eig =
+            //        Foam2Eigen::List2EigenMatrix(trueWeights);
 
-                //Project true heat flux
-                trueWeights = 
-                    projectHeatFlux(trueHeatFlux[samplingSteps[timeSampleI]]);
-                Eigen::VectorXd trueWeights_Eig =
-                    Foam2Eigen::List2EigenMatrix(trueWeights);
+            //    solveT_ic(_initialField);
 
-                solveT_ic(_initialField);
+            //    heatFluxWeights = trueWeights;
+            //    updateHeatFlux(heatFluxWeights);
 
-                heatFluxWeights = trueWeights;
-                updateHeatFlux(heatFluxWeights);
+            //    //ReconstructT
+            //    reconstructT(_outputFolder);
 
-                //ReconstructT
-                reconstructT(_outputFolder);
+            //    timeSampleI++;
+            //}
 
-                timeSampleI++;
-            }
+            //PtrList<volScalarField> gProj;
+            //ITHACAstream::read_fields(gProj, reconstructedHeatFluxName,
+            //                          _outputFolder);
 
-            PtrList<volScalarField> gProj;
-            ITHACAstream::read_fields(gProj, reconstructedHeatFluxName,
-                                      _outputFolder);
-
-            PtrList<volScalarField> Tproj;
-            ITHACAstream::read_fields(Tproj, reconstructedTemperatureName,
-                                      _outputFolder);
-            Info << "\nEnd ONLY PROJECTION" << endl;
-            Info << "\n*********************************************************" << endl;
+            //PtrList<volScalarField> Tproj;
+            //ITHACAstream::read_fields(Tproj, reconstructedTemperatureName,
+            //                          _outputFolder);
+            //Info << "\nEnd ONLY PROJECTION" << endl;
+            //Info << "\n*********************************************************" << endl;
 
 
             Eigen::VectorXd heatFluxRelErr_L2(Ntimes);
@@ -757,58 +764,66 @@ class constantBasisTest: public sequentialIHTP_constant
                     probeHeat_true(timeI-1) = 
                         trueHeatFluxField[cellprobeCenter];
                     probeHeat_rec(timeI-1) = gRec[timeI][cellprobeCenter];
-                    probeHeat_proj(timeI-1) = gProj[timeI][cellprobeCenter];
+                //    probeHeat_proj(timeI-1) = gProj[timeI][cellprobeCenter];
                     heatFluxRelErr_L2(timeI-1) = 
                         ITHACAutilities::errorL2Rel(trueHeatFluxField, gRec[timeI]);
                     heatFluxRelErr_Linf(timeI-1) = 
                         ITHACAutilities::errorLinfRel(trueHeatFluxField, gRec[timeI]);
-                    projHeatFluxRelErr_L2(timeI-1) = 
-                        ITHACAutilities::errorL2Rel(trueHeatFluxField, gProj[timeI]);
-                    projHeatFluxRelErr_Linf(timeI-1) = 
-                        ITHACAutilities::errorLinfRel(trueHeatFluxField, gProj[timeI]);
-                    projRecHeatFluxRelErr_L2(timeI-1) = 
-                        ITHACAutilities::errorL2Rel(gProj[timeI], gRec[timeI]);
-                    projRecHeatFluxRelErr_Linf(timeI-1) = 
-                        ITHACAutilities::errorLinfRel(gProj[timeI], gRec[timeI]);
-                    timeVec(timeI-1) = timeSteps[timeI];
+                 //   projHeatFluxRelErr_L2(timeI-1) = 
+                 //       ITHACAutilities::errorL2Rel(trueHeatFluxField, gProj[timeI]);
+                 //   projHeatFluxRelErr_Linf(timeI-1) = 
+                 //       ITHACAutilities::errorLinfRel(trueHeatFluxField, gProj[timeI]);
+                 //   projRecHeatFluxRelErr_L2(timeI-1) = 
+                 //       ITHACAutilities::errorL2Rel(gProj[timeI], gRec[timeI]);
+                 //   projRecHeatFluxRelErr_Linf(timeI-1) = 
+                 //       ITHACAutilities::errorLinfRel(gProj[timeI], gRec[timeI]);
+                 //   timeVec(timeI-1) = timeSteps[timeI];
                 }
                 ITHACAstream::exportSolution(gRec[timeI],
                                              std::to_string(timeSteps[timeI]), 
                                              _outputFolder, reconstructedHeatFluxName);
-                ITHACAstream::exportSolution(Trec[timeI],
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, reconstructedTemperatureName);
-                ITHACAstream::exportSolution(gProj[timeI],
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "projHeatFlux");
-                ITHACAstream::exportSolution(Tproj[timeI],
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "projTemp");
-                relErrField = ITHACAutilities::relativeErrorField(
-                        Ttrue[timeI], Trec[timeI]);
-                ITHACAstream::exportSolution(relErrField,
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "recTempRelErrField");
-                relErrField = ITHACAutilities::relativeErrorField(
-                        trueHeatFluxField, gProj[timeI]);
-                ITHACAstream::exportSolution(relErrField,
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "projHeatRelErr");
-                relErrField = ITHACAutilities::relativeErrorField(
-                        gProj[timeI], gRec[timeI]);
-                ITHACAstream::exportSolution(relErrField,
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "projRecHeatRelErr");
-                relErrField = ITHACAutilities::relativeErrorField(
-                        Tproj[timeI], Trec[timeI]);
-                ITHACAstream::exportSolution(relErrField,
-                                             std::to_string(timeSteps[timeI]), 
-                                             _outputFolder, "projRecTempRelErr");
+                //ITHACAstream::exportSolution(Trec[timeI],
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, reconstructedTemperatureName);
+                //ITHACAstream::exportSolution(gProj[timeI],
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, "projHeatFlux");
+                //ITHACAstream::exportSolution(Tproj[timeI],
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, "projTemp");
+                //relErrField = ITHACAutilities::relativeErrorField(
+                //        Ttrue[timeI], Trec[timeI]);
+                //ITHACAstream::exportSolution(relErrField,
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, "recTempRelErrField");
+                //relErrField = ITHACAutilities::relativeErrorField(
+                //        trueHeatFluxField, gProj[timeI]);
+                //ITHACAstream::exportSolution(relErrField,
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, "projHeatRelErr");
+                //relErrField = ITHACAutilities::relativeErrorField(
+                //        gProj[timeI], gRec[timeI]);
+                //ITHACAstream::exportSolution(relErrField,
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, "projRecHeatRelErr");
+                //relErrField = ITHACAutilities::relativeErrorField(
+                //        Tproj[timeI], Trec[timeI]);
+                //ITHACAstream::exportSolution(relErrField,
+                //                             std::to_string(timeSteps[timeI]), 
+                //                             _outputFolder, "projRecTempRelErr");
                 ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
             }
+            Eigen::VectorXd heatFluxRelErr_L2_max(1);
+            heatFluxRelErr_L2_max(0) = heatFluxRelErr_L2.maxCoeff();
+            Eigen::VectorXd heatFluxRelErr_Linf_max(1);
+            heatFluxRelErr_Linf_max(0) = heatFluxRelErr_Linf.maxCoeff();
             Info << "\nEND" << endl;
 
             Info << "\nExporting" << endl;
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2_max, "heatFluxRelErr_L2", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf_max, "heatFluxRelErr_Linf", "eigen", "./");
             ITHACAstream::exportMatrix(
                     heatFluxRelErr_L2, "heatFluxRelErr_L2", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(
@@ -833,6 +848,7 @@ class constantBasisTest: public sequentialIHTP_constant
                     _outputFolder);
             Info << "Ended Exporting" << endl;
         }
+
 
 };
 

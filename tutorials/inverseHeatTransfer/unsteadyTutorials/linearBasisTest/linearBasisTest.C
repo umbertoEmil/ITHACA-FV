@@ -85,6 +85,8 @@ int main(int argc, char* argv[])
     example.b = para->ITHACAdict->lookupOrDefault<scalar>("b", 0);
     example.c = para->ITHACAdict->lookupOrDefault<scalar>("c", 0);
     example.d = para->ITHACAdict->lookupOrDefault<scalar>("d", 0);
+    example.linearTrueHeatFlux = 
+        para->ITHACAdict->lookupOrDefault<bool>("linearTrueHeatFlux", 0);
     scalar timeGrad =
         para->ITHACAdict->lookupOrDefault<scalar>("timeGrad", 0);
 

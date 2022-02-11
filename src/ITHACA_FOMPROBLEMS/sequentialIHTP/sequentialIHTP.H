@@ -391,7 +391,7 @@ class sequentialIHTP: public laplacianProblem
 
         /// Solve the T_ic problem
         ///
-        virtual void solveT_ic(volScalarField _initialField) = 0;
+        void solveT_ic(volScalarField _initialField);
 
         //--------------------------------------------------------------------------
 
@@ -517,7 +517,6 @@ class sequentialIHTP: public laplacianProblem
         ///
         void parameterizedHeatFlux_postProcess(List<Eigen::MatrixXd> linSys,
                                          Eigen::VectorXd weigths, 
-                                         volScalarField _initialField,
                                          word outputFolder, label verbose = 0);
 
         //--------------------------------------------------------------------------

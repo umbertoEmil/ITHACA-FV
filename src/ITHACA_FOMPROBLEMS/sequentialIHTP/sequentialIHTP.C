@@ -423,6 +423,71 @@ void sequentialIHTP::assignDirectBC(label timeI)
     }
 }
 
+void sequentialIHTP::solveT_ic(volScalarField _initialField)
+{
+    Info << "\nSolving FULL T_ic problem" << endl;
+    restartOffline();
+    fvMesh& mesh = _mesh();
+    simpleControl& simple = _simple();
+    fv::options& fvOptions(_fvOptions());
+    volScalarField T_ic(_T);
+    Foam::Time& runTime = _runTime();
+    set_valueFraction();
+    List<scalar> RobinBC = Tf;
+    word outputFolder = "./ITHACAoutput/debugT_ic/";
+
+    if(timeSampleI == 0)
+    {
+        ITHACAutilities::assignIF(T_ic, _initialField);
+    }
+    else
+    {
+        ITHACAutilities::assignIF(T_ic, Ttime[Ttime.size() - 1]);
+    }
+
+    T_ic_field.append(T_ic.clone());
+    T_ic_time.resize(0);
+    label timeI = 0;
+    forAll(mesh.boundaryMesh(), patchI)
+    {
+        if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
+        {
+            ITHACAutilities::assignMixedBC(T_ic, patchI, RobinBC, refGrad,
+                                           valueFraction);
+        }
+        else
+        {
+            ITHACAutilities::assignBC(T_ic, patchI, homogeneousBC);
+        }
+    }
+
+    while (runTime.loop())
+    {
+        Info << "Time = " << runTime.timeName() << nl << endl;
+        timeI++;
+
+        while (simple.correctNonOrthogonal())
+        {
+            fvScalarMatrix TEqn
+            (
+                fvm::ddt(T_ic) - fvm::laplacian(DT * diffusivity, T_ic)
+            );
+            fvOptions.constrain(TEqn);
+            TEqn.solve();
+            fvOptions.correct(T_ic);
+        }
+
+        T_ic_time.append(T_ic.clone());
+        T_ic_field.append(T_ic.clone());
+        runTime.printExecutionTime(Info);
+        runTime.write();
+    }
+
+    T_ic_vector = fieldValueAtThermocouples(T_ic_time);
+    T_ic_ready = 1;
+    Info << "SolveT_ic ENDED\n" << endl;
+}
+
 void sequentialIHTP::getT_ic_modes()
 {
     word outputFolder = "./ITHACAoutput/modes/";
@@ -614,10 +679,9 @@ void sequentialIHTP::solveDirect()
 
 void sequentialIHTP::readThermocouples()
 {
-    Info << "Defining positions of thermocouples" << endl;
-
     if (!thermocouplesRead)
     {
+        Info << "Defining positions of thermocouples" << endl;
         word fileName = "./thermocouplesCellsID";
 
         if (ITHACAutilities::check_file(fileName + "_mat.txt"))
@@ -839,12 +903,12 @@ void sequentialIHTP::sampling2symulationTime()
 }
 
 void sequentialIHTP::parameterizedHeatFlux_postProcess(
-    List<Eigen::MatrixXd> linSys, Eigen::VectorXd weigths, volScalarField _initialField, 
-    word outputFolder, label verbose)
+    List<Eigen::MatrixXd> linSys, Eigen::VectorXd weigths, word outputFolder, 
+    label verbose)
 {
     Eigen::VectorXd Tcomp = fieldValueAtThermocouples(Ttime);
-    std::cout << "Tcomp = \n" << Tcomp.transpose() << std::endl;
-    std::cout << "TmeasShort = \n" << TmeasShort.transpose() << std::endl;
+    //std::cout << "Tcomp = \n" << Tcomp.transpose() << std::endl;
+    //std::cout << "TmeasShort = \n" << TmeasShort.transpose() << std::endl;
     J = 0.5 * Foam::sqrt((Tcomp - TmeasShort).dot(Tcomp - TmeasShort));
     Info << "J = " << J << endl;
     Jlist.conservativeResize(Jlist.size() + 1);

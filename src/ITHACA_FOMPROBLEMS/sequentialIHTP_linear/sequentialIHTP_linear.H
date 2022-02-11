@@ -75,6 +75,8 @@ class sequentialIHTP_linear: public sequentialIHTP
         /// Matrix for the inverse problem linear system
         Eigen::MatrixXd Theta_d;
 
+        scalar onlineCPUtime_avg;
+
         word reconstructedTemperatureName = "recTemperature";
         word reconstructedHeatFluxName = "recHeatFluc";
 
@@ -127,12 +129,6 @@ class sequentialIHTP_linear: public sequentialIHTP
         ///
         void computeHeatFluxWeights(volScalarField _initialField, 
                 List<scalar> _initialWeights, word _outputFolder);
-
-        //--------------------------------------------------------------------------
-
-        /// Solve the T_ic problem
-        ///
-        void solveT_ic(volScalarField _initialField);
 };
 
 #endif

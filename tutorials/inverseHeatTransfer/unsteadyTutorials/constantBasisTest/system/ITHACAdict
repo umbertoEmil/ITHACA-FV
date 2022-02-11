@@ -27,7 +27,6 @@ a		    1100;
 b		    1200;
 c		    3000;
 d		    0;
-maxFrequency        0.1;
 
 shapeParameter      .6;
 NmodesT0            20;
@@ -37,19 +36,16 @@ SVDtol              1e-8;
 PODnorm             L2;
 noiseLevel          0.05;
 
-spaceBasisType      pod;
-NpodBasis           10;
+spaceBasisType      rbf;
+NpodBasis           20;
 Nimplicit           10;
 
-timeGrad            0.;
-
-linearTimeBasis     1;
-weightsInterpolation     0;
-
-
+linearTrueHeatFlux  0;
+maxFrequency        0.05;
+timeGrad            0.5;
 
 //Test to perform
-reconstructionTest      1;
-thermocoupleReconstructionTest 1;
+reconstructionTest      0;
+thermocoupleReconstructionTest 0;
 inverseTest             1;
 

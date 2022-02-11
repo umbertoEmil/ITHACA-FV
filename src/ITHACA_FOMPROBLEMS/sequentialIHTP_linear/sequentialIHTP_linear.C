@@ -357,6 +357,7 @@ void sequentialIHTP_linear::computeHeatFluxWeights(volScalarField _initialField,
         List<scalar> _initialWeights, word _outputFolder)
 {
     timeSampleI = 0;
+    onlineCPUtime_avg = 0;
     heatFluxWeights = _initialWeights;
 
     List<Eigen::MatrixXd> linSys;
@@ -419,79 +420,20 @@ void sequentialIHTP_linear::computeHeatFluxWeights(volScalarField _initialField,
         reconstructT(_outputFolder);
 
         label verbose = 0;
-        parameterizedHeatFlux_postProcess(linSys, weigths, _initialField, _outputFolder, 
+        parameterizedHeatFlux_postProcess(linSys, weigths, _outputFolder, 
                 verbose);
         timeSampleI++;
         auto t_end = std::chrono::high_resolution_clock::now();
         double elapsed_time_ms =
             std::chrono::duration<double, std::milli>(t_end-t_start).count();
+        onlineCPUtime_avg += elapsed_time_ms;
         Info << "CPU time = " << elapsed_time_ms << " milliseconds" << endl << endl;
     }
+    onlineCPUtime_avg = onlineCPUtime_avg / timeSamplesNum;
+    Eigen::VectorXd onlineCPUtime_eig(1);
+    onlineCPUtime_eig(0) = onlineCPUtime_avg;
+    ITHACAstream::exportMatrix(
+                    onlineCPUtime_eig, "onlineCPUtime_avg", "eigen", "./");
     Info << "End" << endl;
     Info << endl;
-}
-
-void sequentialIHTP_linear::solveT_ic(volScalarField _initialField)
-{
-    Info << "\nSolving FULL T_ic problem" << endl;
-    restartOffline();
-    fvMesh& mesh = _mesh(); 
-    simpleControl& simple = _simple();
-    fv::options& fvOptions(_fvOptions());
-    volScalarField T_ic(_T);
-    Foam::Time& runTime = _runTime();
-    set_valueFraction(); 
-    List<scalar> RobinBC = Tf;
-    word outputFolder = "./ITHACAoutput/debugT_ic/";
-
-    if(timeSampleI == 0)
-    {
-        ITHACAutilities::assignIF(T_ic, _initialField);
-    }
-    else
-    {
-        ITHACAutilities::assignIF(T_ic, Ttime[Ttime.size() - 1]);
-    }
-
-    T_ic_field.append(T_ic.clone());
-    T_ic_time.resize(0);
-    label timeI = 0;
-    forAll(mesh.boundaryMesh(), patchI)
-    {
-        if (patchI == mesh.boundaryMesh().findPatchID("coldSide"))
-        {
-            ITHACAutilities::assignMixedBC(T_ic, patchI, RobinBC, refGrad,
-                                           valueFraction);
-        }
-        else
-        {
-            ITHACAutilities::assignBC(T_ic, patchI, homogeneousBC);
-        }
-    }
-
-    while (runTime.loop())
-    {
-        Info << "Time = " << runTime.timeName() << nl << endl;
-        timeI++;
-
-        while (simple.correctNonOrthogonal())
-        {
-            fvScalarMatrix TEqn
-            (
-                fvm::ddt(T_ic) - fvm::laplacian(DT * diffusivity, T_ic)
-            );
-            fvOptions.constrain(TEqn);
-            TEqn.solve();
-            fvOptions.correct(T_ic);
-        }
-
-        T_ic_time.append(T_ic.clone());
-        T_ic_field.append(T_ic.clone());
-        runTime.printExecutionTime(Info);
-        runTime.write();
-    }
-
-    T_ic_vector = fieldValueAtThermocouples(T_ic_time);
-    T_ic_ready = 1;
-    Info << "SolveT_ic ENDED\n" << endl;
 }

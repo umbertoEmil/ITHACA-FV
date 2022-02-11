@@ -1,3 +1,0 @@
-sequentialAcquisitionTest_linear.C
-
-EXE = $(FOAM_USER_APPBIN)/sequentialAcquisitionTestLinear

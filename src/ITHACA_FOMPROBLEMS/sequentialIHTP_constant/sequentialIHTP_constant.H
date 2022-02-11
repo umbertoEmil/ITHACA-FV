@@ -72,6 +72,8 @@ class sequentialIHTP_constant: public sequentialIHTP
         word reconstructedTemperatureName = "recTemperature";
         word reconstructedHeatFluxName = "recHeatFluc";
 
+        scalar onlineCPUtime_avg;
+
         // Functions
 
         //--------------------------------------------------------------------------
@@ -115,12 +117,6 @@ class sequentialIHTP_constant: public sequentialIHTP
         ///
         void computeHeatFluxWeights(volScalarField _initialField, 
                 List<scalar> _initialWeights, word _outputFolder);
-
-        //--------------------------------------------------------------------------
-
-        /// Solve the T_ic problem
-        ///
-        void solveT_ic(volScalarField _initialField);
 };
 
 #endif

@@ -319,8 +319,8 @@ incrementalPOD<Type, PatchField, GeoMesh>::reconstruct(
     Eigen::VectorXd InField = this->EigenModes[0].leftCols(Nmodes) * Coeff;
     inputField = Foam2Eigen::Eigen2field(inputField, InField);
     inputField.rename(Name);
-    Info << "WARNING: Boundary conditions are not reconstructed using incremental POD"
-         << endl;
+    //Info << "WARNING: Boundary conditions are not reconstructed using incremental POD"
+    //     << endl;
     return inputField;
 }
 
