@@ -19,32 +19,28 @@ density             8940.0;
 specificHeat        390.0; 
 heatTranferCoeff    5.66e4; 
 Tf                  350.0;
-//a		    150;
-//b		    200;
-//c		    300;
-//d		    14;
 a		    1100;
 b		    1200;
 c		    3000;
 d		    0;
 
 shapeParameter      .6;
-NmodesT_ic            20;
+NmodesT_ic          50;
 NmagicPoints        18;
-T_ic_projectionTol     1e-12;
-SVDtol              1e-8;
+T_ic_projectionTol  1e-8;
+SVDtol              1e-14;
 PODnorm             L2;
-addNoise            0;
-noiseLevel          0.05;
+addNoise 1;
+noiseStdDev 0.01;
 
 spaceBasisType      rbf;
 NpodBasis           20;
 Nimplicit           10;
 
-linearTrueHeatFlux  0;
+linearTrueHeatFlux 0;
 maxFrequency        0.05;
 timeGrad            0.5;
 
 //Test to perform
-FOMtest             0;
+FOMtest             1;
 ROMtest             1;

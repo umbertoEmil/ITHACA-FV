@@ -112,8 +112,8 @@ int main(int argc, char* argv[])
 
     unsigned addNoise = 
         para->ITHACAdict->lookupOrDefault<unsigned>("addNoise", 0);
-    double noiseLevel =
-        para->ITHACAdict->lookupOrDefault<double>("noiseLevel", 0);
+    double noiseStdDev = 
+        para->ITHACAdict->lookupOrDefault<double>("noiseStdDev", 0);
     Info << "\n ************************************************************ \n";
     Info << "Conducting chirp test to compare performance of steady and unsteady inverse solvers\n";
     Info << "We assume the heat flux to estimate has the shape:\n";
@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
     
     if(addNoise)
     {
-        example.addNoise(noiseLevel);
+        example.addNoise(noiseStdDev);
     }
 
     // Full 
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
                 example.projectHeatFlux(example.trueHeatFlux[0]), outputFolderRED,
                 NmagicPoints, SVDtol, PODnorm); 
         example.inverseProblemPostProcess(outputFolderRED);
-        example.inverseProblemPostProcess(outputFolderRED, outputFolderFULL);
+        //example.inverseProblemPostProcess(outputFolderRED, outputFolderFULL);
     }
 
     return 0;

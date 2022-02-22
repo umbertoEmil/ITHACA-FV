@@ -187,6 +187,12 @@ class sequentialIHTP: public laplacianProblem
         /// Cost funtion  [K^2]
         double J;
 
+        /// Cost function parameter [K^2/W^2]
+        scalar costFunctionParameter = 0.0;
+        
+        /// Matrix of the L2 inner product between the heat flux space basis
+        Eigen::MatrixXd basisCrossIntegralMatrix;
+
         /// List of cost funtions  [K^2]
         Eigen::VectorXd Jlist;
 
@@ -529,6 +535,12 @@ class sequentialIHTP: public laplacianProblem
 
         /// Convert list of boundary heat flux into field
         volScalarField list2Field(List<scalar> list, scalar innerField = 0.0);
+
+        //--------------------------------------------------------------------------
+
+        /// Compute the cross L2 product of the space basis
+        ///
+        void computeBasisCrossIntegral();
 
 };
 

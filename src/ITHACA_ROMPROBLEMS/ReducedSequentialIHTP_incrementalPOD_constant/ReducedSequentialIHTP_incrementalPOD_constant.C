@@ -183,7 +183,7 @@ void reducedSequentialIHTP_incrementalPOD_constant::computeHeatFluxWeights(
         updateHeatFlux(heatFluxWeights);
 
         label verbose = 0;
-        reconstructT("./ITHACAoutput/debugReconstrucT/");
+        reconstructT(_outputFolder);
         parameterizedHeatFlux_postProcess(linSys, weigths, _outputFolder, verbose);
         auto t_end = std::chrono::high_resolution_clock::now();
         double elapsed_time_ms =
@@ -311,25 +311,6 @@ double reducedSequentialIHTP_incrementalPOD_constant::computeT_ic_projectionErro
 
     return error;
 }
-
-volScalarField reducedSequentialIHTP_incrementalPOD_constant::reconstructT_lastTime()
-{                                                                                          
-    Info << "Reconstructing last timestesp field T" << endl;
-    Ttime.resize(0);                                                                       
-    restart();
-
-    int timeI = NtimeStepsBetweenSamples - 1;
-    volScalarField Tout(_T);
-    ITHACAutilities::assignIF(Tout, homogeneousBC);                                       
-    Info << "reconstructT_lastTime() still to write. Exiting" << endl;
-    exit(10);
-    //forAll(T_basis, baseI)                                                              
-    //{                                                                                  
-    //    Tout += heatFluxWeights[baseI] * (T_basis[baseI][timeI] + Tad_time[timeI]);
-    //}                                                                                  
-    //Tout += - Tad_time[timeI] + T0_time[timeI];
-    return Tout;
-}   
 
 void reducedSequentialIHTP_incrementalPOD_constant::findMagicPoints()
 {

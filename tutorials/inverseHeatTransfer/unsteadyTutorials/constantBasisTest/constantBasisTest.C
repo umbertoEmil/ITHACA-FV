@@ -114,6 +114,15 @@ int main(int argc, char* argv[])
         para->ITHACAdict->lookupOrDefault<unsigned>("thermocoupleReconstructionTest", 0);
     unsigned inverseTest =
         para->ITHACAdict->lookupOrDefault<unsigned>("inverseTest", 0);
+    unsigned conditioningTest =
+        para->ITHACAdict->lookupOrDefault<unsigned>("conditioningTest", 0);
+    unsigned addNoise =
+        para->ITHACAdict->lookupOrDefault<unsigned>("addNoise", 0);
+    double noiseStdDev = 
+        para->ITHACAdict->lookupOrDefault<double>("noiseStdDev", 0);
+
+    double costFunctionParameter = 
+        para->ITHACAdict->lookupOrDefault<double>("costFunctionParameter", 0.0);
     Info << "\n ************************************************************ \n";
     Info << "Conducting chirp test to compare performance of steady and unsteady inverse solvers\n";
     Info << "We assume the heat flux to estimate has the shape:\n";
@@ -165,9 +174,20 @@ int main(int argc, char* argv[])
     if(inverseTest)
     {
         word outputFolderFULL = "./ITHACAoutput/testInverse/";
+        example.costFunctionParameter = costFunctionParameter;
+
+        if(addNoise)
+        {
+            example.addNoise(noiseStdDev);
+        }
         example.inverseProblemTest(initialField,
                 example.projectHeatFlux(example.trueHeatFlux[0]), outputFolderFULL);
-        //example.inverseProblemPostProcess(outputFolderFULL);
+    }
+
+    if(conditioningTest)
+    {
+        word outputFolder = "./ITHACAoutput/conditioningTest/";
+        example.conditioningTest(outputFolder);
     }
 
     return 0;

@@ -365,6 +365,15 @@ void getModes(PtrList<Field_type>& snapshots, PtrList<Field_type>& modes,
               bool sup = 0,
               label nmodes = 0);
 
+//--------------------------------------------------------------------------
+/// Weighted Gram-Schmidt orthogonalization
+///
+/// @param[in]  matrix  Matrix to be orthogonalized
+/// @param[in]  weights Vector of weights
+///
+void weightedGramSchmidt(
+    Eigen::MatrixXd& matrix,
+    Eigen::VectorXd& weights);
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

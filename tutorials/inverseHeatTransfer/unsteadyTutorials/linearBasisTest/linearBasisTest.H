@@ -257,9 +257,11 @@ class linearBasisTest: public sequentialIHTP_linear
             std::cout << "debug : variance = " << variance  << std::endl;
             int Ntc = thermocouplesPos.size();
 
+
+            Eigen::MatrixXd Temp = Eigen::MatrixXd::Identity(Ntc, Ntc) * variance;
             auto noiseDensity = std::make_shared<muq::Modeling::Gaussian>
                                 (Eigen::VectorXd::Zero(Ntc), 
-                                 Eigen::MatrixXd::Identity(Ntc, Ntc) * variance);
+                                 Temp);
             forAll(samplingSteps, tI)
             {
                 Tmeas.segment(tI * Ntc, Ntc) += noiseDensity->Sample();
@@ -397,7 +399,7 @@ class linearBasisTest: public sequentialIHTP_linear
             Eigen::MatrixXd Btemp = Foam2Eigen::List2EigenMatrix(_heatFlux);
             Eigen::MatrixXd B = Temp.transpose() * Btemp;
             Temp = Temp.transpose() * Temp;
-            Eigen::MatrixXd out = Temp.fullPivLu().solve(B);
+            Eigen::MatrixXd out = Temp.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(B);
             return Foam2Eigen::EigenMatrix2List(out);
         };
 
@@ -687,7 +689,6 @@ class linearBasisTest: public sequentialIHTP_linear
             //PtrList<volScalarField> Trec;
             //ITHACAstream::read_fields(Trec, reconstructedTemperatureName,
             //                          _outputFolder);
-
             //Info << "\n*********************************************************" << endl;
             //Info << "\nStart ONLY PROJECTION" << endl;
             //timeSampleI = 0;
@@ -738,6 +739,7 @@ class linearBasisTest: public sequentialIHTP_linear
 
             Eigen::VectorXd heatFluxRelErr_L2(Ntimes);
             Eigen::VectorXd heatFluxRelErr_Linf(Ntimes);
+            Eigen::VectorXd heatFluxNorm(Ntimes);
             Eigen::VectorXd projHeatFluxRelErr_L2(Ntimes);
             Eigen::VectorXd projHeatFluxRelErr_Linf(Ntimes);
             Eigen::VectorXd projRecHeatFluxRelErr_L2(Ntimes);
@@ -769,6 +771,8 @@ class linearBasisTest: public sequentialIHTP_linear
                         ITHACAutilities::errorL2Rel(trueHeatFluxField, gRec[timeI]);
                     heatFluxRelErr_Linf(timeI-1) = 
                         ITHACAutilities::errorLinfRel(trueHeatFluxField, gRec[timeI]);
+                    heatFluxNorm(timeI-1) = ITHACAutilities::L2normOnPatch(mesh,
+                            gRec[timeI], "hotSide");
                  //   projHeatFluxRelErr_L2(timeI-1) = 
                  //       ITHACAutilities::errorL2Rel(trueHeatFluxField, gProj[timeI]);
                  //   projHeatFluxRelErr_Linf(timeI-1) = 
@@ -777,7 +781,7 @@ class linearBasisTest: public sequentialIHTP_linear
                  //       ITHACAutilities::errorL2Rel(gProj[timeI], gRec[timeI]);
                  //   projRecHeatFluxRelErr_Linf(timeI-1) = 
                  //       ITHACAutilities::errorLinfRel(gProj[timeI], gRec[timeI]);
-                 //   timeVec(timeI-1) = timeSteps[timeI];
+                    timeVec(timeI-1) = timeSteps[timeI];
                 }
                 ITHACAstream::exportSolution(gRec[timeI],
                                              std::to_string(timeSteps[timeI]), 
@@ -817,13 +821,33 @@ class linearBasisTest: public sequentialIHTP_linear
             heatFluxRelErr_L2_max(0) = heatFluxRelErr_L2.maxCoeff();
             Eigen::VectorXd heatFluxRelErr_Linf_max(1);
             heatFluxRelErr_Linf_max(0) = heatFluxRelErr_Linf.maxCoeff();
+
+            Eigen::VectorXd heatFluxRelErr_L2_mean(1);
+            heatFluxRelErr_L2_mean(0) = heatFluxRelErr_L2.mean();
+            Eigen::VectorXd heatFluxRelErr_Linf_mean(1);
+            heatFluxRelErr_Linf_mean(0) = heatFluxRelErr_Linf.mean();
+
+            Eigen::VectorXd measurementsDiscrepancy_max(1);
+            measurementsDiscrepancy_max(0) = Jlist.maxCoeff();
+            Eigen::VectorXd measurementsDiscrepancy_mean(1);
+            measurementsDiscrepancy_mean(0) = Jlist.mean();
+
+            Eigen::VectorXd heatFluxL2norm_max(1);
+            heatFluxL2norm_max(0) = heatFluxNorm.maxCoeff();
+            Eigen::VectorXd heatFluxL2norm_mean(1);
+            heatFluxL2norm_mean(0) = heatFluxNorm.mean();
+
             Info << "\nEND" << endl;
 
             Info << "\nExporting" << endl;
             ITHACAstream::exportMatrix(
-                    heatFluxRelErr_L2_max, "heatFluxRelErr_L2", "eigen", "./");
+                    heatFluxRelErr_L2_max, "heatFluxRelErr_L2_max", "eigen", "./");
             ITHACAstream::exportMatrix(
-                    heatFluxRelErr_Linf_max, "heatFluxRelErr_Linf", "eigen", "./");
+                    heatFluxRelErr_Linf_max, "heatFluxRelErr_Linf_max", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2_mean, "heatFluxRelErr_L2_mean", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf_mean, "heatFluxRelErr_Linf_mean", "eigen", "./");
             ITHACAstream::exportMatrix(
                     heatFluxRelErr_L2, "heatFluxRelErr_L2", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(
@@ -846,7 +870,44 @@ class linearBasisTest: public sequentialIHTP_linear
             ITHACAstream::exportMatrix(
                     projRecHeatFluxRelErr_Linf, "projRecHeatFluxRelErr_Linf", "eigen", 
                     _outputFolder);
+            ITHACAstream::exportMatrix(
+                    measurementsDiscrepancy_max, "measurementsDiscrepancy_max", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    measurementsDiscrepancy_mean, "measurementsDiscrepancy_mean", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    heatFluxL2norm_max, "heatFluxL2norm_max", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    heatFluxL2norm_mean, "heatFluxL2norm_mean", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    heatFluxNorm, "heatFluxL2norm", "eigen", 
+                    _outputFolder);
             Info << "Ended Exporting" << endl;
+        }
+
+        //--------------------------------------------------------------------------
+        /// 
+        void conditioningTest(word _outputFolder)
+        {
+            Info << endl << endl << 
+                "############ Linear system conditioning test ############" << endl << 
+                endl;
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(Theta,
+                                        Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+            Eigen::VectorXd singVal = svd.singularValues();
+            ITHACAstream::exportMatrix(
+                    singVal, "singularValues", "eigen", 
+                    _outputFolder);
+
+            Eigen::VectorXd conditioningNumber(1);
+            conditioningNumber(0) = singVal(0) / singVal(Eigen::last);
+            ITHACAstream::exportMatrix(
+                    conditioningNumber, "conditioningNumber", "eigen", 
+                    _outputFolder);
         }
 
 };

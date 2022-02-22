@@ -143,7 +143,7 @@ void sequentialIHTP::setSpaceBasis(word type,
             scalar radius = Foam::sqrt((faceX - thermocoupleX) * (faceX - 
                     thermocoupleX) / maxX / maxX + (faceZ - thermocoupleZ) * 
                     (faceZ - thermocoupleZ) / maxZ / maxZ);
-            heatFluxSpaceBasis[funcI][faceI] = 1e6 * Foam::sqrt(1 + (shapeParameter *
+            heatFluxSpaceBasis[funcI][faceI] = Foam::sqrt(1 + (shapeParameter *
                         radius) * (shapeParameter * radius));
 
         }
@@ -173,10 +173,6 @@ void sequentialIHTP::setSpaceBasis(word type,
         }
         forAll(tempBasis, baseI)
         {
-            forAll(tempBasis[baseI], cellI)
-            {
-                tempBasis[baseI][cellI] *= 1e6;
-            }
             volScalarField base = list2Field(tempBasis[baseI], 0.0);
             ITHACAstream::exportSolution(base,
                                          std::to_string(1),
@@ -906,6 +902,7 @@ void sequentialIHTP::parameterizedHeatFlux_postProcess(
     List<Eigen::MatrixXd> linSys, Eigen::VectorXd weigths, word outputFolder, 
     label verbose)
 {
+    Foam::fvMesh& mesh = _mesh();
     Eigen::VectorXd Tcomp = fieldValueAtThermocouples(Ttime);
     //std::cout << "Tcomp = \n" << Tcomp.transpose() << std::endl;
     //std::cout << "TmeasShort = \n" << TmeasShort.transpose() << std::endl;
@@ -980,4 +977,25 @@ void sequentialIHTP::findMagicPoints(int NmagicPoints)
     }
 
     Info << "magicPoints:\n" << magicPoints << endl;
+}
+
+void sequentialIHTP::computeBasisCrossIntegral()
+{
+    Info << "Computing the cross L2 product of the space basis " << endl;
+    basisCrossIntegralMatrix.resize(Nbasis, Nbasis);
+
+    fvMesh& mesh = _mesh();
+    M_Assert(heatFluxSpaceBasis.size() == Nbasis, 
+            "heatFluxSpaceBasis are not properly set up");
+    forAll(heatFluxSpaceBasis, baseI)
+    {
+        forAll(heatFluxSpaceBasis, baseJ)
+        {
+            basisCrossIntegralMatrix(baseI, baseJ) = 
+                ITHACAutilities::L2productOnPatch(mesh, 
+                        heatFluxSpaceBasis[baseI], heatFluxSpaceBasis[baseJ], "hotSide");
+        }
+    }
+
+    Info << "computeBasisCrossIntegral END" << endl;
 }

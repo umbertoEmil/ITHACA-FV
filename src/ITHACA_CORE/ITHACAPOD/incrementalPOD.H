@@ -44,6 +44,7 @@ SourceFiles
 #include "Foam2Eigen.H"
 #include "EigenFunctions.H"
 #include "Modes.H"
+#include "ITHACAPOD.H"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
@@ -204,42 +205,6 @@ class incrementalPOD : public Modes<Type, PatchField, GeoMesh>
 
 typedef incrementalPOD<scalar, fvPatchField, volMesh> scalarIncrementalPOD;
 typedef incrementalPOD<vector, fvPatchField, volMesh> vectorIncrementalPOD;
-
-namespace ITHACAPOD
-{
-//--------------------------------------------------------------------------
-/// Weighted Gram-Schmidt orthogonalization
-///
-/// @param[in]  matrix  Matrix to be orthogonalized
-/// @param[in]  weights Vector of weights
-///
-void weightedGramSchmidt(
-    Eigen::MatrixXd& matrix,
-    Eigen::VectorXd& weights)
-{
-    M_Assert(matrix.rows() == weights.rows(),
-             "Matrix and weights must have the same number of rows");
-    Eigen::MatrixXd Ortho = matrix;
-    Ortho = matrix;
-
-    for (label i = 0; i < matrix.cols(); i++)
-    {
-        for (label k = 0; k < i; k++)
-        {
-            double num = Ortho.col(k).transpose() * weights.asDiagonal()
-                         * matrix.col(i);
-            double den = (Ortho.col(k).transpose() * weights.asDiagonal()
-                          * Ortho.col(k));
-            double fact = num / den;
-            Ortho.col(i) -= fact * Ortho.col(k) ;
-        }
-
-        Ortho.col(i).normalize();
-    }
-
-    matrix = Ortho;
-};
-}
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif

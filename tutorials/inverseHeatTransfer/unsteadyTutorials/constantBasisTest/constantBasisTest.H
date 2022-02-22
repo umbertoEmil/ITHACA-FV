@@ -777,7 +777,7 @@ class constantBasisTest: public sequentialIHTP_constant
                  //       ITHACAutilities::errorL2Rel(gProj[timeI], gRec[timeI]);
                  //   projRecHeatFluxRelErr_Linf(timeI-1) = 
                  //       ITHACAutilities::errorLinfRel(gProj[timeI], gRec[timeI]);
-                 //   timeVec(timeI-1) = timeSteps[timeI];
+                    timeVec(timeI-1) = timeSteps[timeI];
                 }
                 ITHACAstream::exportSolution(gRec[timeI],
                                              std::to_string(timeSteps[timeI]), 
@@ -817,13 +817,29 @@ class constantBasisTest: public sequentialIHTP_constant
             heatFluxRelErr_L2_max(0) = heatFluxRelErr_L2.maxCoeff();
             Eigen::VectorXd heatFluxRelErr_Linf_max(1);
             heatFluxRelErr_Linf_max(0) = heatFluxRelErr_Linf.maxCoeff();
+
+            Eigen::VectorXd heatFluxRelErr_L2_mean(1);
+            heatFluxRelErr_L2_mean(0) = heatFluxRelErr_L2.mean();
+            Eigen::VectorXd heatFluxRelErr_Linf_mean(1);
+            heatFluxRelErr_Linf_mean(0) = heatFluxRelErr_Linf.mean();
+
+            Eigen::VectorXd measurementsDiscrepancy_max(1);
+            measurementsDiscrepancy_max(0) = Jlist.maxCoeff();
+
+            Eigen::VectorXd measurementsDiscrepancy_mean(1);
+            measurementsDiscrepancy_mean(0) = Jlist.mean();
+
             Info << "\nEND" << endl;
 
             Info << "\nExporting" << endl;
             ITHACAstream::exportMatrix(
-                    heatFluxRelErr_L2_max, "heatFluxRelErr_L2", "eigen", "./");
+                    heatFluxRelErr_L2_max, "heatFluxRelErr_L2_max", "eigen", "./");
             ITHACAstream::exportMatrix(
-                    heatFluxRelErr_Linf_max, "heatFluxRelErr_Linf", "eigen", "./");
+                    heatFluxRelErr_Linf_max, "heatFluxRelErr_Linf_max", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2_mean, "heatFluxRelErr_L2_mean", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf_mean, "heatFluxRelErr_Linf_mean", "eigen", "./");
             ITHACAstream::exportMatrix(
                     heatFluxRelErr_L2, "heatFluxRelErr_L2", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(
@@ -846,7 +862,35 @@ class constantBasisTest: public sequentialIHTP_constant
             ITHACAstream::exportMatrix(
                     projRecHeatFluxRelErr_Linf, "projRecHeatFluxRelErr_Linf", "eigen", 
                     _outputFolder);
+            ITHACAstream::exportMatrix(
+                    measurementsDiscrepancy_max, "measurementsDiscrepancy_max", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    measurementsDiscrepancy_mean, "measurementsDiscrepancy_mean", "eigen", 
+                    _outputFolder);
             Info << "Ended Exporting" << endl;
+        }
+
+        //--------------------------------------------------------------------------
+        /// 
+        void conditioningTest(word _outputFolder)
+        {
+            Info << endl << endl << 
+                "############ Linear system conditioning test ############" << endl << 
+                endl;
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(Theta,
+                                        Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+            Eigen::VectorXd singVal = svd.singularValues();
+            ITHACAstream::exportMatrix(
+                    singVal, "singularValues", "eigen", 
+                    _outputFolder);
+
+            Eigen::VectorXd conditioningNumber(1);
+            conditioningNumber(0) = singVal(0) / singVal(Eigen::last);
+            ITHACAstream::exportMatrix(
+                    conditioningNumber, "conditioningNumber", "eigen", 
+                    _outputFolder);
         }
 
 

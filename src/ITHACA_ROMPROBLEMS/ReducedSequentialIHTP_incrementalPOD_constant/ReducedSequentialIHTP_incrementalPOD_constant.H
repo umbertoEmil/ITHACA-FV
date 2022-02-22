@@ -34,8 +34,8 @@ SourceFiles
 /// \dir
 /// Directory containing the header and source files for the reducedSequentialIHTP_incrementalPOD_constant class
 
-#ifndef ReducedSequentialIHTP_incrementalPOD_H
-#define ReducedSequentialIHTP_incrementalPOD_H
+#ifndef ReducedSequentialIHTP_incrementalPOD_constant_H
+#define ReducedSequentialIHTP_incrementalPOD_constant_H
 
 #include "fvCFD.H"
 #include "IOmanip.H"
@@ -112,11 +112,6 @@ class reducedSequentialIHTP_incrementalPOD_constant: public sequentialIHTP_const
         /// @param[in]  
         ///
         double computeT_ic_projectionError(volScalarField& T_ic_in);
-
-        ///
-        /// 
-        ///
-        volScalarField reconstructT_lastTime();
 
         ///
         /// 

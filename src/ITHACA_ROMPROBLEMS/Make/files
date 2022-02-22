@@ -14,5 +14,6 @@ ReducedMSR/ReducedMSR.C
 ReducedUnsteadyMSR/ReducedUnsteadyMSR.C
 ReducedUnsteadyNSExplicit/ReducedUnsteadyNSExplicit.C
 ReducedSequentialIHTP_incrementalPOD_constant/ReducedSequentialIHTP_incrementalPOD_constant.C
+ReducedSequentialIHTP_incrementalPOD_linear/ReducedSequentialIHTP_incrementalPOD_linear.C
 
 LIB = $(FOAM_USER_LIBBIN)/libITHACA_ROMPROBLEMS

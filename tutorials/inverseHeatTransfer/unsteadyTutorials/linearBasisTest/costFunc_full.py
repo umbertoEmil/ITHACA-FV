@@ -21,7 +21,7 @@ fig = plt.figure(1,figsize=(12,8))
 plt.semilogy(costFunction, "b", linewidth = 2)
 
 plt.xlabel('Time [s]', fontsize=25)
-plt.ylabel(r'Cost function, $J$', fontsize=25)
+plt.ylabel(r'Cost function, $S^k[\mathbf{w}^k]$', fontsize=25)
 #plt.xlim(0,5)
 plt.grid()
 

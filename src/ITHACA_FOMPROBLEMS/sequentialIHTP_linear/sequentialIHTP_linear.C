@@ -188,22 +188,10 @@ void sequentialIHTP_linear::offlinePhase(bool force)
             Ttime.resize(0);
             ITHACAstream::read_fields(Ttime, "T_basis" + std::to_string(baseI + 1),
                                       basisFolderOffline);
-            for(int timeI = 0; timeI < offlineTimestepsSize; timeI++)
-            {
-                ITHACAstream::exportSolution(Ttime[timeI], 
-                        std::to_string(timeSteps[timeI + 1]), basisFolderOffline, 
-                        "T_basis_check" + std::to_string(baseI + 1));
-            }
             T_basis.append(Ttime.clone());
             Ttime.resize(0);
             ITHACAstream::read_fields(Ttime, "T_d" + std::to_string(baseI + 1),
                                       basisFolderOffline);
-            for(int timeI = 0; timeI < offlineTimestepsSize; timeI++)
-            {
-                ITHACAstream::exportSolution(Ttime[timeI], 
-                        std::to_string(timeSteps[timeI + 1]), basisFolderOffline, 
-                        "T_d_check" + std::to_string(baseI + 1));
-            }
             T_d.append(Ttime.clone());
         }
     }
@@ -213,8 +201,6 @@ void sequentialIHTP_linear::offlinePhase(bool force)
         Theta.resize(thermocouplesNum, Nbasis);
         offlineFlag = 1;
         timeSampleI = 0;
-
-        Info << "Theta size = " << Theta.rows() << ", " << Theta.cols() << endl;
 
         /// Tbasis
         for (label baseI = 0; baseI < Theta.cols(); baseI++)
@@ -277,6 +263,7 @@ void sequentialIHTP_linear::offlinePhase(bool force)
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
         ITHACAstream::exportMatrix(Theta_d, "Theta_d", "eigen", folderOffline);
     }
+    computeBasisCrossIntegral();
     M_Assert(T_basis.size() == Nbasis, "Somethong went wrong in the offline phase");
     M_Assert(T_d.size() == Nbasis, "Somethong went wrong in the offline phase");
     offlineFlag = 0;
@@ -365,11 +352,20 @@ void sequentialIHTP_linear::computeHeatFluxWeights(volScalarField _initialField,
     if (linSys_solver == "TSVD" || linSys_solver == "Tikhonov" || 
             linSys_solver == "conjugateGradient" || linSys_solver == "PCGLS")
     {
-        linSys[0] = Theta;
+        if(costFunctionParameter == 0.0)
+        {
+            linSys[0] = Theta;
+        }
+        else
+        {
+            linSys[0] = Theta.transpose() * Theta + 
+                2 * costFunctionParameter * basisCrossIntegralMatrix;
+        }
     }
     else
     {
-        linSys[0] = Theta.transpose() * Theta;
+        linSys[0] = Theta.transpose() * Theta + 
+            2 * costFunctionParameter * basisCrossIntegralMatrix;
     }
 
     while(timeSampleI < timeSamplesNum)
@@ -397,7 +393,15 @@ void sequentialIHTP_linear::computeHeatFluxWeights(volScalarField _initialField,
         if (linSys_solver == "TSVD" || linSys_solver == "Tikhonov" || 
                 linSys_solver == "conjugateGradient" || linSys_solver == "PCGLS")
         {
-            linSys[1] = TmeasShort + Theta_d * weightsOld - T_ic_vector;
+            if(costFunctionParameter == 0.0)
+            {
+                linSys[1] = TmeasShort + Theta_d * weightsOld - T_ic_vector;
+            }
+            else
+            {
+                linSys[1] = Theta.transpose() * ( TmeasShort + Theta_d * weightsOld 
+                        - T_ic_vector );
+            }
         }
         else
         {

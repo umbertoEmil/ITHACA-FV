@@ -34,18 +34,22 @@ NmagicPoints        18;
 T0projectionTol     1e-12;
 SVDtol              1e-8;
 PODnorm             L2;
-noiseLevel          0.05;
+
+noiseStdDev 0.01;
 
 spaceBasisType      rbf;
-NpodBasis           20;
-Nimplicit           10;
+NpodBasis           10;
 
-linearTrueHeatFlux  0;
+costFunctionParameter 0.0;
+
+linearTrueHeatFlux 0;
 maxFrequency        0.05;
 timeGrad            0.5;
 
 //Test to perform
-reconstructionTest      0;
+reconstructionTest 0;
 thermocoupleReconstructionTest 0;
-inverseTest             1;
+addNoise 0;
+inverseTest 1;
+conditioningTest 0;
 

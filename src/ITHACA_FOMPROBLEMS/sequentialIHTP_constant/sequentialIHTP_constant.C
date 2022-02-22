@@ -136,6 +136,7 @@ void sequentialIHTP_constant::offlinePhase(bool force)
 
         ITHACAstream::exportMatrix(Theta, "Theta", "eigen", folderOffline);
     }
+    computeBasisCrossIntegral();
     M_Assert(T_basis.size() == Nbasis, "Somethong went wrong in the offline phase");
     offlineFlag = 0;
     Info << "\nOffline ENDED" << endl;
@@ -223,11 +224,20 @@ void sequentialIHTP_constant::computeHeatFluxWeights(volScalarField _initialFiel
     if (linSys_solver == "TSVD" || linSys_solver == "Tikhonov" || 
             linSys_solver == "conjugateGradient" || linSys_solver == "PCGLS")
     {
-        linSys[0] = Theta;
+        if(costFunctionParameter == 0.0)
+        {
+            linSys[0] = Theta;
+        }
+        else
+        {
+            linSys[0] = Theta.transpose() * Theta + 
+                2 * costFunctionParameter * basisCrossIntegralMatrix;
+        }
     }
     else
     {
-        linSys[0] = Theta.transpose() * Theta;
+        linSys[0] = Theta.transpose() * Theta + 
+            2 * costFunctionParameter * basisCrossIntegralMatrix;
     }
 
     while(timeSampleI < timeSamplesNum)
@@ -245,7 +255,14 @@ void sequentialIHTP_constant::computeHeatFluxWeights(volScalarField _initialFiel
         if (linSys_solver == "TSVD" || linSys_solver == "Tikhonov" || 
                 linSys_solver == "conjugateGradient" || linSys_solver == "PCGLS")
         {
-            linSys[1] = TmeasShort - T_ic_vector;
+            if(costFunctionParameter == 0.0)
+            {
+                linSys[1] = TmeasShort - T_ic_vector;
+            }
+            else
+            {
+                linSys[1] = Theta.transpose() * ( TmeasShort - T_ic_vector );
+            }
         }
         else
         {

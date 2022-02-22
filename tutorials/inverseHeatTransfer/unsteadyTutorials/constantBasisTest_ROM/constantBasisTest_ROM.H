@@ -289,21 +289,113 @@ class constantBasisTest_ROM: public reducedSequentialIHTP_incrementalPOD_constan
 
         //--------------------------------------------------------------------------
         /// 
-        void inverseProblemPostProcess(word outputFolder)
+        void inverseProblemPostProcess(word _outputFolder)
         {
             fvMesh& mesh(_mesh());
+            PtrList<volScalarField> gRec;
+            ITHACAstream::read_fields(gRec, reconstructedHeatFluxName,
+                                      _outputFolder);
+
+            Eigen::VectorXd heatFluxRelErr_L2(Ntimes);
+            Eigen::VectorXd heatFluxRelErr_Linf(Ntimes);
+            Eigen::VectorXd projHeatFluxRelErr_L2(Ntimes);
+            Eigen::VectorXd projHeatFluxRelErr_Linf(Ntimes);
+            Eigen::VectorXd projRecHeatFluxRelErr_L2(Ntimes);
+            Eigen::VectorXd projRecHeatFluxRelErr_Linf(Ntimes);
+            Eigen::VectorXd timeVec(Ntimes);
+            Eigen::VectorXd probeHeat_rec(Ntimes);
+            Eigen::VectorXd probeHeat_proj(Ntimes);
+            Eigen::VectorXd probeHeat_true(Ntimes);
+            label cellprobeCenter = mesh.findCell(probeCenter);
+            forAll(timeSteps, timeI)
+            {
+                volScalarField trueHeatFluxField = list2Field(trueHeatFlux[timeI]);
+                ITHACAstream::exportSolution(trueHeatFluxField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "trueHeatFlux");
+                volScalarField relErrField = ITHACAutilities::relativeErrorField(
+                        trueHeatFluxField, gRec[timeI]);
+                ITHACAstream::exportSolution(relErrField,
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, "heatFluxRelErrField");
+                if(timeI > 0)
+                {
+                    probeHeat_true(timeI-1) = 
+                        trueHeatFluxField[cellprobeCenter];
+                    probeHeat_rec(timeI-1) = gRec[timeI][cellprobeCenter];
+                    heatFluxRelErr_L2(timeI-1) = 
+                        ITHACAutilities::errorL2Rel(trueHeatFluxField, gRec[timeI]);
+                    heatFluxRelErr_Linf(timeI-1) = 
+                        ITHACAutilities::errorLinfRel(trueHeatFluxField, gRec[timeI]);
+                    timeVec(timeI-1) = timeSteps[timeI];
+                }
+                ITHACAstream::exportSolution(gRec[timeI],
+                                             std::to_string(timeSteps[timeI]), 
+                                             _outputFolder, reconstructedHeatFluxName);
+                ITHACAstream::printProgress(double(timeI + 1) / timeSteps.size());
+            }
+            Eigen::VectorXd heatFluxRelErr_L2_max(1);
+            heatFluxRelErr_L2_max(0) = heatFluxRelErr_L2.maxCoeff();
+            Eigen::VectorXd heatFluxRelErr_Linf_max(1);
+            heatFluxRelErr_Linf_max(0) = heatFluxRelErr_Linf.maxCoeff();
+
+            Eigen::VectorXd heatFluxRelErr_L2_mean(1);
+            heatFluxRelErr_L2_mean(0) = heatFluxRelErr_L2.mean();
+            Eigen::VectorXd heatFluxRelErr_Linf_mean(1);
+            heatFluxRelErr_Linf_mean(0) = heatFluxRelErr_Linf.mean();
+
+            Eigen::VectorXd measurementsDiscrepancy_max(1);
+            measurementsDiscrepancy_max(0) = Jlist.maxCoeff();
+
+            Eigen::VectorXd measurementsDiscrepancy_mean(1);
+            measurementsDiscrepancy_mean(0) = Jlist.mean();
+
+            Info << "\nExporting" << endl;
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2_max, "heatFluxRelErr_L2_max", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf_max, "heatFluxRelErr_Linf_max", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2_mean, "heatFluxRelErr_L2_mean", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf_mean, "heatFluxRelErr_Linf_mean", "eigen", "./");
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_L2, "heatFluxRelErr_L2", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    heatFluxRelErr_Linf, "heatFluxRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(projHeatFluxRelErr_L2, "projHeatFluxRelErr_L2", 
+                    "eigen", _outputFolder);
+            ITHACAstream::exportMatrix( projHeatFluxRelErr_Linf, 
+                    "projHeatFluxRelErr_Linf", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    timeVec, "timeVec", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    probeHeat_true, "probeHeat_true", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    probeHeat_rec, "probeHeat_rec", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    probeHeat_proj, "probeHeat_proj", "eigen", _outputFolder);
+            ITHACAstream::exportMatrix(
+                    projRecHeatFluxRelErr_L2, "projRecHeatFluxRelErr_L2", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    projRecHeatFluxRelErr_Linf, "projRecHeatFluxRelErr_Linf", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    measurementsDiscrepancy_max, "measurementsDiscrepancy_max", "eigen", 
+                    _outputFolder);
+            ITHACAstream::exportMatrix(
+                    measurementsDiscrepancy_mean, "measurementsDiscrepancy_mean", "eigen", 
+                    _outputFolder);
+
+
             Eigen::VectorXd heatFluxL2norm(timeSteps.size());
             Eigen::VectorXd heatFluxLinfNorm(timeSteps.size());
             Eigen::VectorXd trueHeatFluxL2norm(timeSteps.size());
             Eigen::VectorXd trueHeatFluxLinfNorm(timeSteps.size());
             Eigen::VectorXd avgRelErrL2norm(timeSteps.size());
             Eigen::VectorXd avgRelErrLinfNorm(timeSteps.size());
-            Info << "debug : g.size() = " << heatFlux.size() << endl;
-            Info << "debug : trueHeatFlux.size() = " << trueHeatFlux.size() << endl;
-            Info << "debug : Ttrue.size() = " << Ttrue.size() << endl;
-            Info << "debug : timeSteps.size() = " << timeSteps.size() << endl;
 
-            label cellprobeCenter = mesh.findCell(probeCenter);
             Eigen::VectorXd probeCenter_trueHeatFlux(timeSteps.size());
             Eigen::VectorXd probeCenter_gRec = probeCenter_trueHeatFlux;
             Eigen::VectorXd probeCenter_Ttrue = probeCenter_trueHeatFlux;
@@ -319,8 +411,7 @@ class constantBasisTest_ROM: public reducedSequentialIHTP_incrementalPOD_constan
 
             PtrList<volScalarField> Trec;
             ITHACAstream::read_fields(Trec, reconstructedTemperatureName,
-                                      outputFolder);
-            Info << "debug: Trec.size() = " << Trec.size() << endl;
+                                      _outputFolder);
             
 
             Info << "######### Postprocessing #########" <<
@@ -331,22 +422,22 @@ class constantBasisTest_ROM: public reducedSequentialIHTP_incrementalPOD_constan
                 volScalarField gParametrizedField = list2Field(heatFlux[timeI]);
                 ITHACAstream::exportSolution(trueHeatFluxField,
                                              std::to_string(timeSteps[timeI]), 
-                                             outputFolder, "trueHeatFlux");
+                                             _outputFolder, "trueHeatFlux");
                 ITHACAstream::exportSolution(Ttrue[timeI],
-                        std::to_string(timeSteps[timeI]), outputFolder, "Ttrue");
+                        std::to_string(timeSteps[timeI]), _outputFolder, "Ttrue");
                 volScalarField relErrField = ITHACAutilities::relativeErrorField(
                         trueHeatFluxField, gParametrizedField);
                 ITHACAstream::exportSolution(trueHeatFluxField,
                                              std::to_string(timeSteps[timeI]), 
-                                             outputFolder, "trueHeatFlux");
+                                             _outputFolder, "trueHeatFlux");
                 ITHACAstream::exportSolution(relErrField,
                                              std::to_string(timeSteps[timeI]), 
-                                             outputFolder, "heatFluxRelErrField");
+                                             _outputFolder, "heatFluxRelErrField");
                 relErrField = ITHACAutilities::relativeErrorField(Ttrue[timeI], 
                         Trec[timeI]);
                 ITHACAstream::exportSolution(relErrField,
                                              std::to_string(timeSteps[timeI]), 
-                                             outputFolder, "tempRelErrField");
+                                             _outputFolder, "tempRelErrField");
                 probeCenter_trueHeatFlux(timeI) = trueHeatFluxField[cellprobeCenter];
                 probeCenter_gRec(timeI) = gParametrizedField[cellprobeCenter];
                 probeCenter_Ttrue(timeI) = Ttrue[timeI][cellprobeCenter];
@@ -370,36 +461,36 @@ class constantBasisTest_ROM: public reducedSequentialIHTP_incrementalPOD_constan
             }
             Info << "\nExporting" << endl;
             ITHACAstream::exportMatrix(heatFluxL2norm, "heatFluxL2norm", "eigen",
-                                       outputFolder);
+                                       _outputFolder);
             ITHACAstream::exportMatrix(heatFluxLinfNorm, "heatFluxLinfNorm", "eigen",
-                                       outputFolder);
+                                       _outputFolder);
             ITHACAstream::exportMatrix(trueHeatFluxL2norm, "trueHeatFluxL2norm", "eigen",
-                                       outputFolder);
+                                       _outputFolder);
             ITHACAstream::exportMatrix(trueHeatFluxLinfNorm, "trueHeatFluxLinfNorm", 
-                    "eigen", outputFolder);
+                    "eigen", _outputFolder);
             Eigen::VectorXd timeSteps_eigen = Foam2Eigen::List2EigenMatrix(timeSteps);
             Eigen::VectorXd samplingTime_eigen = 
                 Foam2Eigen::List2EigenMatrix(samplingTime);
             ITHACAstream::exportMatrix(
-                    timeSteps_eigen, "timeSteps", "eigen", outputFolder);
+                    timeSteps_eigen, "timeSteps", "eigen", _outputFolder);
             ITHACAstream::exportMatrix(samplingTime_eigen, "samplingTime", "eigen",
-                                       outputFolder);
+                                       _outputFolder);
             ITHACAstream::exportMatrix(probeCenter_trueHeatFlux, 
                     "probeCenter_trueHeatFlux", "eigen", 
-                    outputFolder);
+                    _outputFolder);
             ITHACAstream::exportMatrix(probeCenter_gRec, "probeCenter_gRec", "eigen", 
-                    outputFolder);
+                    _outputFolder);
             ITHACAstream::exportMatrix(probeCenter_Ttrue, "probeCenter_Ttrue", "eigen", 
-                    outputFolder);
+                    _outputFolder);
             ITHACAstream::exportMatrix(probeCenter_Trec, "probeCenter_Trec", "eigen", 
-                    outputFolder);
+                    _outputFolder);
             ITHACAstream::exportMatrix(probeSide_trueHeatFlux, "probeSide_trueHeatFlux", 
-                    "eigen", outputFolder);
+                    "eigen", _outputFolder);
             ITHACAstream::exportMatrix(probeSide_gRec, "probeSide_gRec", "eigen", 
-                    outputFolder);
+                    _outputFolder);
             ITHACAstream::exportMatrix(probe2_Ttrue, "probe2_Ttrue", "eigen", 
-                    outputFolder);
-            ITHACAstream::exportMatrix(probe2_Trec, "probe2_Trec", "eigen", outputFolder);
+                    _outputFolder);
+            ITHACAstream::exportMatrix(probe2_Trec, "probe2_Trec", "eigen", _outputFolder);
             Info << "Ended Exporting" << endl;
         }
 
