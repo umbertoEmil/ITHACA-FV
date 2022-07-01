@@ -8,14 +8,12 @@ EXE_INC = \
     -I$(LIB_SRC)/fileFormats/lnInclude \
     -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
     -I$(FOAM_SRC)/functionObjects/forces/lnInclude \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/reductionProblem \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/laplacianProblem \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem_CG \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblemTotalHeatMeasure_CG \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblemTotalHeatMeasure_paramBC \
-    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/inverseLaplacianProblem_paramBC \
-    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedProblem \
+    -I$(LIB_ITHACA_SRC)/thirdparty/OptimLib \
+    -I$(LIB_ITHACA_SRC)/thirdparty/Eigen \
+    -I$(LIB_ITHACA_SRC)/thirdparty/redsvd \
+    -I$(LIB_ITHACA_SRC)/thirdparty/spectra/include \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/lnInclude \
+    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/lnInclude \
     -I$(LIB_ITHACA_SRC)/ITHACA_MUQ \
     -I$(MUQ_LIBRARIES)/include \
     -I$(MUQ_EXT_LIBRARIES)/include\
@@ -28,10 +26,6 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/Foam2Eigen \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/EigenFunctions \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/Containers \
-    -I$(LIB_ITHACA_SRC)/thirdparty/Eigen \
-    -I$(LIB_ITHACA_SRC)/thirdparty/Eigen/src \
-    -I$(LIB_ITHACA_SRC)/thirdparty/spectra/include \
-    -I$(LIB_ITHACA_SRC)/thirdparty/MiniInverseProblems/include \
     -I$(LIB_ITHACA_SRC)/ITHACA_THIRD_PARTY/splinter/include \
     -DOFVER=$${WM_PROJECT_VERSION%.*} \
     -Wno-comment \
