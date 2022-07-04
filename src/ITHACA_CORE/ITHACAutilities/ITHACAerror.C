@@ -163,13 +163,6 @@ double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
     double err;
     GeometricField<T, fvPatchField, volMesh> errField = field1 - field2;
 
-template<typename T>
-double errorL2Rel(GeometricField<T, fvPatchField, volMesh>& field1,
-                  GeometricField<T, fvPatchField, volMesh>& field2)
-{
-    double err;
-    GeometricField<T, fvPatchField, volMesh> errField = field1 - field2;
-
     if (L2Norm(field1) <= 1e-6)
     {
         err = 0;

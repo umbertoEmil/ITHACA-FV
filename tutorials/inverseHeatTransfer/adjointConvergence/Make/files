@@ -1,3 +1,0 @@
-adjointConvergence.C
-
-EXE = $(FOAM_USER_APPBIN)/adjointConvergence
