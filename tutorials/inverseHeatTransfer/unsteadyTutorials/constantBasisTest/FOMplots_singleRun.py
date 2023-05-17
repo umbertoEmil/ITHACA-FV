@@ -6,10 +6,10 @@ import sys
 sys.path.insert(0, "./")
 
 #plt.style.use('classic')
-params = {'legend.fontsize': 'x-large',
+params = {'legend.fontsize': 30,
           'figure.figsize': (10, 8),
          'axes.labelsize': 'x-large',
-         'axes.titlesize':'x-large',
+         'axes.titlesize':30,
          'xtick.labelsize':'x-large',
          'ytick.labelsize':'x-large'}
 pylab.rcParams.update(params)
@@ -43,14 +43,14 @@ plt.semilogy(t,heatFluxRelErr_Linf_FOM, "ks--", linewidth = 2,markersize = 6, la
 
 plt.xlabel('Time [s]', fontsize=25)
 plt.xlim(0,50)
+plt.ylim(1e-3,1e-1)
 #plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
 plt.grid()
 
 leg = plt.legend(loc='best')
-axes.add_artist(leg)
-h = [plt.plot([],[], color="k", linestyle="-", marker=j, linewidth = 2, markerfacecolor="k", markersize = 15, ls="")[0] for j in ["o", "s"]]
-#plt.legend(handles=h, labels=["Piecewise constant", "Piecewise linear"], ncol = 2, bbox_to_anchor=(0.001, 0.06),loc=2, borderaxespad=0.)
-plt.legend(handles=h, labels=[r"$||e_{rel}||_{L^2(\Gamma_{s_{in}})}$", r"$||e_{rel}||_{L^\infty(\Gamma_{s_{in}})}$"], ncol = 2, bbox_to_anchor=(0., 1.056), frameon=False, edgecolor = ('k'), loc="upper left" , borderaxespad=0.)
+#axes.add_artist(leg)
+#h = [plt.plot([],[], color="k", linestyle="-", marker=j, linewidth = 2, markerfacecolor="k", markersize = 15, ls="")[0] for j in ["o", "s"]]
+#plt.legend(handles=h, labels=[r"$||e_{rel}||_{L^2(\Gamma_{s_{in}})}$", r"$||e_{rel}||_{L^\infty(\Gamma_{s_{in}})}$"], ncol = 2, bbox_to_anchor=(0., 1.156), frameon=False, edgecolor = ('k'), loc="upper left" , borderaxespad=0.)
 
 
 ##############################################################
